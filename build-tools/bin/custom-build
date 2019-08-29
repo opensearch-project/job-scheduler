@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+
+# clean build dir on every build
+rm -rf build/*
+
+mkdir -p build/plugins
+unzip -qq "opendistro-job-scheduler-1.1.0.0.zip" -d build/plugins/opendistro-job-scheduler

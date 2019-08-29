@@ -1,0 +1,30 @@
+# -*-perl-*-
+
+package.Opendistro-job-scheduler = {
+    interfaces = (aes_7.1);
+
+    deploy = {
+        generic = true;
+    };
+
+    build-environment = {
+        chroot = basic;
+        network-access = blocked;
+    };
+
+    build-system = custom-build;
+    build-tools = {
+        aes_7.1 = {
+            BrazilPath = 1.1;
+        };
+    };
+
+    # Use runtime-dependencies for when you want to bring in additional
+    # packages when deploying.
+    # Use dependencies instead if you intend for these dependencies to
+    # be exported to other packages that build against you.
+    dependencies = {
+        aes_7.1 = {
+        };
+    };
+};
