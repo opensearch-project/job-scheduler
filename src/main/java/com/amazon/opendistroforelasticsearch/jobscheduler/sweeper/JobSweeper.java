@@ -44,6 +44,7 @@ import org.elasticsearch.common.component.LifecycleListener;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
+import org.elasticsearch.common.util.concurrent.ThreadContext.StoredContext;
 import org.elasticsearch.common.util.set.Sets;
 import org.elasticsearch.common.xcontent.LoggingDeprecationHandler;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
@@ -370,8 +371,16 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                             .size(this.sweepPageMaxSize)
                             .query(QueryBuilders.matchAllQuery()));
 
-            SearchResponse response = this.retry((searchRequest) -> this.client.search(searchRequest),
+            SearchResponse response;
+            StoredContext ctx = this.client.threadPool().getThreadContext().stashContext();
+            try{
+                client.threadPool().getThreadContext().putTransient("_opendistro_security_protected_indices_conf_request", "true");
+                response = this.retry((searchRequest) -> this.client.search(searchRequest),
                     jobSearchRequest, this.sweepSearchBackoff).actionGet(this.sweepSearchTimeout);
+            } finally {
+                ctx.close();
+            }
+
             if (response.status() != RestStatus.OK) {
                 log.error("Error sweeping shard {}, failed querying jobs on this shard", shardId);
                 return;
