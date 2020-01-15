@@ -1,7 +1,7 @@
 # -*-perl-*-
 
 package.Opendistro-job-scheduler = {
-    interfaces = (aes_7.1);
+    interfaces = (aes_7.4);
 
     deploy = {
         generic = true;
@@ -14,7 +14,7 @@ package.Opendistro-job-scheduler = {
 
     build-system = custom-build;
     build-tools = {
-        aes_7.1 = {
+        aes_7.4 = {
             BrazilPath = 1.1;
         };
     };
@@ -24,7 +24,7 @@ package.Opendistro-job-scheduler = {
     # Use dependencies instead if you intend for these dependencies to
     # be exported to other packages that build against you.
     dependencies = {
-        aes_7.1 = {
+        aes_7.4 = {
         };
     };
 };
