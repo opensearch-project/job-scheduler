@@ -7,4 +7,4 @@ set -o pipefail
 rm -rf build/*
 
 mkdir -p build/plugins
-unzip -qq "opendistro-job-scheduler-1.4.0.1.zip" -d build/plugins/opendistro-job-scheduler
+unzip -qq "opendistro-job-scheduler-1.4.0.2.zip" -d build/plugins/opendistro-job-scheduler

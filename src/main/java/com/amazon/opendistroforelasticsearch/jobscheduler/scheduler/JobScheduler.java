@@ -156,7 +156,10 @@ public class JobScheduler {
                 double jitter = jobParameter.getJitter() == null ? 0d : jobParameter.getJitter();
                 jitter = jitter > jitterLimit ? jitterLimit : jitter;
                 jitter = jitter < 0 ? 0 : jitter;
-                long jitterMillis = Math.round(Randomness.get().nextLong() % interval.toMillis() * jitter);
+                long randomLong = Randomness.get().nextLong();
+                // Why +17? For the 1 in quintillion+ chance that the randomLong is the max negative long
+                long randomPositiveLong = randomLong < 0 ? (randomLong + 17) * -1 : randomLong;
+                long jitterMillis = Math.round(randomPositiveLong % interval.toMillis() * jitter);
                 if (jitter > 0) {
                     log.info("Will delay {} miliseconds for next execution of job {}", jitterMillis, jobParameter.getName());
                 }
