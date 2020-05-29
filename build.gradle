@@ -72,7 +72,7 @@ integTest.runner {
 
 allprojects {
     group = 'com.amazon.opendistroforelasticsearch'
-    version = "${opendistroVersion}.2"
+    version = "${opendistroVersion}.0"
 
     apply from: "$rootDir/build-tools/repositories.gradle"
 
