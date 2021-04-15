@@ -15,15 +15,22 @@
 
 buildscript {
     ext {
-        es_version = System.getProperty("es.version", "7.10.2")
+        es_version = System.getProperty("es.version", "7.10.3")
     }
 
     repositories {
+        maven {
+            url = 's3://search-vemsarat/'
+            credentials(AwsCredentials) {
+                accessKey = System.env.AWS_ACCESS_KEY_ID ?: findProperty('aws_access_key_id')
+                secretKey = System.env.AWS_ACCESS_KEY_ID ?: findProperty('aws_secret_access_key')
+            }
+        }
         mavenCentral()
     }
 
     dependencies {
-        classpath "org.elasticsearch.gradle:build-tools:${es_version}"
+        classpath "org.opensearch.gradle:build-tools:${es_version}-SNAPSHOT"
     }
 }
 
@@ -37,9 +44,9 @@ ext {
     isSnapshot = "true" == System.getProperty("build.snapshot", "true")
 }
 
-apply plugin: 'elasticsearch.esplugin'
-apply plugin: 'elasticsearch.testclusters'
-apply plugin: 'elasticsearch.java-rest-test'
+apply plugin: 'opensearch.opensearchplugin'
+apply plugin: 'opensearch.testclusters'
+apply plugin: 'opensearch.java-rest-test'
 
 ext {
     projectSubstitutions = [:]
@@ -58,7 +65,7 @@ forbiddenApisTest.ignoreFailures = true
 validateNebulaPom.enabled = false
 loggerUsageCheck.enabled = false
 
-esplugin {
+opensearchplugin {
     name 'opendistro-job-scheduler'
     description 'Open Distro for Elasticsearch job schduler plugin'
     classname 'com.amazon.opendistroforelasticsearch.jobscheduler.JobSchedulerPlugin'
@@ -89,6 +96,16 @@ allprojects {
     }
 }
 
+repositories {
+    maven {
+        url = 's3://search-vemsarat/'
+        credentials(AwsCredentials) {
+            accessKey = System.env.AWS_ACCESS_KEY_ID ?: findProperty('aws_access_key_id')
+            secretKey = System.env.AWS_ACCESS_KEY_ID ?: findProperty('aws_secret_access_key')
+        }
+    }
+}
+
 dependencies {
     compile project(path: ":${rootProject.name}-spi", configuration: 'shadow')
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
@@ -106,7 +123,7 @@ afterEvaluate {
 
         into '/usr/share/elasticsearch/plugins'
         from(zipTree(bundlePlugin.archivePath)) {
-            into esplugin.name
+            into opensearchplugin.name
         }
 
         user 'root'

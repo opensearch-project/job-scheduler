@@ -16,7 +16,7 @@
 package com.amazon.opendistroforelasticsearch.jobscheduler.scheduler;
 
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobParameter;
-import org.elasticsearch.threadpool.Scheduler;
+import org.opensearch.threadpool.Scheduler;
 
 import java.time.Instant;
 

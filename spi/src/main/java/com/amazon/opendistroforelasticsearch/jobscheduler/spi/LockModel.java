@@ -15,12 +15,12 @@
 
 package com.amazon.opendistroforelasticsearch.jobscheduler.spi;
 
-import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.xcontent.ToXContentObject;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.XContentParserUtils;
-import org.elasticsearch.index.seqno.SequenceNumbers;
+import org.opensearch.common.Strings;
+import org.opensearch.common.xcontent.ToXContentObject;
+import org.opensearch.common.xcontent.XContentBuilder;
+import org.opensearch.common.xcontent.XContentParser;
+import org.opensearch.common.xcontent.XContentParserUtils;
+import org.opensearch.index.seqno.SequenceNumbers;
 
 import java.io.IOException;
 import java.time.Instant;
