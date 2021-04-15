@@ -32,7 +32,7 @@ import org.opensearch.common.ParseField;
 import org.opensearch.common.io.stream.NamedWriteableRegistry;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
-import org.opensearch.common.util.concurrent.EsExecutors;
+import org.opensearch.common.util.concurrent.OpenSearchExecutors;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
 import org.opensearch.env.Environment;
 import org.opensearch.env.NodeEnvironment;
@@ -105,7 +105,7 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
 
     @Override
     public List<ExecutorBuilder<?>> getExecutorBuilders(Settings settings) {
-        final int processorCount = EsExecutors.allocatedProcessors(settings);
+        final int processorCount = OpenSearchExecutors.allocatedProcessors(settings);
 
         List<ExecutorBuilder<?>> executorBuilders = new ArrayList<>();
         executorBuilders.add(new FixedExecutorBuilder(settings, OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME,

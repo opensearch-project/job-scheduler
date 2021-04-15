@@ -49,8 +49,8 @@ public final class LockModel implements ToXContentObject {
      * Use this constructor to copy existing lock and update the seqNo and primaryTerm.
      *
      * @param copyLock    JobSchedulerLockModel to copy from.
-     * @param seqNo       sequence number from Elasticsearch document.
-     * @param primaryTerm primary term from Elasticsearch document.
+     * @param seqNo       sequence number from OpenSearch document.
+     * @param primaryTerm primary term from OpenSearch document.
      */
     public LockModel(final LockModel copyLock, long seqNo, long primaryTerm) {
         this(copyLock.jobIndexName, copyLock.jobId, copyLock.lockTime, copyLock.lockDurationSeconds,

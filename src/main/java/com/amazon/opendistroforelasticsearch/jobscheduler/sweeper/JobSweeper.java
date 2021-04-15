@@ -26,7 +26,7 @@ import com.amazon.opendistroforelasticsearch.jobscheduler.spi.utils.LockService;
 import com.amazon.opendistroforelasticsearch.jobscheduler.utils.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.ElasticsearchException;
+import org.opensearch.OpenSearchException;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.bulk.BackoffPolicy;
 import org.opensearch.action.search.SearchRequest;
@@ -44,7 +44,7 @@ import org.opensearch.common.bytes.BytesReference;
 import org.opensearch.common.component.LifecycleListener;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
-import org.opensearch.common.util.concurrent.EsExecutors;
+import org.opensearch.common.util.concurrent.OpenSearchExecutors;
 import org.opensearch.common.util.set.Sets;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
@@ -119,7 +119,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         this.addConfigListeners();
 
         this.fullSweepExecutor = Executors.newSingleThreadExecutor(
-                EsExecutors.daemonThreadFactory("opendistro_job_sweeper"));
+                OpenSearchExecutors.daemonThreadFactory("opendistro_job_sweeper"));
         this.sweptJobs = new ConcurrentHashMap<>();
     }
 
@@ -407,7 +407,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         do {
             try {
                 return function.apply(param);
-            } catch (ElasticsearchException e) {
+            } catch (OpenSearchException e) {
                 if (iter.hasNext() && retryalbeStatus.contains(e.status())) {
                     try {
                         Thread.sleep(iter.next().millis());

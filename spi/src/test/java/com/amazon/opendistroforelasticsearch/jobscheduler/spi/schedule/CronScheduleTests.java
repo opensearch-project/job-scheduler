@@ -21,7 +21,7 @@ import org.opensearch.common.io.stream.BytesStreamOutput;
 import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.xcontent.XContentHelper;
 import org.opensearch.common.xcontent.XContentType;
-import org.opensearch.test.ESTestCase;
+import org.opensearch.test.OpenSearchTestCase;
 import org.junit.Assert;
 import org.junit.Before;
 import org.mockito.Mockito;
@@ -35,7 +35,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
-public class CronScheduleTests extends ESTestCase {
+public class CronScheduleTests extends OpenSearchTestCase {
 
     private CronSchedule cronSchedule;
 

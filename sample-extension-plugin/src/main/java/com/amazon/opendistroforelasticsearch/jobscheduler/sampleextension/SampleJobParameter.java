@@ -17,7 +17,7 @@ package com.amazon.opendistroforelasticsearch.jobscheduler.sampleextension;
 
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobParameter;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.Schedule;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.opensearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 import java.time.Instant;
