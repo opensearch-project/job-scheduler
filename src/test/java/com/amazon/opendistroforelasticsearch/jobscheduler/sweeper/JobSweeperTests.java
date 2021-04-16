@@ -25,37 +25,37 @@ import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobRunner
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.utils.LockService;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
-import org.elasticsearch.Version;
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.cluster.ClusterName;
-import org.elasticsearch.cluster.ClusterState;
-import org.elasticsearch.cluster.ESAllocationTestCase;
-import org.elasticsearch.cluster.metadata.IndexMetadata;
-import org.elasticsearch.cluster.metadata.Metadata;
-import org.elasticsearch.cluster.node.DiscoveryNode;
-import org.elasticsearch.cluster.node.DiscoveryNodes;
-import org.elasticsearch.cluster.routing.IndexRoutingTable;
-import org.elasticsearch.cluster.routing.RoutingTable;
-import org.elasticsearch.cluster.routing.ShardRoutingState;
-import org.elasticsearch.cluster.routing.allocation.AllocationService;
-import org.elasticsearch.cluster.service.ClusterService;
-import org.elasticsearch.common.bytes.BytesArray;
-import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.settings.ClusterSettings;
-import org.elasticsearch.common.settings.Setting;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.NamedXContentRegistry;
-import org.elasticsearch.index.Index;
-import org.elasticsearch.index.engine.Engine;
-import org.elasticsearch.index.mapper.ParseContext;
-import org.elasticsearch.index.mapper.ParsedDocument;
-import org.elasticsearch.index.shard.ShardId;
-import org.elasticsearch.test.ClusterServiceUtils;
-import org.elasticsearch.test.ESTestCase;
-import org.elasticsearch.threadpool.Scheduler;
-import org.elasticsearch.threadpool.ThreadPool;
+import org.opensearch.Version;
+import org.opensearch.action.ActionFuture;
+import org.opensearch.action.delete.DeleteResponse;
+import org.opensearch.client.Client;
+import org.opensearch.cluster.ClusterName;
+import org.opensearch.cluster.ClusterState;
+import org.opensearch.cluster.OpenSearchAllocationTestCase;
+import org.opensearch.cluster.metadata.IndexMetadata;
+import org.opensearch.cluster.metadata.Metadata;
+import org.opensearch.cluster.node.DiscoveryNode;
+import org.opensearch.cluster.node.DiscoveryNodes;
+import org.opensearch.cluster.routing.IndexRoutingTable;
+import org.opensearch.cluster.routing.RoutingTable;
+import org.opensearch.cluster.routing.ShardRoutingState;
+import org.opensearch.cluster.routing.allocation.AllocationService;
+import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.common.bytes.BytesArray;
+import org.opensearch.common.bytes.BytesReference;
+import org.opensearch.common.settings.ClusterSettings;
+import org.opensearch.common.settings.Setting;
+import org.opensearch.common.settings.Settings;
+import org.opensearch.common.xcontent.NamedXContentRegistry;
+import org.opensearch.index.Index;
+import org.opensearch.index.engine.Engine;
+import org.opensearch.index.mapper.ParseContext;
+import org.opensearch.index.mapper.ParsedDocument;
+import org.opensearch.index.shard.ShardId;
+import org.opensearch.test.ClusterServiceUtils;
+import org.opensearch.test.OpenSearchTestCase;
+import org.opensearch.threadpool.Scheduler;
+import org.opensearch.threadpool.ThreadPool;
 import org.junit.Before;
 import org.mockito.Mockito;
 import org.mockito.stubbing.OngoingStubbing;
@@ -71,7 +71,7 @@ import java.util.Map;
 import java.util.Set;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class JobSweeperTests extends ESAllocationTestCase {
+public class JobSweeperTests extends OpenSearchAllocationTestCase {
 
     private Client client;
     private ClusterService clusterService;
@@ -104,7 +104,7 @@ public class JobSweeperTests extends ESAllocationTestCase {
 
         this.settings = Settings.builder().build();
 
-        this.discoveryNode = new DiscoveryNode("node", ESTestCase.buildNewFakeTransportAddress(), Version.CURRENT);
+        this.discoveryNode = new DiscoveryNode("node", OpenSearchTestCase.buildNewFakeTransportAddress(), Version.CURRENT);
 
         Set<Setting<?>> settingSet = new HashSet<>();
         settingSet.addAll(ClusterSettings.BUILT_IN_CLUSTER_SETTINGS);
@@ -263,7 +263,7 @@ public class JobSweeperTests extends ESAllocationTestCase {
     private ClusterState addNodesToCluter(ClusterState clusterState, int nodeCount) {
         DiscoveryNodes.Builder nodeBuilder = DiscoveryNodes.builder();
         for (int i = 1; i<=nodeCount; i++) {
-            nodeBuilder.add(ESAllocationTestCase.newNode("node-" + i));
+            nodeBuilder.add(OpenSearchAllocationTestCase.newNode("node-" + i));
         }
 
         return ClusterState.builder(clusterState).nodes(nodeBuilder).build();

@@ -16,10 +16,10 @@
 package com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule;
 
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.JobDocVersion;
-import org.elasticsearch.test.ESTestCase;
+import org.opensearch.test.OpenSearchTestCase;
 import org.junit.Assert;
 
-public class JobDocVersionTests extends ESTestCase {
+public class JobDocVersionTests extends OpenSearchTestCase {
 
     public void testCompareTo() {
         // constructor parameters: primary_term, seqNo, version

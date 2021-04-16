@@ -16,7 +16,7 @@
 package com.amazon.opendistroforelasticsearch.jobscheduler.spi;
 
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.Schedule;
-import org.elasticsearch.common.xcontent.ToXContentObject;
+import org.opensearch.common.xcontent.ToXContentObject;
 
 import java.time.Instant;
 

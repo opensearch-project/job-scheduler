@@ -35,10 +35,10 @@ import com.amazon.opendistroforelasticsearch.jobscheduler.spi.JobExecutionContex
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.LockModel;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobParameter;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.Schedule;
-import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.cluster.service.ClusterService;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.test.ESIntegTestCase;
+import org.opensearch.action.ActionListener;
+import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.common.xcontent.XContentBuilder;
+import org.opensearch.test.OpenSearchIntegTestCase;
 import org.junit.Before;
 import org.mockito.Mockito;
 
@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class LockServiceIT extends ESIntegTestCase {
+public class LockServiceIT extends OpenSearchIntegTestCase {
 
     static final String JOB_ID = "test_job_id";
     static final String JOB_INDEX_NAME = "test_job_index_name";
@@ -96,7 +96,7 @@ public class LockServiceIT extends ESIntegTestCase {
     @Before
     public void setup() {
         // the test cluster is an external cluster instead of internal cluster in new test framework,
-        // thus the ESIntegTestCase.clusterService() will throw exception.
+        // thus the OpenSearchIntegTestCase.clusterService() will throw exception.
         this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(this.clusterService.state().routingTable().hasIndex(".opendistro-job-scheduler-lock"))
                 .thenReturn(false)

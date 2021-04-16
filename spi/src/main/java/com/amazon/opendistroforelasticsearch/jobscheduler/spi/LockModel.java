@@ -15,12 +15,12 @@
 
 package com.amazon.opendistroforelasticsearch.jobscheduler.spi;
 
-import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.xcontent.ToXContentObject;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.XContentParserUtils;
-import org.elasticsearch.index.seqno.SequenceNumbers;
+import org.opensearch.common.Strings;
+import org.opensearch.common.xcontent.ToXContentObject;
+import org.opensearch.common.xcontent.XContentBuilder;
+import org.opensearch.common.xcontent.XContentParser;
+import org.opensearch.common.xcontent.XContentParserUtils;
+import org.opensearch.index.seqno.SequenceNumbers;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -49,8 +49,8 @@ public final class LockModel implements ToXContentObject {
      * Use this constructor to copy existing lock and update the seqNo and primaryTerm.
      *
      * @param copyLock    JobSchedulerLockModel to copy from.
-     * @param seqNo       sequence number from Elasticsearch document.
-     * @param primaryTerm primary term from Elasticsearch document.
+     * @param seqNo       sequence number from OpenSearch document.
+     * @param primaryTerm primary term from OpenSearch document.
      */
     public LockModel(final LockModel copyLock, long seqNo, long primaryTerm) {
         this(copyLock.jobIndexName, copyLock.jobId, copyLock.lockTime, copyLock.lockDurationSeconds,
