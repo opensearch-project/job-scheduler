@@ -1,13 +1,13 @@
-# Open Distro for Elasticsearch Job Scheduler
+# OpenSearch Job Scheduler
 
-Open Distro for Elasticsearch JobScheduler plugin provides a framework for Elasticsearch plugin
-developers to schedule periodical jobs running within Elasticsearch nodes. You can schedule jobs
+OpenSearch JobSchedule plugin provides a framework for OpenSearch plugin
+developers to schedule periodical jobs running within OpenSearch nodes. You can schedule jobs
 by specify an interval, or using Unix Cron expression to define more flexible schedule to execute
 your job. 
 
-Elasticsearch plugin developers can easily extend JobScheduler plugin to schedule jobs like running
+OpenSearch plugin developers can easily extend JobScheduler plugin to schedule jobs like running
 aggregation query against raw data and save the aggregated data into a new index every hour, or keep
-monitoring the shard allocation by calling Elasticsearch API and post the output to a Webhook.
+monitoring the shard allocation by calling OpenSearch API and post the output to a Webhook.
 
 ## Build
 The JobScheduler plugin uses the [Gradle](https://docs.gradle.org/4.10.2/userguide/userguide.html)
@@ -23,7 +23,7 @@ Once you have built the plugin from source code, run
 ```bash
 elasticsearch-plugin install file://${PLUGIN_ZIP_FILE_PATH}
 ```
-to install the JobScheduler plugin to your Elasticsearch.
+to install the JobScheduler plugin to your OpenSearch.
 
 ## Develop a plugin that extends JobScheduler
 JobScheduler plugin provides a SPI for other plugins to implement. Essentially, you need to
