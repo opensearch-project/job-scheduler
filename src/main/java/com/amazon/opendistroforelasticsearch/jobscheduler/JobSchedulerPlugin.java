@@ -109,7 +109,7 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
 
         List<ExecutorBuilder<?>> executorBuilders = new ArrayList<>();
         executorBuilders.add(new FixedExecutorBuilder(settings, OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME,
-                processorCount, 200, "opendistro.jobscheduler.threadpool"));
+                processorCount, 3000, "opendistro.jobscheduler.threadpool"));
 
         return executorBuilders;
     }
