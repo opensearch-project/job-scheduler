@@ -15,10 +15,10 @@
 
 package com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule;
 
-import org.elasticsearch.common.bytes.BytesArray;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.test.ESTestCase;
+import org.opensearch.common.bytes.BytesArray;
+import org.opensearch.common.xcontent.XContentParser;
+import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.test.OpenSearchTestCase;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -27,7 +27,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
-public class ScheduleParserTests extends ESTestCase {
+public class ScheduleParserTests extends OpenSearchTestCase {
 
     public void testParseCronSchedule() throws IOException {
         String cronScheduleJsonStr = "{\"cron\":{\"expression\":\"* * * * *\",\"timezone\":\"PST8PDT\"}}";

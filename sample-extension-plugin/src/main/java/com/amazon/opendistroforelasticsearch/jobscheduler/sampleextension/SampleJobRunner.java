@@ -21,11 +21,11 @@ import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobRunner
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.utils.LockService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.cluster.routing.ShardRouting;
-import org.elasticsearch.cluster.service.ClusterService;
-import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.threadpool.ThreadPool;
+import org.opensearch.action.ActionListener;
+import org.opensearch.cluster.routing.ShardRouting;
+import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.plugins.Plugin;
+import org.opensearch.threadpool.ThreadPool;
 
 import java.util.List;
 
@@ -35,7 +35,7 @@ import java.util.List;
  * The job runner should be a singleton class if it uses Elasticsearch client or other objects passed
  * from Elasticsearch. Because when registering the job runner to JobScheduler plugin, Elasticsearch has
  * not invoke plugins' createComponents() method. That is saying the plugin is not completely initalized,
- * and the Elasticsearch {@link org.elasticsearch.client.Client}, {@link ClusterService} and other objects
+ * and the Elasticsearch {@link org.opensearch.client.Client}, {@link ClusterService} and other objects
  * are not available to plugin and this job runner.
  *
  * So we have to move this job runner intialization to {@link Plugin} createComponents() method, and using

@@ -13,11 +13,12 @@
  *   permissions and limitations under the License.
  */
 
-apply plugin: 'elasticsearch.esplugin'
-apply plugin: 'elasticsearch.testclusters'
-apply plugin: 'elasticsearch.java-rest-test'
+apply plugin: 'opensearch.opensearchplugin'
+apply plugin: 'opensearch.testclusters'
+apply plugin: 'opensearch.java-rest-test'
 
-esplugin {
+
+opensearchplugin {
     name 'opendistro-job-scheduler-sample-extension'
     description 'Sample plugin that extends OpenDistro JobSchedulerPlugin'
     classname 'com.amazon.opendistroforelasticsearch.jobscheduler.sampleextension.SampleExtensionPlugin'
@@ -28,6 +29,17 @@ ext {
     projectSubstitutions = [:]
     licenseFile = rootProject.file('LICENSE.txt')
     noticeFile = rootProject.file('NOTICE.txt')
+}
+
+repositories {
+    maven {
+        url = 's3://search-vemsarat/'
+        credentials(AwsCredentials) {
+            accessKey = System.env.AWS_ACCESS_KEY_ID ?: findProperty('aws_access_key_id')
+            secretKey = System.env.AWS_ACCESS_KEY_ID ?: findProperty('aws_secret_access_key')
+        }
+    }
+    mavenCentral()
 }
 
 dependencies {

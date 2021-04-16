@@ -21,10 +21,10 @@ import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobRunner
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.CronSchedule;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.Schedule;
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.test.ESTestCase;
-import org.elasticsearch.threadpool.Scheduler;
-import org.elasticsearch.threadpool.ThreadPool;
+import org.opensearch.common.xcontent.XContentBuilder;
+import org.opensearch.test.OpenSearchTestCase;
+import org.opensearch.threadpool.Scheduler;
+import org.opensearch.threadpool.ThreadPool;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -39,7 +39,7 @@ import java.util.List;
 
 @RunWith(RandomizedRunner.class)
 @SuppressWarnings({"rawtypes"})
-public class JobSchedulerTests extends ESTestCase {
+public class JobSchedulerTests extends OpenSearchTestCase {
     private ThreadPool threadPool;
 
     private JobScheduler scheduler;

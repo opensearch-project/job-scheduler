@@ -15,7 +15,7 @@
 
 package com.amazon.opendistroforelasticsearch.jobscheduler.spi;
 
-import org.elasticsearch.common.xcontent.XContentParser;
+import org.opensearch.common.xcontent.XContentParser;
 
 import java.io.IOException;
 
