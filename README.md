@@ -1,6 +1,6 @@
 # OpenSearch Job Scheduler
 
-OpenSearch JobSchedule plugin provides a framework for OpenSearch plugin
+OpenSearch JobScheduler plugin provides a framework for OpenSearch plugin
 developers to schedule periodical jobs running within OpenSearch nodes. You can schedule jobs
 by specify an interval, or using Unix Cron expression to define more flexible schedule to execute
 your job. 
@@ -21,7 +21,7 @@ Then you will find the built artifact located at `build/distributions` directory
 ## Install
 Once you have built the plugin from source code, run
 ```bash
-elasticsearch-plugin install file://${PLUGIN_ZIP_FILE_PATH}
+opensearch-plugin install file://${PLUGIN_ZIP_FILE_PATH}
 ```
 to install the JobScheduler plugin to your OpenSearch.
 
@@ -37,7 +37,7 @@ JobScheduler plugin provides a SPI for other plugins to implement. Essentially, 
 Please refer to the `sample-extension-plugin` subproject in this project, which provides a complete
 example of using JobScheduler to run periodical jobs.
 
-The sample extension plugin takes an index name as input and logs the index shards to elasticsearch
+The sample extension plugin takes an index name as input and logs the index shards to opensearch
 logs according to the specified Schedule. And it also exposes a REST endpoint for end users to
 create/delete jobs.
 
