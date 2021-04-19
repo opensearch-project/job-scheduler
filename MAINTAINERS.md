@@ -1,4 +1,4 @@
-# OpenSearch Maintainers
+# OpenSearch Job Scheduler Maintainers
 
 ## Maintainers
 | Maintainer | GitHub ID | Affiliation |
