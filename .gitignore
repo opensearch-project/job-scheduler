@@ -6,3 +6,6 @@ local-test
 build
 .local-*
 .DS_Store
+.project
+.settings
+
