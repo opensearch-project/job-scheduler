@@ -8,4 +8,5 @@ build
 .DS_Store
 .project
 .settings
-
+bin/
+.classpath
