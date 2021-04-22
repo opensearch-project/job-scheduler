@@ -26,7 +26,7 @@
 
 buildscript {
     ext {
-        opensearch_version = System.getProperty("opensearch.version", "1.0.0")
+        opensearch_version = System.getProperty("opensearch.version", "1.0.0-alpha1")
     }
 
     repositories {
@@ -35,7 +35,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "org.opensearch.gradle:build-tools:${opensearch_version}-SNAPSHOT"
+        classpath "org.opensearch.gradle:build-tools:${opensearch_version}"
     }
 }
 
