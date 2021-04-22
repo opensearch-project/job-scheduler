@@ -35,10 +35,15 @@ jobs:
         working-directory: ./OpenSearch
         run: ./gradlew publishToMavenLocal
         
-      # common-utils
+      # job-scheduler
       - name: Build and Test
         run: |
           ./gradlew test
+
+      # job-scheduler
+      - name: Run Integration Tests
+        run: |
+          ./gradlew integTest
 
       - name: Publish to Maven Local
         run: |
