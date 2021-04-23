@@ -36,10 +36,10 @@ jobs:
         working-directory: ./OpenSearch
         run: ./gradlew publishToMavenLocal -Dbuild.version_qualifier=alpha1 -Dbuild.snapshot=false
         
-      # common-utils
+      # job-scheduler
       - name: Build and Test
         run: |
-          ./gradlew test -Dopensearch.version=1.0.0-alpha1 -Dbuild.snapshot=false
+          ./gradlew build -Dopensearch.version=1.0.0-alpha1 -Dbuild.snapshot=false
 
       - name: Publish to Maven Local
         run: |
