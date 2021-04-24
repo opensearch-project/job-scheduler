@@ -71,7 +71,7 @@ validateNebulaPom.enabled = false
 loggerUsageCheck.enabled = false
 
 opensearchplugin {
-    name 'opendistro-job-scheduler'
+    name 'opensearch-job-scheduler'
     description 'Open Distro for Elasticsearch job schduler plugin'
     classname 'com.amazon.opendistroforelasticsearch.jobscheduler.JobSchedulerPlugin'
 }
@@ -87,7 +87,7 @@ testClusters.javaRestTest {
 
 allprojects {
     group = 'com.amazon.opendistroforelasticsearch'
-    version = "${opendistroVersion}.0"
+    version = "${opendistroVersion}.0-beta1"
 
     apply from: "$rootDir/build-tools/repositories.gradle"
 
