@@ -24,7 +24,7 @@
  *   permissions and limitations under the License.
  */
 
-rootProject.name = 'opendistro-job-scheduler'
+rootProject.name = 'opensearch-job-scheduler'
 
 include "spi"
 project(":spi").name = rootProject.name + "-spi"
