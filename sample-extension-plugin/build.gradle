@@ -61,7 +61,7 @@ javaRestTest {
     systemProperty 'tests.security.manager', 'false'
 }
 testClusters.javaRestTest {
-    testDistribution = 'OSS'
+    testDistribution = 'INTEG_TEST'
 }
 
 // As of ES 7.7 the sample-extension-plugin is being added to the list of plugins for the testCluster during build before
