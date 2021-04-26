@@ -51,8 +51,8 @@ public class SampleExtensionPluginIT extends OpenSearchIntegTestCase {
                 .actionGet();
         List<PluginInfo> pluginInfos = nodesInfoResponse.getNodes().get(0).getInfo(PluginsAndModules.class).getPluginInfos();
         Assert.assertTrue(pluginInfos.stream().anyMatch(pluginInfo -> pluginInfo.getName()
-                .equals("opendistro-job-scheduler")));
+                .equals("opensearch-job-scheduler")));
         Assert.assertTrue(pluginInfos.stream().anyMatch(pluginInfo -> pluginInfo.getName()
-                .equals("opendistro-job-scheduler-sample-extension")));
+                .equals("opensearch-job-scheduler-sample-extension")));
     }
 }
