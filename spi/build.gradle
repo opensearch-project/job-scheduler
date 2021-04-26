@@ -98,7 +98,7 @@ task integTest(type: RestIntegTestTask) {
 check.dependsOn integTest
 
 testClusters.javaRestTest {
-    testDistribution = 'OSS'
+    testDistribution = 'INTEG_TEST'
 }
 
 task sourcesJar(type: Jar) {
