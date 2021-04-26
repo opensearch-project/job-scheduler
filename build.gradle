@@ -87,7 +87,7 @@ testClusters.javaRestTest {
 
 allprojects {
     group = 'com.amazon.opendistroforelasticsearch'
-    version = "${opensearchVersion}.0-beta1"
+    version = "${opensearchVersion}.0-alpha2"
 
     apply from: "$rootDir/build-tools/repositories.gradle"
 
