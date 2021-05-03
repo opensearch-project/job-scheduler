@@ -31,34 +31,52 @@ import org.opensearch.common.unit.TimeValue;
 
 public class JobSchedulerSettings {
     public static final Setting<TimeValue> REQUEST_TIMEOUT = Setting.positiveTimeSetting(
-            "opendistro.jobscheduler.request_timeout",
+            "opensearch.jobscheduler.request_timeout",
             TimeValue.timeValueSeconds(10),
             Setting.Property.NodeScope, Setting.Property.Dynamic);
 
     public static final Setting<TimeValue> SWEEP_BACKOFF_MILLIS = Setting.positiveTimeSetting(
-            "opendistro.jobscheduler.sweeper.backoff_millis",
+            "opensearch.jobscheduler.sweeper.backoff_millis",
             TimeValue.timeValueMillis(50),
             Setting.Property.NodeScope, Setting.Property.Dynamic);
 
     public static final Setting<Integer> SWEEP_BACKOFF_RETRY_COUNT = Setting.intSetting(
-            "opendistro.jobscheduler.retry_count",
-            3,
+            "opensearch.jobscheduler.retry_count",
+            3, 
             Setting.Property.NodeScope, Setting.Property.Dynamic);
 
     public static final Setting<TimeValue> SWEEP_PERIOD = Setting.positiveTimeSetting(
-            "opendistro.jobscheduler.sweeper.period",
+            "opensearch.jobscheduler.sweeper.period",
             TimeValue.timeValueMinutes(5),
             Setting.Property.NodeScope, Setting.Property.Dynamic);
 
     public static final Setting<Integer> SWEEP_PAGE_SIZE = Setting.intSetting(
-            "opendistro.jobscheduler.sweeper.page_size",
-            100,
+            "opensearch.jobscheduler.sweeper.page_size",
+            100, 
             Setting.Property.NodeScope, Setting.Property.Dynamic);
 
     public static final Setting<Double> JITTER_LIMIT = Setting.doubleSetting(
-            "opendistro.jobscheduler.jitter_limit",
-            0.60, 0, 0.95,
+            "opensearch.jobscheduler.jitter_limit",
+            0.60, 0, 0.95, 
             Setting.Property.NodeScope, Setting.Property.Dynamic);
 
+    // legacy settings from OpenDistro
+    
+    public static final Setting<TimeValue> LEGACY_OPENDISTRO_REQUEST_TIMEOUT = REQUEST_TIMEOUT.withKey(
+            "opendistro.jobscheduler.request_timeout");
 
+    public static final Setting<TimeValue> LEGACY_OPENDISTRO_SWEEP_BACKOFF_MILLIS = SWEEP_BACKOFF_MILLIS.withKey(
+            "opendistro.jobscheduler.sweeper.backoff_millis");
+
+    public static final Setting<Integer> LEGACY_OPENDISTRO_SWEEP_BACKOFF_RETRY_COUNT = SWEEP_BACKOFF_RETRY_COUNT.withKey(
+            "opendistro.jobscheduler.retry_count");
+
+    public static final Setting<TimeValue> LEGACY_OPENDISTRO_SWEEP_PERIOD = SWEEP_PERIOD.withKey(
+            "opendistro.jobscheduler.sweeper.period");
+
+    public static final Setting<Integer> LEGACY_OPENDISTRO_SWEEP_PAGE_SIZE = SWEEP_PAGE_SIZE.withKey(
+            "opendistro.jobscheduler.sweeper.page_size");
+
+    public static final Setting<Double> LEGACY_OPENDISTRO_JITTER_LIMIT = JITTER_LIMIT.withKey(
+            "opendistro.jobscheduler.jitter_limit");
 }

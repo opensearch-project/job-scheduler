@@ -42,6 +42,8 @@ import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.ParseField;
 import org.opensearch.common.io.stream.NamedWriteableRegistry;
 import org.opensearch.common.settings.Setting;
+import org.opensearch.common.settings.SettingUpgrader;
+import org.opensearch.common.settings.GenericSettingUpgrader;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.util.concurrent.OpenSearchExecutors;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
@@ -66,7 +68,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-
 
 public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
 
@@ -111,7 +112,33 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
         settingList.add(JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT);
         settingList.add(JobSchedulerSettings.SWEEP_PERIOD);
         settingList.add(JobSchedulerSettings.JITTER_LIMIT);
+        // legacy OpenDistro settings
+        settingList.add(JobSchedulerSettings.LEGACY_OPENDISTRO_SWEEP_PAGE_SIZE);
+        settingList.add(JobSchedulerSettings.LEGACY_OPENDISTRO_REQUEST_TIMEOUT);
+        settingList.add(JobSchedulerSettings.LEGACY_OPENDISTRO_SWEEP_BACKOFF_MILLIS);
+        settingList.add(JobSchedulerSettings.LEGACY_OPENDISTRO_SWEEP_BACKOFF_RETRY_COUNT);
+        settingList.add(JobSchedulerSettings.LEGACY_OPENDISTRO_SWEEP_PERIOD);
+        settingList.add(JobSchedulerSettings.LEGACY_OPENDISTRO_JITTER_LIMIT);
         return settingList;
+    }
+
+
+    
+    public List<SettingUpgrader<?>> getSettingUpgraders() {
+        List<SettingUpgrader<?>> settingUpgraders = new ArrayList<>();
+        settingUpgraders.add(new GenericSettingUpgrader<>(JobSchedulerSettings.LEGACY_OPENDISTRO_SWEEP_PAGE_SIZE, 
+            JobSchedulerSettings.SWEEP_PAGE_SIZE));
+        settingUpgraders.add(new GenericSettingUpgrader<>(JobSchedulerSettings.LEGACY_OPENDISTRO_REQUEST_TIMEOUT, 
+            JobSchedulerSettings.REQUEST_TIMEOUT));
+        settingUpgraders.add(new GenericSettingUpgrader<>(JobSchedulerSettings.LEGACY_OPENDISTRO_SWEEP_BACKOFF_MILLIS, 
+            JobSchedulerSettings.SWEEP_BACKOFF_MILLIS));
+        settingUpgraders.add(new GenericSettingUpgrader<>(JobSchedulerSettings.LEGACY_OPENDISTRO_SWEEP_BACKOFF_RETRY_COUNT, 
+            JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT));
+        settingUpgraders.add(new GenericSettingUpgrader<>(JobSchedulerSettings.LEGACY_OPENDISTRO_SWEEP_PERIOD, 
+            JobSchedulerSettings.SWEEP_PERIOD));
+        settingUpgraders.add(new GenericSettingUpgrader<>(JobSchedulerSettings.LEGACY_OPENDISTRO_JITTER_LIMIT, 
+            JobSchedulerSettings.JITTER_LIMIT));
+        return settingUpgraders;
     }
 
     @Override
