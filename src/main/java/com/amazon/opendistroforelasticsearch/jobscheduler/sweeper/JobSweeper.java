@@ -136,17 +136,11 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
 
     private void loadSettings(Settings settings) {
         this.sweepPeriod = JobSchedulerSettings.SWEEP_PERIOD.get(settings);
-        log.info("Background full sweep with period: " + this.sweepPeriod.getMinutes());
         this.sweepPageMaxSize = JobSchedulerSettings.SWEEP_PAGE_SIZE.get(settings);
-        log.info("Background sweep page size: " + this.sweepPageMaxSize);
         this.sweepSearchTimeout = JobSchedulerSettings.REQUEST_TIMEOUT.get(settings);
-        log.info("Background sweep search timeout: " + this.sweepSearchTimeout.getMinutes());
         this.sweepSearchBackoffMillis = JobSchedulerSettings.SWEEP_BACKOFF_MILLIS.get(settings);
-        log.info("Background sweep search backoff: " + this.sweepSearchBackoffMillis.getMillis());
         this.sweepSearchBackoffRetryCount = JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT.get(settings);
-        log.info("Background sweep search backoff retry count: " + this.sweepSearchBackoffRetryCount);
         this.jitterLimit = JobSchedulerSettings.JITTER_LIMIT.get(settings);
-        log.info("Background sweep jitter limit: " + this.jitterLimit);
         this.sweepSearchBackoff = this.updateRetryPolicy();
     }
 
