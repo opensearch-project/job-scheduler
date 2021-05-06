@@ -136,11 +136,17 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
 
     private void loadSettings(Settings settings) {
         this.sweepPeriod = JobSchedulerSettings.SWEEP_PERIOD.get(settings);
+        log.info("Background full sweep with period: " + this.sweepPeriod.getMinutes());
         this.sweepPageMaxSize = JobSchedulerSettings.SWEEP_PAGE_SIZE.get(settings);
+        log.info("Background sweep page size: " + this.sweepPageMaxSize);
         this.sweepSearchTimeout = JobSchedulerSettings.REQUEST_TIMEOUT.get(settings);
+        log.info("Background sweep search timeout: " + this.sweepSearchTimeout.getMinutes());
         this.sweepSearchBackoffMillis = JobSchedulerSettings.SWEEP_BACKOFF_MILLIS.get(settings);
+        log.info("Background sweep search backoff: " + this.sweepSearchBackoffMillis.getMillis());
         this.sweepSearchBackoffRetryCount = JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT.get(settings);
+        log.info("Background sweep search backoff retry count: " + this.sweepSearchBackoffRetryCount);
         this.jitterLimit = JobSchedulerSettings.JITTER_LIMIT.get(settings);
+        log.info("Background sweep jitter limit: " + this.jitterLimit);
         this.sweepSearchBackoff = this.updateRetryPolicy();
     }
 
@@ -148,25 +154,36 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.SWEEP_PERIOD,
                 timeValue -> {
                     sweepPeriod = timeValue;
-                    log.debug("Reinitializing background full sweep with period: " + sweepPeriod.getMinutes());
+                    log.debug("Reinitializing background full sweep with period: " + this.sweepPeriod.getMinutes());
                     initBackgroundSweep();
                 });
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.SWEEP_PAGE_SIZE,
-                intValue -> sweepPageMaxSize = intValue);
+                intValue -> {
+                    sweepPageMaxSize = intValue;
+                    log.debug("Setting background sweep page size: " + this.sweepPageMaxSize);
+                });
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.REQUEST_TIMEOUT,
-                timeValue -> this.sweepSearchTimeout = timeValue);
+                timeValue -> {
+                    this.sweepSearchTimeout = timeValue;
+                    log.debug("Setting background sweep search timeout: " + this.sweepSearchTimeout.getMinutes());
+                });
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.SWEEP_BACKOFF_MILLIS,
                 timeValue -> {
                     this.sweepSearchBackoffMillis = timeValue;
                     this.sweepSearchBackoff = this.updateRetryPolicy();
+                    log.debug("Setting background sweep search backoff: " + this.sweepSearchBackoffMillis.getMillis());
                 });
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT,
                 intValue -> {
                     this.sweepSearchBackoffRetryCount = intValue;
                     this.sweepSearchBackoff = this.updateRetryPolicy();
+                    log.debug("Setting background sweep search backoff retry count: " + this.sweepSearchBackoffRetryCount);
                 });
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.JITTER_LIMIT,
-                doubleValue -> this.jitterLimit = doubleValue);
+                doubleValue -> {
+                    this.jitterLimit = doubleValue;
+                    log.debug("Setting background sweep jitter limit: " + this.jitterLimit);
+                });
     }
 
     private BackoffPolicy updateRetryPolicy() {
