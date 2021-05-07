@@ -148,35 +148,35 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.SWEEP_PERIOD,
                 timeValue -> {
                     sweepPeriod = timeValue;
-                    log.debug("Reinitializing background full sweep with period: " + this.sweepPeriod.getMinutes());
+                    log.debug("Reinitializing background full sweep with period: {}", this.sweepPeriod.getMinutes());
                     initBackgroundSweep();
                 });
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.SWEEP_PAGE_SIZE,
                 intValue -> {
                     sweepPageMaxSize = intValue;
-                    log.debug("Setting background sweep page size: " + this.sweepPageMaxSize);
+                    log.debug("Setting background sweep page size: {}", this.sweepPageMaxSize);
                 });
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.REQUEST_TIMEOUT,
                 timeValue -> {
                     this.sweepSearchTimeout = timeValue;
-                    log.debug("Setting background sweep search timeout: " + this.sweepSearchTimeout.getMinutes());
+                    log.debug("Setting background sweep search timeout: {}", this.sweepSearchTimeout.getMinutes());
                 });
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.SWEEP_BACKOFF_MILLIS,
                 timeValue -> {
                     this.sweepSearchBackoffMillis = timeValue;
                     this.sweepSearchBackoff = this.updateRetryPolicy();
-                    log.debug("Setting background sweep search backoff: " + this.sweepSearchBackoffMillis.getMillis());
+                    log.debug("Setting background sweep search backoff: {}", this.sweepSearchBackoffMillis.getMillis());
                 });
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT,
                 intValue -> {
                     this.sweepSearchBackoffRetryCount = intValue;
                     this.sweepSearchBackoff = this.updateRetryPolicy();
-                    log.debug("Setting background sweep search backoff retry count: " + this.sweepSearchBackoffRetryCount);
+                    log.debug("Setting background sweep search backoff retry count: {}", this.sweepSearchBackoffRetryCount);
                 });
         clusterService.getClusterSettings().addSettingsUpdateConsumer(JobSchedulerSettings.JITTER_LIMIT,
                 doubleValue -> {
                     this.jitterLimit = doubleValue;
-                    log.debug("Setting background sweep jitter limit: " + this.jitterLimit);
+                    log.debug("Setting background sweep jitter limit: {}", this.jitterLimit);
                 });
     }
 
