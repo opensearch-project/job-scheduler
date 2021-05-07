@@ -29,34 +29,34 @@ package com.amazon.opendistroforelasticsearch.jobscheduler;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.unit.TimeValue;
 
-public class JobSchedulerSettings {
+public class LegacyOpenDistroJobSchedulerSettings {
     public static final Setting<TimeValue> REQUEST_TIMEOUT = Setting.positiveTimeSetting(
-            "opensearch.jobscheduler.request_timeout",
-            LegacyOpenDistroJobSchedulerSettings.REQUEST_TIMEOUT,
-            Setting.Property.NodeScope, Setting.Property.Dynamic);
+            "opendistro.jobscheduler.request_timeout",
+            TimeValue.timeValueSeconds(10),
+            Setting.Property.NodeScope, Setting.Property.Dynamic, Setting.Property.Deprecated);
 
     public static final Setting<TimeValue> SWEEP_BACKOFF_MILLIS = Setting.positiveTimeSetting(
-            "opensearch.jobscheduler.sweeper.backoff_millis",
-            LegacyOpenDistroJobSchedulerSettings.SWEEP_BACKOFF_MILLIS,
-            Setting.Property.NodeScope, Setting.Property.Dynamic);
+            "opendistro.jobscheduler.sweeper.backoff_millis",
+            TimeValue.timeValueMillis(50),
+            Setting.Property.NodeScope, Setting.Property.Dynamic, Setting.Property.Deprecated);
 
     public static final Setting<Integer> SWEEP_BACKOFF_RETRY_COUNT = Setting.intSetting(
-            "opensearch.jobscheduler.retry_count",
-            LegacyOpenDistroJobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT,
-            Setting.Property.NodeScope, Setting.Property.Dynamic);
+            "opendistro.jobscheduler.retry_count",
+            3,
+            Setting.Property.NodeScope, Setting.Property.Dynamic, Setting.Property.Deprecated);
 
     public static final Setting<TimeValue> SWEEP_PERIOD = Setting.positiveTimeSetting(
-            "opensearch.jobscheduler.sweeper.period",
-            LegacyOpenDistroJobSchedulerSettings.SWEEP_PERIOD,
-            Setting.Property.NodeScope, Setting.Property.Dynamic);
+            "opendistro.jobscheduler.sweeper.period",
+            TimeValue.timeValueMinutes(5),
+            Setting.Property.NodeScope, Setting.Property.Dynamic, Setting.Property.Deprecated);
 
     public static final Setting<Integer> SWEEP_PAGE_SIZE = Setting.intSetting(
-            "opensearch.jobscheduler.sweeper.page_size",
-            LegacyOpenDistroJobSchedulerSettings.SWEEP_PAGE_SIZE,
-            Setting.Property.NodeScope, Setting.Property.Dynamic);
+            "opendistro.jobscheduler.sweeper.page_size",
+            100,
+            Setting.Property.NodeScope, Setting.Property.Dynamic, Setting.Property.Deprecated);
 
     public static final Setting<Double> JITTER_LIMIT = Setting.doubleSetting(
-            "opensearch.jobscheduler.jitter_limit",
-            LegacyOpenDistroJobSchedulerSettings.JITTER_LIMIT,
-            Setting.Property.NodeScope, Setting.Property.Dynamic);
+            "opendistro.jobscheduler.jitter_limit",
+            0.60, 0, 0.95,
+            Setting.Property.NodeScope, Setting.Property.Dynamic, Setting.Property.Deprecated);
 }

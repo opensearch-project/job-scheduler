@@ -105,6 +105,12 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
     @Override
     public List<Setting<?>> getSettings() {
         List<Setting<?>> settingList = new ArrayList<>();
+        settingList.add(LegacyOpenDistroJobSchedulerSettings.SWEEP_PAGE_SIZE);
+        settingList.add(LegacyOpenDistroJobSchedulerSettings.REQUEST_TIMEOUT);
+        settingList.add(LegacyOpenDistroJobSchedulerSettings.SWEEP_BACKOFF_MILLIS);
+        settingList.add(LegacyOpenDistroJobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT);
+        settingList.add(LegacyOpenDistroJobSchedulerSettings.SWEEP_PERIOD);
+        settingList.add(LegacyOpenDistroJobSchedulerSettings.JITTER_LIMIT);
         settingList.add(JobSchedulerSettings.SWEEP_PAGE_SIZE);
         settingList.add(JobSchedulerSettings.REQUEST_TIMEOUT);
         settingList.add(JobSchedulerSettings.SWEEP_BACKOFF_MILLIS);
