@@ -38,7 +38,7 @@ import org.opensearch.test.OpenSearchTestCase;
 @SuppressWarnings({"rawtypes"})
 public class JobSchedulerSettingsTests extends OpenSearchTestCase {
 
-    JobSchedulerPlugin plugin = null;
+    JobSchedulerPlugin plugin;
     
     @Before
     public void setup() {
