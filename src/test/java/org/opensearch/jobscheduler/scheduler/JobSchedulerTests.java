@@ -26,11 +26,11 @@
 
 package org.opensearch.jobscheduler.scheduler;
 
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.JobDocVersion;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobParameter;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobRunner;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.CronSchedule;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.Schedule;
+import org.opensearch.jobscheduler.spi.JobDocVersion;
+import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
+import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
+import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
+import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import org.opensearch.common.xcontent.XContentBuilder;
 import org.opensearch.test.OpenSearchTestCase;

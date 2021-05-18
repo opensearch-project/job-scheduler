@@ -24,9 +24,9 @@
  *   permissions and limitations under the License.
  */
 
-package com.amazon.opendistroforelasticsearch.jobscheduler.spi;
+package org.opensearch.jobscheduler.spi;
 
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.spi.utils.LockService;
 
 import java.time.Instant;
 

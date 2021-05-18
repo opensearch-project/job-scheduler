@@ -24,29 +24,8 @@
  *   permissions and limitations under the License.
  */
 
-package com.amazon.opendistroforelasticsearch.jobscheduler.spi;
+package org.opensearch.jobscheduler.spi;
 
-/**
- * SPI of job scheduler.
- */
-public interface JobSchedulerExtension {
-    /**
-     * @return job type string.
-     */
-    String getJobType();
-
-    /**
-     * @return job index name.
-     */
-    String getJobIndex();
-
-    /**
-     * @return job runner implementation.
-     */
-    ScheduledJobRunner getJobRunner();
-
-    /**
-     * @return job document parser.
-     */
-    ScheduledJobParser getJobParser();
+public interface ScheduledJobRunner {
+    void runJob(ScheduledJobParameter job, JobExecutionContext context);
 }

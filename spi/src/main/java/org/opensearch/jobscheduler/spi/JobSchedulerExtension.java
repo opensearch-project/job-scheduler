@@ -24,12 +24,29 @@
  *   permissions and limitations under the License.
  */
 
-package com.amazon.opendistroforelasticsearch.jobscheduler.spi;
+package org.opensearch.jobscheduler.spi;
 
-import org.opensearch.common.xcontent.XContentParser;
+/**
+ * SPI of job scheduler.
+ */
+public interface JobSchedulerExtension {
+    /**
+     * @return job type string.
+     */
+    String getJobType();
 
-import java.io.IOException;
+    /**
+     * @return job index name.
+     */
+    String getJobIndex();
 
-public interface ScheduledJobParser {
-    ScheduledJobParameter parse(XContentParser xContentParser, String id, JobDocVersion jobDocVersion) throws IOException;
+    /**
+     * @return job runner implementation.
+     */
+    ScheduledJobRunner getJobRunner();
+
+    /**
+     * @return job document parser.
+     */
+    ScheduledJobParser getJobParser();
 }

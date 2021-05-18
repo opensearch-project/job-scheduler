@@ -27,12 +27,12 @@
 package org.opensearch.jobscheduler;
 
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.JobSchedulerExtension;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobParser;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobRunner;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.Schedule;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.ScheduleParser;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
+import org.opensearch.jobscheduler.spi.ScheduledJobParser;
+import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
+import org.opensearch.jobscheduler.spi.schedule.Schedule;
+import org.opensearch.jobscheduler.spi.schedule.ScheduleParser;
+import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.sweeper.JobSweeper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

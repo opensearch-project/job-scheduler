@@ -24,7 +24,7 @@
  *   permissions and limitations under the License.
  */
 
-package com.amazon.opendistroforelasticsearch.jobscheduler.spi;
+package org.opensearch.jobscheduler.spi;
 
 import java.util.Locale;
 

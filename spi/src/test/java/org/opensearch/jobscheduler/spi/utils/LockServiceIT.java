@@ -39,13 +39,13 @@
  * permissions and limitations under the License.
  */
 
-package com.amazon.opendistroforelasticsearch.jobscheduler.spi.utils;
+package org.opensearch.jobscheduler.spi.utils;
 
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.JobDocVersion;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.JobExecutionContext;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.LockModel;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobParameter;
-import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.Schedule;
+import org.opensearch.jobscheduler.spi.JobDocVersion;
+import org.opensearch.jobscheduler.spi.JobExecutionContext;
+import org.opensearch.jobscheduler.spi.LockModel;
+import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
+import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import org.opensearch.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.xcontent.XContentBuilder;

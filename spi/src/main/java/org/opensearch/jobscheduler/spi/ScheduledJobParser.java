@@ -24,8 +24,12 @@
  *   permissions and limitations under the License.
  */
 
-package com.amazon.opendistroforelasticsearch.jobscheduler.spi;
+package org.opensearch.jobscheduler.spi;
 
-public interface ScheduledJobRunner {
-    void runJob(ScheduledJobParameter job, JobExecutionContext context);
+import org.opensearch.common.xcontent.XContentParser;
+
+import java.io.IOException;
+
+public interface ScheduledJobParser {
+    ScheduledJobParameter parse(XContentParser xContentParser, String id, JobDocVersion jobDocVersion) throws IOException;
 }
