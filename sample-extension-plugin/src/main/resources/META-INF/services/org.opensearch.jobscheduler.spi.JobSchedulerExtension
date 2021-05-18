@@ -1,1 +1,1 @@
-com.amazon.opendistroforelasticsearch.jobscheduler.sampleextension.SampleExtensionPlugin
+org.opensearch.jobscheduler.sampleextension.SampleExtensionPlugin
