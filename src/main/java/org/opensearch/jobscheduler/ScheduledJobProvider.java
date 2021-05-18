@@ -24,7 +24,7 @@
  *   permissions and limitations under the License.
  */
 
-package com.amazon.opendistroforelasticsearch.jobscheduler;
+package org.opensearch.jobscheduler;
 
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobParser;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobRunner;

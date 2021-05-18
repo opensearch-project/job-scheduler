@@ -24,16 +24,16 @@
  *   permissions and limitations under the License.
  */
 
-package com.amazon.opendistroforelasticsearch.jobscheduler;
+package org.opensearch.jobscheduler;
 
-import com.amazon.opendistroforelasticsearch.jobscheduler.scheduler.JobScheduler;
+import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.JobSchedulerExtension;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobParser;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.ScheduledJobRunner;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.Schedule;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.schedule.ScheduleParser;
 import com.amazon.opendistroforelasticsearch.jobscheduler.spi.utils.LockService;
-import com.amazon.opendistroforelasticsearch.jobscheduler.sweeper.JobSweeper;
+import org.opensearch.jobscheduler.sweeper.JobSweeper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.client.Client;
