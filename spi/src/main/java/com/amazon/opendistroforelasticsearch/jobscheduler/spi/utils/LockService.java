@@ -82,7 +82,7 @@ public final class LockService {
 
     private String lockMapping() {
         try {
-            InputStream in = LockService.class.getResourceAsStream("opendistro_job_scheduler_lock.json");
+            InputStream in = LockService.class.getResourceAsStream("opensearch_job_scheduler_lock.json");
             StringBuilder stringBuilder = new StringBuilder();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             for (String line; (line = bufferedReader.readLine()) != null; ) {
