@@ -50,7 +50,8 @@ import java.util.List;
 /**
  * A sample rest handler that supports schedule and deschedule job operation
  *
- * Users need to provide "id", "index", "job_name", and "interval" parameter to schedule a job. e.g.
+ * Users need to provide "id", "index", "job_name", and "interval" parameter to schedule
+ * a job. e.g.
  * {@code 
  * POST /_plugins/scheduler_sample/watch?id=dashboards-job-id&job_name=watch dashboards index&index=.opensearch_dashboards_1&interval=1
  * }
