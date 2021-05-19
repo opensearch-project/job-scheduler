@@ -85,7 +85,7 @@ public class JobSchedulerSettingsTests extends OpenSearchTestCase {
     }
 
     public void testSettingsGetValue() {
-        Settings settings = Settings.builder().put("opensearch.jobscheduler.request_timeout", "42s").build();
+        Settings settings = Settings.builder().put("plugins.jobscheduler.request_timeout", "42s").build();
         assertEquals(JobSchedulerSettings.REQUEST_TIMEOUT.get(settings), TimeValue.timeValueSeconds(42)); 
         assertEquals(LegacyOpenDistroJobSchedulerSettings.REQUEST_TIMEOUT.get(settings), TimeValue.timeValueSeconds(10)); 
     }
