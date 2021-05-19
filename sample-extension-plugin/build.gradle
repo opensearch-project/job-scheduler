@@ -32,7 +32,7 @@ apply plugin: 'opensearch.java-rest-test'
 opensearchplugin {
     name 'opensearch-job-scheduler-sample-extension'
     description 'Sample plugin that extends OpenSearch Job Scheduler plugin'
-    classname 'com.amazon.opendistroforelasticsearch.jobscheduler.sampleextension.SampleExtensionPlugin'
+    classname 'org.opensearch.jobscheduler.sampleextension.SampleExtensionPlugin'
     extendedPlugins = ['opensearch-job-scheduler']
 }
 

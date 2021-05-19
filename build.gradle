@@ -73,7 +73,7 @@ loggerUsageCheck.enabled = false
 opensearchplugin {
     name 'opensearch-job-scheduler'
     description 'OpenSearch Job Scheduler plugin'
-    classname 'com.amazon.opendistroforelasticsearch.jobscheduler.JobSchedulerPlugin'
+    classname 'org.opensearch.jobscheduler.JobSchedulerPlugin'
 }
 
 javaRestTest {
@@ -86,7 +86,7 @@ testClusters.javaRestTest {
 }
 
 allprojects {
-    group = 'com.amazon.opendistroforelasticsearch'
+    group = 'org.opensearch'
     version = "${opensearchVersion}.0-beta1"
 
     apply from: "$rootDir/build-tools/repositories.gradle"
