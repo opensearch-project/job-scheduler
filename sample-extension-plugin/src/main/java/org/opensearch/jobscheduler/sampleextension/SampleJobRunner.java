@@ -43,10 +43,10 @@ import java.util.List;
 /**
  * A sample job runner class.
  *
- * The job runner should be a singleton class if it uses Elasticsearch client or other objects passed
- * from Elasticsearch. Because when registering the job runner to JobScheduler plugin, Elasticsearch has
+ * The job runner should be a singleton class if it uses OpenSearch client or other objects passed
+ * from OpenSearch. Because when registering the job runner to JobScheduler plugin, OpenSearch has
  * not invoke plugins' createComponents() method. That is saying the plugin is not completely initalized,
- * and the Elasticsearch {@link org.opensearch.client.Client}, {@link ClusterService} and other objects
+ * and the OpenSearch {@link org.opensearch.client.Client}, {@link ClusterService} and other objects
  * are not available to plugin and this job runner.
  *
  * So we have to move this job runner intialization to {@link Plugin} createComponents() method, and using

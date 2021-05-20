@@ -52,16 +52,18 @@ import java.util.List;
  *
  * Users need to provide "id", "index", "job_name", and "interval" parameter to schedule
  * a job. e.g.
- * {@code POST /_opendistro/scheduler_sample/watch?id=kibana-job-id&job_name=watch kibana index&index=.kibana_1&interval=1"}
+ * {@code 
+ * POST /_plugins/scheduler_sample/watch?id=dashboards-job-id&job_name=watch dashboards index&index=.opensearch_dashboards_1&interval=1
+ * }
  *
- * creates a job with id "1" and job name "watch kibana index", which logs ".kibana_1" index's shards info
- * every 1 minute
+ * creates a job with id "dashboards-job-id" and job name "watch dashboards index", 
+ * which logs ".opensearch_dashboards_1" index's shards info every 1 minute
  *
  * Users can remove that job by calling
- * {@code DELETE /_opendistro/scheduler_sample/watch?id=kibana-job-id}
+ * {@code DELETE /_plugins/scheduler_sample/watch?id=dashboards-job-id}
  */
 public class SampleExtensionRestHandler extends BaseRestHandler {
-    public static final String WATCH_INDEX_URI = "/_opendistro/scheduler_sample/watch";
+    public static final String WATCH_INDEX_URI = "/_plugins/scheduler_sample/watch";
 
     @Override
     public String getName() {
