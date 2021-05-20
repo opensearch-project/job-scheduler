@@ -120,14 +120,14 @@ publishing {
             artifact javadocJar
 
             pom {
-              name = "ElasticSearch Job Scheduler SPI"
+              name = "OpenSearch Job Scheduler SPI"
               packaging = "jar"
-              url = "https://github.com/opendistro-for-elasticsearch/job-scheduler"
-              description = "Open Distro for Elasticsearch Job Scheduler"
+              url = "https://github.com/opensearch-project/job-scheduler"
+              description = "OpenSearch Job Scheduler"
               scm {
-                connection = "scm:git@github.com:opendistro-for-elasticsearch/job-scheduler.git"
-                developerConnection = "scm:git@github.com:opendistro-for-elasticsearch/job-scheduler.git"
-                url = "git@github.com:opendistro-for-elasticsearch/job-scheduler.git"
+                connection = "scm:git@github.com:opensearch-project/job-scheduler.git"
+                developerConnection = "scm:git@github.com:opensearch-project/job-scheduler.git"
+                url = "git@github.com:opensearch-project/job-scheduler.git"
               }
               licenses {
                 license {

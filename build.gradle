@@ -131,18 +131,18 @@ afterEvaluate {
         fileMode 0644
         dirMode 0755
 
-        requires('opensearch-oss', versions.elasticsearch, EQUAL)
+        requires('opensearch', versions.opensearch, EQUAL)
         packager = 'Amazon'
         vendor = 'Amazon'
         os = 'LINUX'
         prefix '/usr'
 
         license 'ASL-2.0'
-        maintainer 'OpenDistro for Elasticsearch Team <opendistro@amazon.com>'
-        url 'https://opendistro.github.io/for-elasticsearch/downloads.html'
+        maintainer 'OpenSearch Team <opensearch@amazon.com>'
+        url 'https://opensearch.org/downloads.html'
         summary '''
-         JobScheduler plugin for OpenDistro for Elasticsearch. 
-         Reference documentation can be found at https://opendistro.github.io/for-elasticsearch-docs/.
+         JobScheduler plugin for OpenSearch. 
+         Reference documentation can be found at https://docs-beta.opensearch.org/.
     '''.stripIndent().replace('\n', ' ').trim()
     }
 
