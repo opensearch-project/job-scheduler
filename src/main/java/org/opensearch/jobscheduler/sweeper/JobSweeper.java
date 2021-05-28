@@ -277,8 +277,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                     }
                     return jobDocVersion;
                 } catch (Exception e) {
-                    log.warn("Unable to parse job, error message: {} , message source: {}", e.getMessage(),
-                            Strings.cleanTruncate(jobSource.utf8ToString(), 1000));
+                    log.warn("Unable to parse job {}, error message: {}", docId, e.getMessage());
                     return currentJobDocVersion;
                 }
             } else {
