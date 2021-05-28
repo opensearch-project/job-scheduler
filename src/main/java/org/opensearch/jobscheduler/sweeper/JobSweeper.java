@@ -50,7 +50,6 @@ import org.opensearch.cluster.routing.IndexShardRoutingTable;
 import org.opensearch.cluster.routing.Murmur3HashFunction;
 import org.opensearch.cluster.routing.ShardRouting;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.common.Strings;
 import org.opensearch.common.bytes.BytesReference;
 import org.opensearch.common.component.LifecycleListener;
 import org.opensearch.common.settings.Settings;
@@ -277,8 +276,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                     }
                     return jobDocVersion;
                 } catch (Exception e) {
-                    log.warn("Unable to parse job, error message: {} , message source: {}", e.getMessage(),
-                            Strings.cleanTruncate(jobSource.utf8ToString(), 1000));
+                    log.warn("Unable to parse job {}, error message: {}", docId, e.getMessage());
                     return currentJobDocVersion;
                 }
             } else {
