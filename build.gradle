@@ -59,8 +59,7 @@ ext {
     noticeFile = rootProject.file('NOTICE')
 }
 
-// TODO: enable
-licenseHeaders.enabled = false
+licenseHeaders.enabled = true
 testingConventions.enabled = false
 forbiddenApis.ignoreFailures = false
 
