@@ -34,7 +34,7 @@ jobs:
           path: OpenSearch
       - name: Build OpenSearch
         working-directory: ./OpenSearch
-        run: ./gradlew publishToMavenLocal -Dbuild.version_qualifier=rc1 -Dbuild.snapshot=false
+        run: ./gradlew publishToMavenLocal -Dbuild.snapshot=false
         
       # job-scheduler
       - name: Build and Test
