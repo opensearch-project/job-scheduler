@@ -1,56 +1,50 @@
+[![Test and Build Workflow](https://github.com/opensearch-project/job-scheduler/workflows/Build%20and%20Test/badge.svg)](https://github.com/opensearch-project/job-scheduler/actions)
+[![codecov](https://codecov.io/gh/opensearch-project/job-scheduler/branch/main/graph/badge.svg)](https://codecov.io/gh/opensearch-project/job-scheduler)
+![PRs welcome!](https://img.shields.io/badge/PRs-welcome!-success)
+
+<img src="https://opensearch.org/assets/brand/SVG/Logo/opensearch_logo_default.svg" height="64px"/>
+
+- [OpenSearch Job Scheduler](#opensearch-job-scheduler)
+- [Contributing](#contributing)
+- [Getting Help](#getting-help)
+- [Code of Conduct](#code-of-conduct)
+- [Security](#security)
+- [License](#license)
+- [Copyright](#copyright)
+
 # OpenSearch Job Scheduler
 
 OpenSearch JobScheduler plugin provides a framework for OpenSearch plugin
 developers to schedule periodical jobs running within OpenSearch nodes. You can schedule jobs
 by specify an interval, or using Unix Cron expression to define more flexible schedule to execute
-your job. 
+your job.
 
 OpenSearch plugin developers can easily extend JobScheduler plugin to schedule jobs like running
 aggregation query against raw data and save the aggregated data into a new index every hour, or keep
 monitoring the shard allocation by calling OpenSearch API and post the output to a Webhook.
 
-## Build
-The JobScheduler plugin uses the [Gradle](https://docs.gradle.org/4.10.2/userguide/userguide.html)
-build system.
-1. Checkout this package from version control.
-1. To build from command line set `JAVA_HOME` to point to a JDK >=14
-1. Run `./gradlew build`
+## Contributing
 
-Then you will find the built artifact located at `build/distributions` directory
+See [developer guide](DEVELOPER_GUIDE.md) and [how to contribute to this project](CONTRIBUTING.md).
 
-## Install
-Once you have built the plugin from source code, run
-```bash
-opensearch-plugin install file://${PLUGIN_ZIP_FILE_PATH}
-```
-to install the JobScheduler plugin to your OpenSearch.
+## Getting Help
 
-## Develop a plugin that extends JobScheduler
-JobScheduler plugin provides a SPI for other plugins to implement. Essentially, you need to
-1. Define your *JobParameter* type by implementing `ScheduledJobParameter` interface
-1. Implement your JobParameter parser function that can deserialize your JobParameter from XContent
-1. Create your *JobRunner* implementation by implementing `ScheduledJobRunner` interface
-1. Create your own plugin which implements `JobSchedulerExtension` interface
-   - don't forget to create the service provider configuration file in your resources folder and
-   bundle it into your plugin artifact
-   
-Please refer to the `sample-extension-plugin` subproject in this project, which provides a complete
-example of using JobScheduler to run periodical jobs.
+If you find a bug, or have a feature request, please don't hesitate to open an issue in this repository.
 
-The sample extension plugin takes an index name as input and logs the index shards to opensearch
-logs according to the specified Schedule. And it also exposes a REST endpoint for end users to
-create/delete jobs.
+For more information, see [project website](https://opensearch.org/) and [documentation](https://docs-beta.opensearch.org/). If you need help and are unsure where to open an issue, try [forums](https://discuss.opendistrocommunity.dev/).
 
 ## Code of Conduct
 
-This project has adopted an [Open Source Code of Conduct](https://www.opensearch.org/codeofconduct.html).
+This project has adopted the [Amazon Open Source Code of Conduct](CODE_OF_CONDUCT.md). For more information see the [Code of Conduct FAQ](https://aws.github.io/code-of-conduct-faq), or contact [opensource-codeofconduct@amazon.com](mailto:opensource-codeofconduct@amazon.com) with any additional questions or comments.
 
-
-## Security issue notifications
+## Security
 
 If you discover a potential security issue in this project we ask that you notify AWS/Amazon Security via our [vulnerability reporting page](http://aws.amazon.com/security/vulnerability-reporting/). Please do **not** create a public GitHub issue.
 
+## License
 
-## Licensing
+This project is licensed under the [Apache v2.0 License](./LICENSE)
 
-See the [LICENSE](./LICENSE.txt) file for our project's licensing. We will ask you to confirm the licensing of your contribution.
+## Copyright
+
+Copyright 2020-2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
