@@ -55,6 +55,7 @@ import org.opensearch.common.component.LifecycleListener;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.common.util.concurrent.OpenSearchExecutors;
+import org.opensearch.common.util.concurrent.ThreadContext.StoredContext;
 import org.opensearch.common.util.set.Sets;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
@@ -398,8 +399,16 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                             .size(this.sweepPageMaxSize)
                             .query(QueryBuilders.matchAllQuery()));
 
-            SearchResponse response = this.retry((searchRequest) -> this.client.search(searchRequest),
-                    jobSearchRequest, this.sweepSearchBackoff).actionGet(this.sweepSearchTimeout);
+            SearchResponse response;
+            StoredContext ctx = this.client.threadPool().getThreadContext().stashContext();
+            try {
+                client.threadPool().getThreadContext().putTransient("_opendistro_security_protected_indices_conf_request", "true");
+                response = this.retry((searchRequest) -> this.client.search(searchRequest),
+                        jobSearchRequest, this.sweepSearchBackoff).actionGet(this.sweepSearchTimeout);
+            } finally {
+                ctx.close();
+            }
+
             if (response.status() != RestStatus.OK) {
                 log.error("Error sweeping shard {}, failed querying jobs on this shard", shardId);
                 return;
