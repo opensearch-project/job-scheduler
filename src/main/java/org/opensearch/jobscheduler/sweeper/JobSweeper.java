@@ -398,25 +398,30 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                             .size(this.sweepPageMaxSize)
                             .query(QueryBuilders.matchAllQuery()));
 
-            SearchResponse response = this.retry((searchRequest) -> this.client.search(searchRequest),
-                    jobSearchRequest, this.sweepSearchBackoff).actionGet(this.sweepSearchTimeout);
-            if (response.status() != RestStatus.OK) {
-                log.error("Error sweeping shard {}, failed querying jobs on this shard", shardId);
-                return;
-            }
-            for (SearchHit hit : response.getHits()) {
-                String jobId = hit.getId();
-                if (shardNodes.isOwningNode(jobId)) {
-                    this.sweep(shardId, jobId, hit.getSourceRef(), new JobDocVersion(hit.getPrimaryTerm(), hit.getSeqNo(),
-                            hit.getVersion()));
+            this.retry((searchRequest) -> this.client.search(searchRequest,
+                    object : ActionListener<SearchResponse> {
+                override fun onResponse(searchResponse: SearchResponse) {
+                    for (SearchHit hit : response.getHits()) {
+                        String jobId = hit.getId();
+                        if (shardNodes.isOwningNode(jobId)) {
+                            this.sweep(shardId, jobId, hit.getSourceRef(), new JobDocVersion(hit.getPrimaryTerm(), hit.getSeqNo(),
+                                    hit.getVersion()));
+                        }
+                    }
+                    if (response.getHits() == null || response.getHits().getHits().length < 1) {
+                        searchAfter = null;
+                    } else {
+                        SearchHit lastHit = response.getHits().getHits()[response.getHits().getHits().length - 1];
+                        searchAfter = lastHit.getId();
+                    }
                 }
-            }
-            if (response.getHits() == null || response.getHits().getHits().length < 1) {
-                searchAfter = null;
-            } else {
-                SearchHit lastHit = response.getHits().getHits()[response.getHits().getHits().length - 1];
-                searchAfter = lastHit.getId();
-            }
+
+                override fun onFailure(exception: Exception) {
+                    log.error("Error sweeping shard {}, failed querying jobs on this " +
+                            "shard with exception "$exception.message", shardId);
+                }
+            }),
+                    jobSearchRequest, this.sweepSearchBackoff);
         }
     }
 
