@@ -41,6 +41,16 @@ The sample extension plugin takes an index name as input and logs the index shar
 logs according to the specified Schedule. And it also exposes a REST endpoint for end users to
 create/delete jobs.
 
+## Contributing
+
+See [developer guide](DEVELOPER_GUIDE.md) and [how to contribute to this project](CONTRIBUTING.md).
+
+## Getting Help
+
+If you find a bug, or have a feature request, please don't hesitate to open an issue in this repository.
+
+For more information, see [project website](https://opensearch.org/) and [documentation](https://opensearch.org/docs/). If you need help and are unsure where to open an issue, try [forums](https://discuss.opendistrocommunity.dev/).
+
 ## Code of Conduct
 
 This project has adopted an [Open Source Code of Conduct](https://www.opensearch.org/codeofconduct.html).
