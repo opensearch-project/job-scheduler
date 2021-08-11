@@ -1,5 +1,8 @@
 {
   "dynamic": "strict",
+  "_meta": {
+    "schema_version": 2
+  },
   "properties": {
     "job_index_name": {
       "type": "keyword"
@@ -16,6 +19,13 @@
     },
     "released": {
       "type": "boolean"
+    },
+    "resource_type": {
+      "type": "text"
+    },
+    "resource": {
+      "type": "object",
+      "enabled": "false"
     }
   }
 }
