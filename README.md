@@ -25,7 +25,7 @@ aggregation query against raw data and save the aggregated data into a new index
 monitoring the shard allocation by calling OpenSearch API and post the output to a Webhook.
 
 ## Getting Started
-Add the following to your plugin to integrate with JobSchedular 
+Add the following to your plugin to integrate with JobScheduler
 1. Gradle 
 * [Extend plugin from `opensearch-job-scheduler`](https://github.com/opensearch-project/job-scheduler/blob/main/sample-extension-plugin/build.gradle#L36)
 * Add [this workaround](https://github.com/opensearch-project/job-scheduler/blob/main/sample-extension-plugin/build.gradle#L36) to make sure that job-schedular plugin is correctly installed during integration tests.
