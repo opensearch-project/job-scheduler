@@ -5,6 +5,7 @@
 <img src="https://opensearch.org/assets/brand/SVG/Logo/opensearch_logo_default.svg" height="64px"/>
 
 - [OpenSearch Job Scheduler](#opensearch-job-scheduler)
+- [Getting Started](#getting-started)
 - [Contributing](#contributing)
 - [Getting Help](#getting-help)
 - [Code of Conduct](#code-of-conduct)
@@ -22,6 +23,19 @@ your job.
 OpenSearch plugin developers can easily extend JobScheduler plugin to schedule jobs like running
 aggregation query against raw data and save the aggregated data into a new index every hour, or keep
 monitoring the shard allocation by calling OpenSearch API and post the output to a Webhook.
+
+## Getting Started
+Add the following to your plugin to integrate with JobScheduler
+1. Gradle 
+* [Extend plugin from `opensearch-job-scheduler`](https://github.com/opensearch-project/job-scheduler/blob/main/sample-extension-plugin/build.gradle#L36)
+* Add [this workaround](https://github.com/opensearch-project/job-scheduler/blob/main/sample-extension-plugin/build.gradle#L36) to make sure that job-schedular plugin is correctly installed during integration tests.
+
+2. Implement the following classes
+* Implement these two interfaces [ScheduledJobParameter](https://github.com/opensearch-project/job-scheduler/blob/main/sample-extension-plugin/src/main/java/org/opensearch/jobscheduler/sampleextension/SampleJobParameter.java#L37) and [ScheduledJobRunner](https://github.com/opensearch-project/job-scheduler/blob/main/sample-extension-plugin/src/main/java/org/opensearch/jobscheduler/sampleextension/SampleJobRunner.java#L43)  
+* Extend class [JobSchedulerExtension](https://github.com/opensearch-project/job-scheduler/blob/main/sample-extension-plugin/src/main/java/org/opensearch/jobscheduler/sampleextension/SampleExtensionPlugin.java#L12)
+
+3. Add the resource file
+* Create `org.opensearch.jobscheduler.spi.JobSchedulerExtension` [file](https://github.com/opensearch-project/job-scheduler/blob/main/sample-extension-plugin/src/main/resources/META-INF/services/org.opensearch.jobscheduler.spi.JobSchedulerExtension#L1). 
 
 ## Contributing
 
