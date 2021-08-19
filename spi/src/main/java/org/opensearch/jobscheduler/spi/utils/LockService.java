@@ -336,8 +336,7 @@ public final class LockService {
 
     private void findLock(final String lockId, ActionListener<LockModel> listener) {
         GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
-        checkAndUpdateLockMapping(ActionListener.wrap(
-                updated -> client.get(getRequest, ActionListener.wrap(
+        client.get(getRequest, ActionListener.wrap(
                         response -> {
                             if (!response.isExists()) {
                                 listener.onResponse(null);
@@ -358,8 +357,6 @@ public final class LockService {
                             logger.error("Exception occurred finding lock", exception);
                             listener.onFailure(exception);
                         }
-                )),
-                listener::onFailure
         ));
 
     }
