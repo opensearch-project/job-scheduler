@@ -63,45 +63,8 @@ public final class LockModel implements ToXContentObject {
     private final boolean released;
     private final long seqNo;
     private final long primaryTerm;
-    private final boolean isResourceLock;
     private final Map<String, Object> resource;
     private final String resourceType;
-
-    /**
-     * Fully parametrized constructor for LockModel
-     * @param resource              Map containing data that defines the resource that needs to be locked.
-     * @param jobIndexName          Job Index Name of job that is trying to acquire the lock.
-     * @param jobId                 Job Id of job that is trying to acquire the lock.
-     * @param resourceType          String qualifier that states what type of job is trying to acquire the lock.
-     * @param lockTime              time of lock creation.
-     * @param lockDurationSeconds   Length of time which the lock will be held.
-     * @param released              Whether the lock has been released or not.
-     * @param seqNo                 sequence number from OpenSearch document
-     * @param primaryTerm           primary term from OpenSearch document.
-     * @throws IOException          throws IOException if there is a failure when serializing the resource.
-     */
-    public LockModel(Map<String, Object> resource, String jobIndexName, String jobId, String resourceType, Instant lockTime,
-                     long lockDurationSeconds, boolean released, long seqNo, long primaryTerm) throws IOException {
-        // regular job scheduler lock
-        if (resource == null) {
-            this.lockId = jobIndexName + LOCK_ID_DELIMITER + jobId;
-            this.isResourceLock = false;
-            this.resource = null;
-            this.resourceType = null;
-        } else {
-            this.lockId = LockModel.generateResourceLockId(jobIndexName, resourceType, resource);
-            this.resource = resource;
-            this.resourceType = resourceType;
-            this.isResourceLock = true;
-        }
-        this.jobIndexName = jobIndexName;
-        this.jobId = jobId;
-        this.lockTime = lockTime;
-        this.lockDurationSeconds = lockDurationSeconds;
-        this.released = released;
-        this.seqNo = seqNo;
-        this.primaryTerm = primaryTerm;
-    }
 
     /**
      * Use this constructor to copy existing lock and update the seqNo and primaryTerm.
@@ -110,26 +73,18 @@ public final class LockModel implements ToXContentObject {
      * @param seqNo       sequence number from OpenSearch document.
      * @param primaryTerm primary term from OpenSearch document.
      */
-    public LockModel(final LockModel copyLock, long seqNo, long primaryTerm) {
-        if (copyLock.isResourceLock) {
-            this.lockId = copyLock.lockId;
-            this.isResourceLock = true;
-            this.resource = copyLock.resource;
-            this.resourceType = copyLock.resourceType;
-        }
-        else {
-            this.lockId = copyLock.jobIndexName + LOCK_ID_DELIMITER + copyLock.jobId;
-            this.isResourceLock = false;
-            this.resource = null;
-            this.resourceType = null;
-        }
-        this.jobIndexName = copyLock.jobIndexName;
-        this.jobId = copyLock.jobId;
-        this.lockTime = copyLock.lockTime;
-        this.lockDurationSeconds = copyLock.lockDurationSeconds;
-        this.released = copyLock.released;
-        this.seqNo = seqNo;
-        this.primaryTerm = primaryTerm;
+    public LockModel(final LockModel copyLock, long seqNo, long primaryTerm) throws IOException {
+        this (
+            copyLock.jobIndexName,
+            copyLock.jobId,
+            copyLock.resourceType,
+            copyLock.resource,
+            copyLock.lockTime,
+            copyLock.lockDurationSeconds,
+            copyLock.released,
+            seqNo,
+            primaryTerm
+        );
     }
 
     /**
@@ -138,26 +93,18 @@ public final class LockModel implements ToXContentObject {
      * @param copyLock JobSchedulerLockModel to copy from.
      * @param released boolean flag to indicate if the lock is released
      */
-    public LockModel(final LockModel copyLock, final boolean released) {
-        if (copyLock.isResourceLock) {
-            this.lockId = copyLock.lockId;
-            this.resource = copyLock.resource;
-            this.resourceType = copyLock.resourceType;
-            this.isResourceLock = true;
-        }
-        else {
-            this.lockId = copyLock.jobIndexName + LOCK_ID_DELIMITER + copyLock.jobId;
-            this.resource = null;
-            this.resourceType = null;
-            this.isResourceLock = false;
-        }
-        this.jobId = copyLock.jobId;
-        this.jobIndexName = copyLock.jobIndexName;
-        this.lockTime = copyLock.lockTime;
-        this.lockDurationSeconds = copyLock.lockDurationSeconds;
-        this.seqNo = copyLock.seqNo;
-        this.primaryTerm = copyLock.primaryTerm;
-        this.released = released;
+    public LockModel(final LockModel copyLock, final boolean released) throws IOException {
+        this (
+            copyLock.jobIndexName,
+            copyLock.jobId,
+            copyLock.resourceType,
+            copyLock.resource,
+            copyLock.lockTime,
+            copyLock.lockDurationSeconds,
+            released,
+            copyLock.seqNo,
+            copyLock.primaryTerm
+        );
 
     }
 
@@ -170,26 +117,18 @@ public final class LockModel implements ToXContentObject {
      * @param released            boolean flag to indicate if the lock is released
      */
     public LockModel(final LockModel copyLock,
-                     final Instant updateLockTime, final long lockDurationSeconds, final boolean released) {
-        if (copyLock.isResourceLock) {
-            this.lockId = copyLock.lockId;
-            this.resource = copyLock.resource;
-            this.resourceType = copyLock.resourceType;
-            this.isResourceLock = true;
-        }
-        else {
-            this.lockId = copyLock.jobIndexName + LOCK_ID_DELIMITER + copyLock.jobId;
-            this.resource = null;
-            this. resourceType = null;
-            this.isResourceLock = false;
-        }
-        this.jobIndexName = copyLock.jobIndexName;
-        this.jobId = copyLock.jobId;
-        this.seqNo = copyLock.seqNo;
-        this.primaryTerm = copyLock.primaryTerm;
-        this.lockTime = updateLockTime;
-        this.lockDurationSeconds = lockDurationSeconds;
-        this.released = released;
+                     final Instant updateLockTime, final long lockDurationSeconds, final boolean released) throws IOException {
+        this (
+            copyLock.jobIndexName,
+            copyLock.jobId,
+            copyLock.resourceType,
+            copyLock.resource,
+            updateLockTime,
+            lockDurationSeconds,
+            released,
+            copyLock.seqNo,
+            copyLock.primaryTerm
+        );
     }
 
     /**
@@ -200,7 +139,7 @@ public final class LockModel implements ToXContentObject {
      * @param lockDurationSeconds   duration for which the lock is valid.
      * @param released              boolean flag to indicate if the lock is released.
      */
-    public LockModel(String jobIndexName, String jobId, Instant lockTime, long lockDurationSeconds, boolean released) {
+    public LockModel(String jobIndexName, String jobId, Instant lockTime, long lockDurationSeconds, boolean released) throws IOException {
         this(jobIndexName, jobId, lockTime, lockDurationSeconds, released,
                 SequenceNumbers.UNASSIGNED_SEQ_NO, SequenceNumbers.UNASSIGNED_PRIMARY_TERM);
     }
@@ -216,19 +155,8 @@ public final class LockModel implements ToXContentObject {
      * @param primaryTerm           primary term from OpenSearch document.
      */
     public LockModel(String jobIndexName, String jobId, Instant lockTime,
-                     long lockDurationSeconds, boolean released, long seqNo, long primaryTerm) {
-        System.out.println("Job id passed in "+ jobId);
-        this.lockId = jobIndexName + LOCK_ID_DELIMITER + jobId;
-        this.jobIndexName = jobIndexName;
-        this.jobId = jobId;
-        this.lockTime = lockTime;
-        this.lockDurationSeconds = lockDurationSeconds;
-        this.released = released;
-        this.seqNo = seqNo;
-        this.primaryTerm = primaryTerm;
-        this.resource = null;
-        this.resourceType = null;
-        this.isResourceLock = false;
+                     long lockDurationSeconds, boolean released, long seqNo, long primaryTerm) throws IOException {
+        this(jobIndexName, jobId, null, null, lockTime, lockDurationSeconds, released, seqNo, primaryTerm);
     }
 
     public LockModel(String jobIndexName, String jobId, String resourceType, Map<String, Object> resource, Instant lockTime,
@@ -237,19 +165,46 @@ public final class LockModel implements ToXContentObject {
                 SequenceNumbers.UNASSIGNED_SEQ_NO, SequenceNumbers.UNASSIGNED_PRIMARY_TERM);
     }
 
+    /***
+     *
+     * @param jobIndexName          index of job acquiring the lock
+     * @param jobId                 id of the job acquiring the lock
+     * @param resourceType          type of job acquiring the lock
+     * @param resource              resource to acquire
+     * @param lockTime              time at which lock is acquired
+     * @param lockDurationSeconds   duration for which lock is valid
+     * @param released              boolean flag for whether lock is released
+     * @param seqNo                 sequence number from Opensearch document
+     * @param primaryTerm           primary term from Opensearch document
+     * @throws IOException          throws IOException if resource fails to serialize
+     */
     public LockModel(String jobIndexName, String jobId, String resourceType, Map<String, Object> resource, Instant lockTime,
                      long lockDurationSeconds, boolean released, long seqNo, long primaryTerm) throws IOException {
-        this.lockId = LockModel.generateResourceLockId(jobIndexName, resourceType, resource);
-        this.jobIndexName = jobIndexName;
-        this.jobId = jobId;
-        this.resourceType = resourceType;
-        this.resource = resource;
-        this.lockTime = lockTime;
-        this.lockDurationSeconds = lockDurationSeconds;
-        this.released = released;
-        this.seqNo = seqNo;
-        this.primaryTerm = primaryTerm;
-        this.isResourceLock = true;
+        if (resourceType != null) {
+            this.lockId = LockModel.generateResourceLockId(jobIndexName, resourceType, resource);
+            this.jobIndexName = jobIndexName;
+            this.jobId = jobId;
+            this.resourceType = resourceType;
+            this.resource = resource;
+            this.lockTime = lockTime;
+            this.lockDurationSeconds = lockDurationSeconds;
+            this.released = released;
+            this.seqNo = seqNo;
+            this.primaryTerm = primaryTerm;
+        }
+        else {
+            this.lockId = jobIndexName + LOCK_ID_DELIMITER + jobId;
+            this.jobIndexName = jobIndexName;
+            this.jobId = jobId;
+            this.lockTime = lockTime;
+            this.lockDurationSeconds = lockDurationSeconds;
+            this.released = released;
+            this.seqNo = seqNo;
+            this.primaryTerm = primaryTerm;
+            this.resource = null;
+            this.resourceType = null;
+        }
+
     }
 
     public static String generateLockId(String jobIndexName, String jobId) {
@@ -316,12 +271,11 @@ public final class LockModel implements ToXContentObject {
             }
         }
 
-        System.out.println("IN parse: jobID = "+jobId);
         return new LockModel(
-                resource,
                 requireNonNull(jobIndexName, "JobIndexName cannot be null"),
                 requireNonNull(jobId, "JobId cannot be null"),
                 resourceType,
+                resource,
                 requireNonNull(lockTime, "lockTime cannot be null"),
                 requireNonNull(lockDurationSecond, "lockDurationSeconds cannot be null"),
                 requireNonNull(released, "released cannot be null"),
@@ -345,10 +299,7 @@ public final class LockModel implements ToXContentObject {
     }
 
     @Override public String toString() {
-        String seqNo = "seqNo: "+this.seqNo;
-        String primaryTerm = " primary term"+this.primaryTerm;
-
-        return Strings.toString(this, false, true) + seqNo + primaryTerm;
+        return Strings.toString(this, false, true);
     }
 
     public String getLockId() {
@@ -407,8 +358,7 @@ public final class LockModel implements ToXContentObject {
                 jobId.equals(lockModel.jobId) &&
                 lockTime.equals(lockModel.lockTime) &&
                 resourceCheck &&
-                resourceTypeCheck &&
-                (isResourceLock == lockModel.isResourceLock);
+                resourceTypeCheck;
     }
 
     @Override

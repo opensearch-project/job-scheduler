@@ -379,11 +379,17 @@ public final class LockService {
             listener.onResponse(false);
         } else {
             logger.debug("Releasing lock: " + lock);
-            final LockModel lockToRelease = new LockModel(lock, true);
-            updateLock(lockToRelease, ActionListener.wrap(
-                    releasedLock -> listener.onResponse(releasedLock != null),
-                    listener::onFailure
-            ));
+            try {
+                final LockModel lockToRelease = new LockModel(lock, true);
+                updateLock(lockToRelease, ActionListener.wrap(
+                        releasedLock -> listener.onResponse(releasedLock != null),
+                        listener::onFailure
+                ));
+            } catch (IOException e) {
+                logger.debug("Failed to serialize resource in lock.");
+                listener.onFailure(e);
+            }
+
         }
 
     }
@@ -430,18 +436,23 @@ public final class LockService {
         } else {
             logger.debug("Renewing lock: {}. The lock was acquired or renewed on: {}, and the duration was {} sec.",
                     lock, lock.getLockTime(), lock.getLockDurationSeconds());
-            final LockModel lockToRenew = new LockModel(lock, getNow(), lock.getLockDurationSeconds(), false);
-            updateLock(lockToRenew, ActionListener.wrap(
-                    renewedLock -> {
-                        logger.debug("Renewed lock: {}. It is supposed to be valid for another {} sec from {}.",
-                                renewedLock, renewedLock.getLockDurationSeconds(), renewedLock.getLockTime());
-                        listener.onResponse(renewedLock);
-                    },
-                    exception -> {
-                        logger.debug("Failed to renew lock: {}.", lock);
-                        listener.onFailure(exception);
-                    }
-            ));
+            try {
+                final LockModel lockToRenew = new LockModel(lock, getNow(), lock.getLockDurationSeconds(), false);
+                updateLock(lockToRenew, ActionListener.wrap(
+                        renewedLock -> {
+                            logger.debug("Renewed lock: {}. It is supposed to be valid for another {} sec from {}.",
+                                    renewedLock, renewedLock.getLockDurationSeconds(), renewedLock.getLockTime());
+                            listener.onResponse(renewedLock);
+                        },
+                        exception -> {
+                            logger.debug("Failed to renew lock: {}.", lock);
+                            listener.onFailure(exception);
+                        }
+                ));
+            } catch (IOException e) {
+                logger.debug("Failed to serialize resource in lock.");
+                listener.onFailure(e);
+            }
         }
     }
 

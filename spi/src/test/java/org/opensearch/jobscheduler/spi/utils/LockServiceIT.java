@@ -215,38 +215,23 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                     assertFalse("Lock should not expire.", lock.isExpired());
                     lockService.release(lock, ActionListener.wrap(
                             released -> {
-                                if (released) {
-                                    System.out.println("LockServiceIT: released lock is true");
-                                }
-                                else {
-                                    System.out.println("LockServiceIT: released lock is false");
-                                }
                                 assertTrue("Failed to release lock.", released);
                                 lockService.deleteLock(lock.getLockId(), ActionListener.wrap(
                                         deleted -> {
-                                            if (deleted) {
-                                                System.out.println("LockServiceIT: lock is deleted");
-                                            }
-                                            else {
-                                                System.out.println("LockServiceIT: lock is not deleted");
-                                            }
                                             assertTrue("Failed to delete lock.", deleted);
                                             latch.countDown();
                                         },
                                         exception -> {
-                                            System.out.println("LockServiceIT: exception in deleting lock");
                                             fail(exception.getMessage());
                                         }
                                 ));
                             },
                             exception -> {
-                                System.out.println("LockServiceIT: release exception");
                                 fail(exception.getMessage());
                             }
                     ));
                 },
                 exception -> {
-                    System.out.println("message: "+exception.toString());
                     fail(exception.getMessage());
                 }
         ));
