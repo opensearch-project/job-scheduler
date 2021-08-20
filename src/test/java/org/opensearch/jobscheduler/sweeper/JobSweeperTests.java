@@ -5,6 +5,12 @@
 
 package org.opensearch.jobscheduler.sweeper;
 
+import org.opensearch.client.AdminClient;
+import org.opensearch.client.IndicesAdminClient;
+import org.opensearch.cluster.metadata.MappingMetadata;
+import org.opensearch.common.collect.ImmutableOpenMap;
+import org.opensearch.common.xcontent.XContentParser;
+import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.JobSchedulerSettings;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
@@ -79,7 +85,7 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
     private Double jitterLimit = 0.95;
 
     @Before
-    public void setup() throws IOException {
+    public void setup() {
         this.client = Mockito.mock(Client.class);
         this.threadPool = Mockito.mock(ThreadPool.class);
         this.scheduler = Mockito.mock(JobScheduler.class);
@@ -210,7 +216,45 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
         Engine.DeleteResult deleteResult = new Engine.DeleteResult(1L, 1L, 1L, true);
 
         Set<String> jobIdSet = new HashSet<>();
+        String indexContent;
         jobIdSet.add("doc-id");
+        AdminClient mockAdminClient = Mockito.mock(AdminClient.class);
+        Mockito.when(this.client.admin()).thenReturn(mockAdminClient);
+        IndicesAdminClient indicesAdminClient = Mockito.mock(IndicesAdminClient.class);
+        Mockito.when(mockAdminClient.indices()).thenReturn(indicesAdminClient);
+        try {
+            indexContent = "{\"testIndex\":{\"settings\":{\"index\":{\"creation_date\":\"1558407515699\"," +
+                    "\"number_of_shards\":\"1\",\"number_of_replicas\":\"1\",\"uuid\":\"t-VBBW6aR6KpJ3XP5iISOA\"," +
+                    "\"version\":{\"created\":\"6040399\"},\"provided_name\":\"data_test\"}},\"mapping_version\":123," +
+                    "\"settings_version\":123,\"mappings\":{\"_doc\":{\"_meta\":{\"schema_version\":1},\"properties\":" +
+                    "{\"name\":{\"type\":\"keyword\"}}}}}}";
+            XContentParser parser = createParser(XContentType.JSON.xContent(), indexContent);
+            IndexMetadata realIndex = IndexMetadata.fromXContent(parser);
+            IndexMetadata indexMetadata = Mockito.mock(IndexMetadata.class);
+
+            MappingMetadata mappingMetadata = Mockito.mock(MappingMetadata.class);
+            Mockito.when(indexMetadata.mapping()).thenReturn(mappingMetadata);
+
+            Mockito.when(mappingMetadata.sourceAsMap()).thenReturn(realIndex.mapping().sourceAsMap());
+
+            Map<String, IndexMetadata> indexMetadataHashMap = new HashMap<>();
+            indexMetadataHashMap.put(".opendistro-job-scheduler-lock", indexMetadata);
+
+            ImmutableOpenMap.Builder<String, IndexMetadata> mapBuilder = new ImmutableOpenMap.Builder<>();
+            mapBuilder.putAll(indexMetadataHashMap);
+
+            ImmutableOpenMap<String, IndexMetadata> indexMetadataMap = mapBuilder.build();
+            ClusterState state = Mockito.mock(ClusterState.class);
+            Metadata metadata = Mockito.mock(Metadata.class);
+            Mockito.when(clusterService.state()).thenReturn(state);
+            Mockito.when(state.metadata()).thenReturn(metadata);
+            Mockito.when(metadata.indices())
+                    .thenReturn(indexMetadataMap);
+        }
+        catch (IOException e) {
+            fail(e.getMessage());
+        }
+
         Mockito.when(this.scheduler.getScheduledJobIds("index-name")).thenReturn(jobIdSet);
 
         ActionFuture<DeleteResponse> actionFuture = Mockito.mock(ActionFuture.class);
@@ -280,8 +324,8 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
         BytesReference source = this.getTestJsonSource();
 
         Term uid = new Term(
-            "id_field",
-            new BytesRef(docId.getBytes(Charset.defaultCharset()), 0, docId.getBytes(Charset.defaultCharset()).length)
+                "id_field",
+                new BytesRef(docId.getBytes(Charset.defaultCharset()), 0, docId.getBytes(Charset.defaultCharset()).length)
         );
         ParsedDocument parsedDocument = new ParsedDocument(null, null, docId, null, docs, source, null, null);
 
