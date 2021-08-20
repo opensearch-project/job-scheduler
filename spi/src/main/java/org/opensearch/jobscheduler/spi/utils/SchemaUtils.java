@@ -34,7 +34,6 @@ public class SchemaUtils {
     private static final String _META = "_meta";
     private static final String SCHEMA_VERSION = "schema_version";
     private static final String _DOC = "_doc";
-    private static final String LOCK_INDEX_NAME = ".opendistro-job-scheduler-lock";
     private static final long DEFAULT_SCHEMA_VERSION = 1L;
     private static final Logger logger = LogManager.getLogger(SchemaUtils.class);
 
@@ -90,12 +89,12 @@ public class SchemaUtils {
     public static void checkAndUpdateLockIndexMapping(String mapping, ClusterService clusterService,
                                                       IndicesAdminClient client, ActionListener<AcknowledgedResponse> listener) {
         ClusterState clusterState = clusterService.state();
-        if (clusterState.metadata().indices().containsKey(LOCK_INDEX_NAME)) {
+        if (clusterState.metadata().indices().containsKey(LockService.LOCK_INDEX_NAME)) {
             try {
                 long newSchemaVersion = schemaVersion(mapping);
-                IndexMetadata indexMetadata = clusterState.metadata().indices().get(SchemaUtils.LOCK_INDEX_NAME);
+                IndexMetadata indexMetadata = clusterState.metadata().indices().get(LockService.LOCK_INDEX_NAME);
                 if (shouldUpdateIndex(indexMetadata, newSchemaVersion)) {
-                    PutMappingRequest putMappingRequest = new PutMappingRequest(SchemaUtils.LOCK_INDEX_NAME).type(_DOC).source(mapping, XContentType.JSON);
+                    PutMappingRequest putMappingRequest = new PutMappingRequest(LockService.LOCK_INDEX_NAME).type(_DOC).source(mapping, XContentType.JSON);
                     client.putMapping(putMappingRequest, listener);
                 } else {
                     listener.onResponse(new AcknowledgedResponse(true));

@@ -224,7 +224,8 @@ public final class LockModel implements ToXContentObject {
             throw ioException;
         }
     }
-    public static byte[] serialize(Object obj) throws IOException {
+
+    private static byte[] serialize(Object obj) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ObjectOutputStream os = new ObjectOutputStream(out);
         os.writeObject(obj);

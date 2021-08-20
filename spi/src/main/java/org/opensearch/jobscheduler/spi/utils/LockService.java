@@ -69,7 +69,7 @@ public final class LockService {
      * https://www.elastic.co/guide/en/elasticsearch/reference/6.x/removal-of-types.html#_schedule_for_removal_of_mapping_types
      */
     private static final String MAPPING_TYPE = "_doc";
-    private static final String LOCK_INDEX_NAME = ".opendistro-job-scheduler-lock";
+    public static final String LOCK_INDEX_NAME = ".opendistro-job-scheduler-lock";
 
     private final Client client;
     private final ClusterService clusterService;
