@@ -141,10 +141,20 @@ public class IntervalScheduleTests extends OpenSearchTestCase {
 
     public void testToXContent() throws IOException {
         long epochMillis = this.startTime.toEpochMilli();
-        String xContentJsonStr = "{\"interval\":{\"start_time\":" + epochMillis + ",\"period\":1,\"unit\":\"Minutes\"}}";
+        String xContentJsonStr = "{\"interval\":{\"start_time\":" + epochMillis + ",\"period\":1,\"unit\":\"Minutes\",\"schedule_delay\":0}}";
                 XContentHelper.toXContent(this.intervalSchedule, XContentType.JSON, false)
                 .utf8ToString();
         Assert.assertEquals(xContentJsonStr, XContentHelper.toXContent(this.intervalSchedule, XContentType.JSON, false)
+                .utf8ToString());
+    }
+
+    public void testToXContentDelay() throws IOException {
+        IntervalSchedule delaySchedule = new IntervalSchedule(startTime, 1, ChronoUnit.MINUTES, 1234);
+        long epochMillis = this.startTime.plusMillis(1234).toEpochMilli();
+        String xContentJsonStr = "{\"interval\":{\"start_time\":" + epochMillis + ",\"period\":1,\"unit\":\"Minutes\",\"schedule_delay\":1234}}";
+        XContentHelper.toXContent(delaySchedule, XContentType.JSON, false)
+                .utf8ToString();
+        Assert.assertEquals(xContentJsonStr, XContentHelper.toXContent(delaySchedule, XContentType.JSON, false)
                 .utf8ToString());
     }
 
@@ -166,4 +176,5 @@ public class IntervalScheduleTests extends OpenSearchTestCase {
         IntervalSchedule newIntervalSchedule = new IntervalSchedule(input);
         assertEquals(intervalSchedule, newIntervalSchedule);
     }
+
 }

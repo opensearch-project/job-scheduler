@@ -49,6 +49,7 @@ public class ScheduleParser {
                 case CronSchedule.CRON_FIELD:
                     String expression = null;
                     ZoneId timezone = null;
+                    long cronDelay = 0;
                     while (!XContentParser.Token.END_OBJECT.equals(parser.nextToken())) {
                         String cronField = parser.currentName();
                         parser.nextToken();
@@ -56,6 +57,8 @@ public class ScheduleParser {
                             case CronSchedule.EXPRESSION_FIELD: expression = parser.text();
                                 break;
                             case CronSchedule.TIMEZONE_FIELD: timezone = ZoneId.of(parser.text());
+                                break;
+                            case Schedule.DELAY_FIELD: cronDelay = parser.longValue();
                                 break;
                             default:
                                 throw new IllegalArgumentException(
@@ -65,11 +68,12 @@ public class ScheduleParser {
                     XContentParserUtils.ensureExpectedToken(XContentParser.Token.END_OBJECT, parser.currentToken(),
                             parser);
                     parser.nextToken();
-                    return new CronSchedule(expression, timezone);
+                    return new CronSchedule(expression, timezone, cronDelay);
                 case IntervalSchedule.INTERVAL_FIELD:
                     Instant startTime = null;
                     int period = 0;
                     ChronoUnit unit = null;
+                    long intervalDelay = 0;
                     while (!XContentParser.Token.END_OBJECT.equals(parser.nextToken())) {
                         String intervalField = parser.currentName();
                         parser.nextToken();
@@ -83,6 +87,9 @@ public class ScheduleParser {
                             case IntervalSchedule.UNIT_FIELD:
                                 unit = ChronoUnit.valueOf(parser.text().toUpperCase(Locale.ROOT));
                                 break;
+                            case Schedule.DELAY_FIELD:
+                                intervalDelay = parser.longValue();
+                                break;
                             default:
                                 throw new IllegalArgumentException(
                                         String.format(Locale.ROOT, "Unknown interval field %s", intervalField));
@@ -91,7 +98,7 @@ public class ScheduleParser {
                     XContentParserUtils.ensureExpectedToken(XContentParser.Token.END_OBJECT, parser.currentToken(),
                             parser);
                     parser.nextToken();
-                    return new IntervalSchedule(startTime, period, unit);
+                    return new IntervalSchedule(startTime, period, unit, intervalDelay);
                 default:
                     throw new IllegalArgumentException(
                             String.format(Locale.ROOT, "Unknown schedule type %s", fieldName));

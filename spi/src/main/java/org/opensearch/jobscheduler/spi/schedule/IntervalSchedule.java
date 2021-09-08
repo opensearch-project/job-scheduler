@@ -71,6 +71,7 @@ public class IntervalSchedule implements Schedule {
     private ChronoUnit unit;
     private transient long intervalInMillis;
     private Clock clock;
+    private long scheduleDelay;
 
     public IntervalSchedule(Instant startTime, int interval, ChronoUnit unit) {
         if (!SUPPORTED_UNITS.contains(unit)) {
@@ -83,12 +84,22 @@ public class IntervalSchedule implements Schedule {
         this.unit = unit;
         this.intervalInMillis = Duration.of(interval, this.unit).toMillis();
         this.clock = Clock.system(ZoneId.systemDefault());
+        this.scheduleDelay = 0;
+    }
+
+    public IntervalSchedule(Instant startTime, int interval, ChronoUnit unit, long scheduleDelay) {
+        this(startTime, interval, unit);
+        this.scheduleDelay = scheduleDelay;
+        this.startTime = this.startTime.plusMillis(this.scheduleDelay);
     }
 
     public IntervalSchedule(StreamInput input) throws IOException {
         startTime = input.readInstant();
         interval = input.readInt();
         unit = input.readEnum(ChronoUnit.class);
+        Long delayIn = input.readOptionalLong();
+        scheduleDelay = delayIn == null ? 0 : delayIn;
+        startTime = startTime.plusMillis(scheduleDelay);
         intervalInMillis = Duration.of(interval, unit).toMillis();
         clock = Clock.system(ZoneId.systemDefault());
     }
@@ -103,6 +114,11 @@ public class IntervalSchedule implements Schedule {
         return this.interval;
     }
 
+    @VisibleForTesting
+    public long getDelay() {
+        return this.scheduleDelay;
+    }
+
     public ChronoUnit getUnit() {
         return this.unit;
     }
@@ -111,9 +127,13 @@ public class IntervalSchedule implements Schedule {
     public Instant getNextExecutionTime(Instant time) {
         Instant baseTime = time == null ? this.clock.instant() : time;
         long delta = (baseTime.toEpochMilli() - this.startTime.toEpochMilli()) % this.intervalInMillis;
-        long remaining = this.intervalInMillis - delta;
+        if (delta >= 0) {
+            long remaining = this.intervalInMillis - delta;
+            return baseTime.plus(remaining, ChronoUnit.MILLIS);
+        } else {
+            return this.startTime;
+        }
 
-        return baseTime.plus(remaining, ChronoUnit.MILLIS);
     }
 
     @Override
@@ -121,8 +141,12 @@ public class IntervalSchedule implements Schedule {
         long enabledTimeEpochMillis = this.startTime.toEpochMilli();
         Instant currentTime = this.clock.instant();
         long delta = currentTime.toEpochMilli() - enabledTimeEpochMillis;
-        long remainingScheduleTime = intervalInMillis - (delta % intervalInMillis);
-        return Duration.of(remainingScheduleTime, ChronoUnit.MILLIS);
+        if (delta >= 0) {
+            long remainingScheduleTime = intervalInMillis - (delta % intervalInMillis);
+            return Duration.of(remainingScheduleTime, ChronoUnit.MILLIS);
+        } else {
+            return Duration.ofMillis(enabledTimeEpochMillis - currentTime.toEpochMilli());
+        }
     }
 
     @Override
@@ -158,6 +182,7 @@ public class IntervalSchedule implements Schedule {
                 .field(START_TIME_FIELD, this.startTime.toEpochMilli())
                 .field(PERIOD_FIELD, this.interval)
                 .field(UNIT_FIELD, this.unit)
+                .field(DELAY_FIELD, Long.valueOf(this.scheduleDelay))
                 .endObject()
                 .endObject();
         return builder;
@@ -181,12 +206,13 @@ public class IntervalSchedule implements Schedule {
         return startTime.equals(intervalSchedule.startTime) &&
                 interval == intervalSchedule.interval &&
                 unit == intervalSchedule.unit &&
-                intervalInMillis == intervalSchedule.intervalInMillis;
+                intervalInMillis == intervalSchedule.intervalInMillis &&
+                scheduleDelay == intervalSchedule.scheduleDelay;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(startTime, interval, unit, intervalInMillis);
+        return Objects.hash(startTime, interval, unit, intervalInMillis, scheduleDelay);
     }
 
     @Override
@@ -194,5 +220,6 @@ public class IntervalSchedule implements Schedule {
         out.writeInstant(startTime);
         out.writeInt(interval);
         out.writeEnum(unit);
+        out.writeOptionalLong(scheduleDelay);
     }
 }

@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 public interface Schedule extends Writeable, ToXContentObject {
+    static final String DELAY_FIELD = "schedule_delay";
 
     /**
      * Gets next job execution time of give time parameter.
