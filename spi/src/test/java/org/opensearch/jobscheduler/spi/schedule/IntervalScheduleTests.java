@@ -34,6 +34,7 @@ import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.test.OpenSearchTestCase;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -62,6 +63,7 @@ public class IntervalScheduleTests extends OpenSearchTestCase {
         new IntervalSchedule(startTime, 1, ChronoUnit.MILLIS);
     }
 
+    @Ignore
     public void testNextTimeToExecution() {
         Instant now = Instant.now();
         Clock testClock = Clock.fixed(now, ZoneId.systemDefault());
