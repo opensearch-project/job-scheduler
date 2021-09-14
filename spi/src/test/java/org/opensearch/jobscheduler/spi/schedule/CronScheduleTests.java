@@ -49,23 +49,36 @@ import java.util.Optional;
 public class CronScheduleTests extends OpenSearchTestCase {
 
     private CronSchedule cronSchedule;
+    private CronSchedule cronScheduleDelay;
+    private final long DELAY = 15000;
 
     @Before
     public void setup() {
         this.cronSchedule = new CronSchedule("* * * * *", ZoneId.systemDefault());
+        this.cronScheduleDelay = new CronSchedule("* * * * *", ZoneId.systemDefault(), DELAY);
     }
 
     public void testNextTimeToExecute() {
         Instant now = Instant.now();
         Clock testClock = Clock.fixed(now, ZoneId.systemDefault());
         this.cronSchedule.setClock(testClock);
+        this.cronScheduleDelay.setClock(testClock);
 
         Instant nextMinute = Instant.ofEpochSecond(now.getEpochSecond() / 60 * 60 + 60);
+        Instant nextMinuteDelay = Instant.ofEpochSecond((now.minusMillis(DELAY)).getEpochSecond() / 60 * 60 + 60).plusMillis(DELAY);
 
         Duration expected = Duration.between(now, nextMinute);
         Duration duration = this.cronSchedule.nextTimeToExecute();
+        Duration expectedDelay = Duration.between(now, nextMinuteDelay);
+        Duration durationDelay = this.cronScheduleDelay.nextTimeToExecute();
 
         Assert.assertEquals(expected, duration);
+        Assert.assertEquals(expectedDelay, durationDelay);
+
+        Assert.assertEquals(this.cronSchedule.nextTimeToExecute(),
+                Duration.between(now, this.cronSchedule.getNextExecutionTime(now)));
+        Assert.assertEquals(this.cronScheduleDelay.nextTimeToExecute(),
+                Duration.between(now, this.cronScheduleDelay.getNextExecutionTime(now)));
     }
 
     public void testGetPeriodStartingAt() {
@@ -74,6 +87,18 @@ public class CronScheduleTests extends OpenSearchTestCase {
         Instant nextMinute = currentMinute.plus(1L, ChronoUnit.MINUTES);
 
         Tuple<Instant, Instant> period = this.cronSchedule.getPeriodStartingAt(currentMinute);
+
+        Assert.assertEquals(currentMinute, period.v1());
+        Assert.assertEquals(nextMinute, period.v2());
+    }
+
+    public void testGetPeriodStartingAtWithDelay() {
+        Instant now = Instant.now();
+        // If it is 10:01:07 with a delay of 15 seconds, we want the current minute to be 10:00:15 and next to be 10:01:15
+        Instant currentMinute = Instant.ofEpochSecond(now.minusMillis(DELAY).getEpochSecond() / 60 * 60).plusMillis(DELAY);
+        Instant nextMinute = currentMinute.plus(1L, ChronoUnit.MINUTES);
+
+        Tuple<Instant, Instant> period = this.cronScheduleDelay.getPeriodStartingAt(currentMinute);
 
         Assert.assertEquals(currentMinute, period.v1());
         Assert.assertEquals(nextMinute, period.v2());
@@ -89,6 +114,21 @@ public class CronScheduleTests extends OpenSearchTestCase {
         Instant nextMinute = currentMinute.plus(1L, ChronoUnit.MINUTES);
 
         Tuple<Instant, Instant> period = this.cronSchedule.getPeriodStartingAt(null);
+
+        Assert.assertEquals(currentMinute, period.v1());
+        Assert.assertEquals(nextMinute, period.v2());
+    }
+
+    public void testGetPeriodStartingAtWithDelay_nullStartTime() {
+        Instant now = Instant.now();
+
+        Clock testClock = Clock.fixed(now, ZoneId.systemDefault());
+        this.cronScheduleDelay.setClock(testClock);
+
+        Instant currentMinute = Instant.ofEpochSecond(now.minusMillis(DELAY).getEpochSecond() / 60 * 60).plusMillis(DELAY);
+        Instant nextMinute = currentMinute.plus(1L, ChronoUnit.MINUTES);
+
+        Tuple<Instant, Instant> period = this.cronScheduleDelay.getPeriodStartingAt(null);
 
         Assert.assertEquals(currentMinute, period.v1());
         Assert.assertEquals(nextMinute, period.v2());
@@ -131,21 +171,49 @@ public class CronScheduleTests extends OpenSearchTestCase {
         Assert.assertFalse(this.cronSchedule.runningOnTime(lastExecutionTime));
     }
 
+    public void testRunningOnTimeWithDelay() {
+        Instant now = Instant.now();
+
+        Clock testClock = Clock.fixed(now, ZoneId.systemDefault());
+        this.cronScheduleDelay.setClock(testClock);
+
+        // Subtract by delay first in case that goes to the previous minute/iteration
+        Instant currentMinutePlusDelay = Instant.ofEpochSecond((now.minusMillis(DELAY)).getEpochSecond() / 60 * 60).plusMillis(DELAY);
+
+        Instant lastExecutionTime = currentMinutePlusDelay.minus(10, ChronoUnit.MILLIS);
+        Assert.assertTrue(this.cronScheduleDelay.runningOnTime(lastExecutionTime));
+
+        lastExecutionTime = currentMinutePlusDelay.plus(10, ChronoUnit.MILLIS);
+        Assert.assertTrue(this.cronScheduleDelay.runningOnTime(lastExecutionTime));
+
+        lastExecutionTime = currentMinutePlusDelay.plus(10, ChronoUnit.SECONDS);
+        Assert.assertFalse(this.cronScheduleDelay.runningOnTime(lastExecutionTime));
+
+        lastExecutionTime = currentMinutePlusDelay.minus(10, ChronoUnit.SECONDS);
+        Assert.assertFalse(this.cronScheduleDelay.runningOnTime(lastExecutionTime));
+    }
+
     public void testRunningOnTime_nullParam() {
         Assert.assertTrue(this.cronSchedule.runningOnTime(null));
+        Assert.assertTrue(this.cronScheduleDelay.runningOnTime(null));
     }
 
     public void testRunningOnTime_noLastExecution() {
         Instant now = Instant.now();
         Clock testClock = Clock.fixed(now, ZoneId.systemDefault());
         this.cronSchedule.setClock(testClock);
+        this.cronScheduleDelay.setClock(testClock);
         ExecutionTime mockExecutionTime = Mockito.mock(ExecutionTime.class);
         this.cronSchedule.setExecutionTime(mockExecutionTime);
+        this.cronScheduleDelay.setExecutionTime(mockExecutionTime);
 
         Mockito.when(mockExecutionTime.lastExecution(ZonedDateTime.ofInstant(now, ZoneId.systemDefault())))
                 .thenReturn(Optional.empty());
+        Mockito.when(mockExecutionTime.lastExecution(ZonedDateTime.ofInstant(now.minusMillis(DELAY), ZoneId.systemDefault())))
+                .thenReturn(Optional.empty());
 
         Assert.assertFalse(this.cronSchedule.runningOnTime(now));
+        Assert.assertFalse(this.cronScheduleDelay.runningOnTime(now));
     }
 
     public void testToXContent() throws IOException {
@@ -159,10 +227,16 @@ public class CronScheduleTests extends OpenSearchTestCase {
         CronSchedule cronScheduleOne = new CronSchedule("* * * * *", ZoneId.of("PST8PDT"));
         CronSchedule cronScheduleTwo = new CronSchedule("* * * * *", ZoneId.of("PST8PDT"));
         CronSchedule cronScheduleThree = new CronSchedule("1 * * * *", ZoneId.of("PST8PDT"));
+        CronSchedule cronScheduleFour = new CronSchedule("1 * * * *", ZoneId.of("PST8PDT"), DELAY);
+        CronSchedule cronScheduleFive = new CronSchedule("1 * * * *", ZoneId.of("PST8PDT"), DELAY);
 
         Assert.assertEquals(cronScheduleOne, cronScheduleTwo);
         Assert.assertNotEquals(cronScheduleOne, cronScheduleThree);
         Assert.assertEquals(cronScheduleOne.hashCode(), cronScheduleTwo.hashCode());
+        Assert.assertNotEquals(cronScheduleThree, cronScheduleFour);
+        Assert.assertNotEquals(cronScheduleThree.hashCode(), cronScheduleFour.hashCode());
+        Assert.assertEquals(cronScheduleFour, cronScheduleFive);
+        Assert.assertEquals(cronScheduleFour.hashCode(), cronScheduleFive.hashCode());
     }
 
     public void testCronScheduleAsStream() throws Exception {
@@ -175,7 +249,7 @@ public class CronScheduleTests extends OpenSearchTestCase {
 
     public void testCronScheduleAsStreamDelay() throws Exception {
         BytesStreamOutput out = new BytesStreamOutput();
-        CronSchedule schedule = new CronSchedule("* * * * *", ZoneId.of("PST8PDT"), 1234);
+        CronSchedule schedule = new CronSchedule("* * * * *", ZoneId.of("PST8PDT"), DELAY);
         schedule.writeTo(out);
         StreamInput input = out.bytes().streamInput();
         CronSchedule newCronSchedule = new CronSchedule(input);

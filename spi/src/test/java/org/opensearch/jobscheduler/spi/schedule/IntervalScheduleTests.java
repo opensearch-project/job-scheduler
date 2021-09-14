@@ -44,16 +44,20 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 
 public class IntervalScheduleTests extends OpenSearchTestCase {
 
     private IntervalSchedule intervalSchedule;
+    private IntervalSchedule intervalScheduleDelay;
     private Instant startTime;
+    private final long DELAY = 15000;
 
     @Before
     public void setup() throws ParseException {
-        startTime = new SimpleDateFormat("MM/dd/yyyy").parse("01/01/2019").toInstant();
+        startTime = new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT).parse("01/01/2019").toInstant();
         this.intervalSchedule = new IntervalSchedule(startTime, 1, ChronoUnit.MINUTES);
+        this.intervalScheduleDelay = new IntervalSchedule(startTime, 3, ChronoUnit.MINUTES, DELAY);
     }
 
     @Test (expected =  IllegalArgumentException.class)
@@ -66,11 +70,21 @@ public class IntervalScheduleTests extends OpenSearchTestCase {
         Instant now = Instant.now();
         Clock testClock = Clock.fixed(now, ZoneId.systemDefault());
         this.intervalSchedule.setClock(testClock);
+        this.intervalScheduleDelay.setClock(testClock);
 
         Instant nextMinute = Instant.ofEpochSecond(now.getEpochSecond() / 60 * 60 + 60);
         Duration expected = Duration.of(nextMinute.toEpochMilli() - now.toEpochMilli(), ChronoUnit.MILLIS);
 
+        Instant nextIntervalPlusDelay = Instant.ofEpochSecond(((now.minusMillis(DELAY).getEpochSecond()) / 180 * 180) + 180).plusMillis(DELAY);
+        Duration expectedDelay = Duration.of(nextIntervalPlusDelay.toEpochMilli() - now.toEpochMilli(), ChronoUnit.MILLIS);
+
         Assert.assertEquals(expected, this.intervalSchedule.nextTimeToExecute());
+        Assert.assertEquals(expectedDelay, this.intervalScheduleDelay.nextTimeToExecute());
+
+        Assert.assertEquals(this.intervalSchedule.nextTimeToExecute(),
+                Duration.between(now, this.intervalSchedule.getNextExecutionTime(now)));
+        Assert.assertEquals(this.intervalScheduleDelay.nextTimeToExecute(),
+                Duration.between(now, this.intervalScheduleDelay.getNextExecutionTime(now)));
     }
 
     public void testGetPeriodStartingAt() {
@@ -135,8 +149,49 @@ public class IntervalScheduleTests extends OpenSearchTestCase {
         Assert.assertFalse(this.intervalSchedule.runningOnTime(lastExecutionTime));
     }
 
+    public void testRunningOnTimeWithDelay() {
+        Instant now = Instant.now();
+        if(now.minusMillis(DELAY).toEpochMilli() % (180 * 1000) == 0) {
+            // test "now" is not execution time case
+            now = now.plus(10, ChronoUnit.SECONDS);
+        }
+        Instant currentThreeMinutePlusDelay = Instant.ofEpochSecond(now.getEpochSecond() / 180 * 180).plusMillis(DELAY);
+
+        Clock testClock = Clock.fixed(now, ZoneId.systemDefault());
+        this.intervalScheduleDelay.setClock(testClock);
+
+        Instant lastExecutionTime = currentThreeMinutePlusDelay.plus(10, ChronoUnit.MILLIS);
+        Assert.assertTrue(this.intervalScheduleDelay.runningOnTime(lastExecutionTime));
+
+        lastExecutionTime = currentThreeMinutePlusDelay.minus(2, ChronoUnit.SECONDS);
+        Assert.assertFalse(this.intervalScheduleDelay.runningOnTime(lastExecutionTime));
+
+        // test "now" is execution time case
+        now = currentThreeMinutePlusDelay;
+        testClock = Clock.fixed(now, ZoneId.systemDefault());
+        this.intervalScheduleDelay.setClock(testClock);
+
+        lastExecutionTime = currentThreeMinutePlusDelay.minus(179500, ChronoUnit.MILLIS);
+        Assert.assertTrue(this.intervalScheduleDelay.runningOnTime(lastExecutionTime));
+
+        lastExecutionTime = currentThreeMinutePlusDelay.minus(178500, ChronoUnit.MILLIS);
+        Assert.assertFalse(this.intervalScheduleDelay.runningOnTime(lastExecutionTime));
+
+        // test "now" is in the first second, and last run in current second of current second
+        now = currentThreeMinutePlusDelay.plus(500, ChronoUnit.MILLIS);
+        testClock = Clock.fixed(now, ZoneId.systemDefault());
+        this.intervalScheduleDelay.setClock(testClock);
+
+        lastExecutionTime = currentThreeMinutePlusDelay;
+        Assert.assertTrue(this.intervalScheduleDelay.runningOnTime(lastExecutionTime));
+
+        lastExecutionTime = currentThreeMinutePlusDelay.minus(2, ChronoUnit.SECONDS);
+        Assert.assertFalse(this.intervalScheduleDelay.runningOnTime(lastExecutionTime));
+    }
+
     public void testRunningOnTime_nullLastExetime() {
         Assert.assertTrue(this.intervalSchedule.runningOnTime(null));
+        Assert.assertTrue(this.intervalScheduleDelay.runningOnTime(null));
     }
 
     public void testToXContent() throws IOException {
@@ -146,15 +201,11 @@ public class IntervalScheduleTests extends OpenSearchTestCase {
                 .utf8ToString();
         Assert.assertEquals(xContentJsonStr, XContentHelper.toXContent(this.intervalSchedule, XContentType.JSON, false)
                 .utf8ToString());
-    }
 
-    public void testToXContentDelay() throws IOException {
-        IntervalSchedule delaySchedule = new IntervalSchedule(startTime, 1, ChronoUnit.MINUTES, 1234);
-        long epochMillis = this.startTime.plusMillis(1234).toEpochMilli();
-        String xContentJsonStr = "{\"interval\":{\"start_time\":" + epochMillis + ",\"period\":1,\"unit\":\"Minutes\",\"schedule_delay\":1234}}";
-        XContentHelper.toXContent(delaySchedule, XContentType.JSON, false)
+        String xContentJsonStrDelay = "{\"interval\":{\"start_time\":" + epochMillis + ",\"period\":3,\"unit\":\"Minutes\",\"schedule_delay\":15000}}";
+        XContentHelper.toXContent(this.intervalScheduleDelay, XContentType.JSON, false)
                 .utf8ToString();
-        Assert.assertEquals(xContentJsonStr, XContentHelper.toXContent(delaySchedule, XContentType.JSON, false)
+        Assert.assertEquals(xContentJsonStrDelay, XContentHelper.toXContent(this.intervalScheduleDelay, XContentType.JSON, false)
                 .utf8ToString());
     }
 
@@ -163,10 +214,15 @@ public class IntervalScheduleTests extends OpenSearchTestCase {
         IntervalSchedule intervalScheduleOne = new IntervalSchedule(Instant.ofEpochMilli(epochMilli), 5, ChronoUnit.MINUTES);
         IntervalSchedule intervalScheduleTwo = new IntervalSchedule(Instant.ofEpochMilli(epochMilli), 5, ChronoUnit.MINUTES);
         IntervalSchedule intervalScheduleThree = new IntervalSchedule(Instant.ofEpochMilli(epochMilli), 4, ChronoUnit.MINUTES);
+        IntervalSchedule intervalScheduleFour = new IntervalSchedule(Instant.ofEpochMilli(epochMilli), 4, ChronoUnit.MINUTES, 5000);
+        IntervalSchedule intervalScheduleFive = new IntervalSchedule(Instant.ofEpochMilli(epochMilli), 4, ChronoUnit.MINUTES, 5000);
 
         Assert.assertEquals(intervalScheduleOne, intervalScheduleTwo);
         Assert.assertNotEquals(intervalScheduleOne, intervalScheduleThree);
         Assert.assertEquals(intervalScheduleOne.hashCode(), intervalScheduleTwo.hashCode());
+        Assert.assertNotEquals(intervalScheduleOne, intervalScheduleFour);
+        Assert.assertEquals(intervalScheduleFour, intervalScheduleFive);
+        Assert.assertEquals(intervalScheduleFour.hashCode(), intervalScheduleFive.hashCode());
     }
 
     public void testIntervalScheduleAsStream() throws Exception {
@@ -175,6 +231,12 @@ public class IntervalScheduleTests extends OpenSearchTestCase {
         StreamInput input = out.bytes().streamInput();
         IntervalSchedule newIntervalSchedule = new IntervalSchedule(input);
         assertEquals(intervalSchedule, newIntervalSchedule);
+
+        BytesStreamOutput outDelay = new BytesStreamOutput();
+        intervalScheduleDelay.writeTo(outDelay);
+        StreamInput inputDelay = outDelay.bytes().streamInput();
+        IntervalSchedule newIntervalScheduleDelay = new IntervalSchedule(inputDelay);
+        assertEquals(intervalScheduleDelay, newIntervalScheduleDelay);
     }
 
 }

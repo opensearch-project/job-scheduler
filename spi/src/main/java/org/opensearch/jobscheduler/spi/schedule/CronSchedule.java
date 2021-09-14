@@ -105,15 +105,15 @@ public class CronSchedule implements Schedule {
         return this.expression;
     }
 
-    @VisibleForTesting
-    public long getDelay() {
-        return this.scheduleDelay;
-    }
+    public long getDelay() { return this.scheduleDelay; }
+
+    public void setDelay(long delay) { this.scheduleDelay = delay; }
 
     @Override
     public Instant getNextExecutionTime(Instant time) {
         Instant baseTime = time == null ? this.clock.instant() : time;
 
+        // the executionTime object doesn't use the delay, need to remove the delay before and then add it back after
         ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(baseTime.minusMillis(this.scheduleDelay), this.timezone);
         ZonedDateTime nextExecutionTime = this.executionTime.nextExecution(zonedDateTime).orElse(null);
 
@@ -134,8 +134,8 @@ public class CronSchedule implements Schedule {
         if (startTime != null) {
             realStartTime = startTime;
         } else {
-            Instant now = this.clock.instant().minusMillis(this.scheduleDelay);
-            Optional<ZonedDateTime> lastExecutionTime = this.executionTime.lastExecution(ZonedDateTime.ofInstant(now, this.timezone));
+            Instant now = this.clock.instant();
+            Optional<ZonedDateTime> lastExecutionTime = this.executionTime.lastExecution(ZonedDateTime.ofInstant(now.minusMillis(this.scheduleDelay), this.timezone));
             if (!lastExecutionTime.isPresent()) {
                 return new Tuple<>(now, now);
             }

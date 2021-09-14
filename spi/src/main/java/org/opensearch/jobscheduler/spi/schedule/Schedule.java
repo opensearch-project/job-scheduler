@@ -37,10 +37,10 @@ public interface Schedule extends Writeable, ToXContentObject {
     static final String DELAY_FIELD = "schedule_delay";
 
     /**
-     * Gets next job execution time of give time parameter.
+     * Gets next job execution time of given time parameter.
      *
      * @param time base time point
-     * @return next exection time since time parameter.
+     * @return next execution time since time parameter.
      */
     Instant getNextExecutionTime(Instant time);
 
@@ -66,4 +66,7 @@ public interface Schedule extends Writeable, ToXContentObject {
      * @return true if the job executes on time, otherwise false.
      */
     Boolean runningOnTime(Instant lastExecutionTime);
+
+    long getDelay();
+    void setDelay(long delay);
 }
