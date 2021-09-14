@@ -51,7 +51,7 @@ dependencies {
     compileOnly project(path: ":${rootProject.name}-spi", configuration: 'shadow')
 }
 
-licenseHeaders.enabled = false
+licenseHeaders.enabled = true
 validateNebulaPom.enabled = false
 testingConventions.enabled = false
 loggerUsageCheck.enabled = false
