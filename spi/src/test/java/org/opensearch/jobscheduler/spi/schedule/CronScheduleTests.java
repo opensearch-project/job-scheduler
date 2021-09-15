@@ -217,10 +217,15 @@ public class CronScheduleTests extends OpenSearchTestCase {
     }
 
     public void testToXContent() throws IOException {
-        CronSchedule schedule = new CronSchedule("* * * * *", ZoneId.of("PST8PDT"), 1234);
-        String expectedJsonStr = "{\"cron\":{\"expression\":\"* * * * *\",\"timezone\":\"PST8PDT\",\"schedule_delay\":1234}}";
+        CronSchedule schedule = new CronSchedule("* * * * *", ZoneId.of("PST8PDT"));
+        String expectedJsonStr = "{\"cron\":{\"expression\":\"* * * * *\",\"timezone\":\"PST8PDT\"}}";
         Assert.assertEquals(expectedJsonStr,
                 XContentHelper.toXContent(schedule, XContentType.JSON, false).utf8ToString());
+
+        CronSchedule scheduleDelay = new CronSchedule("* * * * *", ZoneId.of("PST8PDT"), 1234);
+        String expectedJsonStrDelay = "{\"cron\":{\"expression\":\"* * * * *\",\"timezone\":\"PST8PDT\",\"schedule_delay\":1234}}";
+        Assert.assertEquals(expectedJsonStrDelay,
+                XContentHelper.toXContent(scheduleDelay, XContentType.JSON, false).utf8ToString());
     }
 
     public void testCronScheduleEqualsAndHashCode() {

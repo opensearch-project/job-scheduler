@@ -61,14 +61,13 @@ public class CronSchedule implements Schedule {
     private String expression;
     private ExecutionTime executionTime;
     private Clock clock;
-    private long scheduleDelay;
+    private Long scheduleDelay;
 
     public CronSchedule(String expression, ZoneId timezone) {
         this.expression = expression;
         this.timezone = timezone;
         this.executionTime = ExecutionTime.forCron(cronParser.parse(this.expression));
         clock = Clock.system(timezone);
-        this.scheduleDelay = 0;
     }
 
     public CronSchedule(String expression, ZoneId timezone, long scheduleDelay) {
@@ -79,8 +78,7 @@ public class CronSchedule implements Schedule {
     public CronSchedule(StreamInput input) throws IOException {
         timezone = input.readZoneId();
         expression = input.readString();
-        Long delayIn = input.readOptionalLong();
-        scheduleDelay = delayIn == null ? 0 : delayIn;
+        scheduleDelay = input.readOptionalLong();
         executionTime = ExecutionTime.forCron(cronParser.parse(expression));
         clock = Clock.system(timezone);
     }
@@ -105,24 +103,26 @@ public class CronSchedule implements Schedule {
         return this.expression;
     }
 
-    public long getDelay() { return this.scheduleDelay; }
+    public long getDelay() { return this.scheduleDelay == null ? 0 : this.scheduleDelay; }
 
     public void setDelay(long delay) { this.scheduleDelay = delay; }
 
     @Override
     public Instant getNextExecutionTime(Instant time) {
         Instant baseTime = time == null ? this.clock.instant() : time;
+        long delay = scheduleDelay == null ? 0 : scheduleDelay;
 
         // the executionTime object doesn't use the delay, need to remove the delay before and then add it back after
-        ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(baseTime.minusMillis(this.scheduleDelay), this.timezone);
+        ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(baseTime.minusMillis(delay), this.timezone);
         ZonedDateTime nextExecutionTime = this.executionTime.nextExecution(zonedDateTime).orElse(null);
 
-        return nextExecutionTime == null ? null : nextExecutionTime.toInstant().plusMillis(this.scheduleDelay);
+        return nextExecutionTime == null ? null : nextExecutionTime.toInstant().plusMillis(delay);
     }
 
     @Override
     public Duration nextTimeToExecute() {
-        Instant now = this.clock.instant().minusMillis(this.scheduleDelay);
+        long delay = scheduleDelay == null ? 0 : scheduleDelay;
+        Instant now = this.clock.instant().minusMillis(delay);
         ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(now, this.timezone);
         Optional<Duration> timeToNextExecution = this.executionTime.timeToNextExecution(zonedDateTime);
         return timeToNextExecution.orElse(null);
@@ -130,29 +130,31 @@ public class CronSchedule implements Schedule {
 
     @Override
     public Tuple<Instant, Instant> getPeriodStartingAt(Instant startTime) {
+        long delay = scheduleDelay == null ? 0 : scheduleDelay;
         Instant realStartTime;
         if (startTime != null) {
             realStartTime = startTime;
         } else {
             Instant now = this.clock.instant();
-            Optional<ZonedDateTime> lastExecutionTime = this.executionTime.lastExecution(ZonedDateTime.ofInstant(now.minusMillis(this.scheduleDelay), this.timezone));
+            Optional<ZonedDateTime> lastExecutionTime = this.executionTime.lastExecution(ZonedDateTime.ofInstant(now.minusMillis(delay), this.timezone));
             if (!lastExecutionTime.isPresent()) {
                 return new Tuple<>(now, now);
             }
-            realStartTime = lastExecutionTime.get().toInstant().plusMillis(this.scheduleDelay);
+            realStartTime = lastExecutionTime.get().toInstant().plusMillis(delay);
         }
-        ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(realStartTime.minusMillis(this.scheduleDelay), this.timezone);
+        ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(realStartTime.minusMillis(delay), this.timezone);
         ZonedDateTime newEndTime = executionTime.nextExecution(zonedDateTime).orElse(null);
-        return new Tuple<>(realStartTime, newEndTime == null ? null : newEndTime.toInstant().plusMillis(this.scheduleDelay));
+        return new Tuple<>(realStartTime, newEndTime == null ? null : newEndTime.toInstant().plusMillis(delay));
     }
 
     @Override
     public Boolean runningOnTime(Instant lastExecutionTime) {
+        long delay = scheduleDelay == null ? 0 : scheduleDelay;
         if (lastExecutionTime == null) {
             return true;
         }
 
-        Instant now = this.clock.instant().minusMillis(this.scheduleDelay);
+        Instant now = this.clock.instant().minusMillis(delay);
         ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(now, timezone);
         Optional<ZonedDateTime> expectedExecutionTime = this.executionTime.lastExecution(zonedDateTime);
 
@@ -161,7 +163,7 @@ public class CronSchedule implements Schedule {
         }
         ZonedDateTime actualExecutionTime = ZonedDateTime.ofInstant(lastExecutionTime, timezone);
 
-        return ChronoUnit.SECONDS.between(expectedExecutionTime.get().plus(scheduleDelay, ChronoUnit.MILLIS), actualExecutionTime) == 0L;
+        return ChronoUnit.SECONDS.between(expectedExecutionTime.get().plus(delay, ChronoUnit.MILLIS), actualExecutionTime) == 0L;
     }
 
     @Override
@@ -169,9 +171,9 @@ public class CronSchedule implements Schedule {
         builder.startObject()
                 .startObject(CRON_FIELD)
                 .field(EXPRESSION_FIELD, this.expression)
-                .field(TIMEZONE_FIELD, this.timezone.getId())
-                .field(DELAY_FIELD, Long.valueOf(this.scheduleDelay))
-                .endObject()
+                .field(TIMEZONE_FIELD, this.timezone.getId());
+        if (this.scheduleDelay != null) { builder.field(DELAY_FIELD, this.scheduleDelay); }
+                builder.endObject()
                 .endObject();
         return builder;
     }
@@ -188,7 +190,7 @@ public class CronSchedule implements Schedule {
         CronSchedule cronSchedule = (CronSchedule) o;
         return timezone.equals(cronSchedule.timezone) &&
                 expression.equals(cronSchedule.expression) &&
-                scheduleDelay == cronSchedule.scheduleDelay;
+                Objects.equals(scheduleDelay, cronSchedule.scheduleDelay);
     }
 
     @Override

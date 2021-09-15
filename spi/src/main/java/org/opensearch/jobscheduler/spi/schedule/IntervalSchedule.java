@@ -72,7 +72,7 @@ public class IntervalSchedule implements Schedule {
     private ChronoUnit unit;
     private transient long intervalInMillis;
     private Clock clock;
-    private long scheduleDelay;
+    private Long scheduleDelay;
 
     public IntervalSchedule(Instant startTime, int interval, ChronoUnit unit) {
         if (!SUPPORTED_UNITS.contains(unit)) {
@@ -86,7 +86,6 @@ public class IntervalSchedule implements Schedule {
         this.unit = unit;
         this.intervalInMillis = Duration.of(interval, this.unit).toMillis();
         this.clock = Clock.system(ZoneId.systemDefault());
-        this.scheduleDelay = 0;
     }
 
     public IntervalSchedule(Instant startTime, int interval, ChronoUnit unit, long scheduleDelay) {
@@ -99,9 +98,12 @@ public class IntervalSchedule implements Schedule {
         initialStartTime = input.readInstant();
         interval = input.readInt();
         unit = input.readEnum(ChronoUnit.class);
-        Long delayIn = input.readOptionalLong();
-        scheduleDelay = delayIn == null ? 0 : delayIn;
-        startTimeWithDelay = initialStartTime.plusMillis(scheduleDelay);
+        scheduleDelay = input.readOptionalLong();
+        if(scheduleDelay == null) {
+            startTimeWithDelay = initialStartTime;
+        } else {
+            startTimeWithDelay = initialStartTime.plusMillis(scheduleDelay);
+        }
         intervalInMillis = Duration.of(interval, unit).toMillis();
         clock = Clock.system(ZoneId.systemDefault());
     }
@@ -120,7 +122,7 @@ public class IntervalSchedule implements Schedule {
         return this.unit;
     }
 
-    public long getDelay() { return this.scheduleDelay; }
+    public long getDelay() { return this.scheduleDelay == null ? 0 : this.scheduleDelay; }
 
     public void setDelay(long delay) {
         this.scheduleDelay = delay;
@@ -184,9 +186,9 @@ public class IntervalSchedule implements Schedule {
                 .startObject(INTERVAL_FIELD)
                 .field(START_TIME_FIELD, this.initialStartTime.toEpochMilli())
                 .field(PERIOD_FIELD, this.interval)
-                .field(UNIT_FIELD, this.unit)
-                .field(DELAY_FIELD, Long.valueOf(this.scheduleDelay))
-                .endObject()
+                .field(UNIT_FIELD, this.unit);
+        if (this.scheduleDelay != null) { builder.field(DELAY_FIELD, this.scheduleDelay); }
+                builder.endObject()
                 .endObject();
         return builder;
     }
@@ -210,7 +212,7 @@ public class IntervalSchedule implements Schedule {
                 interval == intervalSchedule.interval &&
                 unit == intervalSchedule.unit &&
                 intervalInMillis == intervalSchedule.intervalInMillis &&
-                scheduleDelay == intervalSchedule.scheduleDelay;
+                Objects.equals(scheduleDelay, intervalSchedule.scheduleDelay);
     }
 
     @Override

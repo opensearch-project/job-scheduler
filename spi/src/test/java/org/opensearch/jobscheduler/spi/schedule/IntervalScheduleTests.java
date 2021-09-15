@@ -196,7 +196,7 @@ public class IntervalScheduleTests extends OpenSearchTestCase {
 
     public void testToXContent() throws IOException {
         long epochMillis = this.startTime.toEpochMilli();
-        String xContentJsonStr = "{\"interval\":{\"start_time\":" + epochMillis + ",\"period\":1,\"unit\":\"Minutes\",\"schedule_delay\":0}}";
+        String xContentJsonStr = "{\"interval\":{\"start_time\":" + epochMillis + ",\"period\":1,\"unit\":\"Minutes\"}}";
                 XContentHelper.toXContent(this.intervalSchedule, XContentType.JSON, false)
                 .utf8ToString();
         Assert.assertEquals(xContentJsonStr, XContentHelper.toXContent(this.intervalSchedule, XContentType.JSON, false)
