@@ -99,11 +99,7 @@ public class IntervalSchedule implements Schedule {
         interval = input.readInt();
         unit = input.readEnum(ChronoUnit.class);
         scheduleDelay = input.readOptionalLong();
-        if(scheduleDelay == null) {
-            startTimeWithDelay = initialStartTime;
-        } else {
-            startTimeWithDelay = initialStartTime.plusMillis(scheduleDelay);
-        }
+        startTimeWithDelay = scheduleDelay == null ? initialStartTime : initialStartTime.plusMillis(scheduleDelay);
         intervalInMillis = Duration.of(interval, unit).toMillis();
         clock = Clock.system(ZoneId.systemDefault());
     }
@@ -120,13 +116,6 @@ public class IntervalSchedule implements Schedule {
 
     public ChronoUnit getUnit() {
         return this.unit;
-    }
-
-    public long getDelay() { return this.scheduleDelay == null ? 0 : this.scheduleDelay; }
-
-    public void setDelay(long delay) {
-        this.scheduleDelay = delay;
-        this.startTimeWithDelay = initialStartTime.plusMillis(scheduleDelay);
     }
 
     @Override

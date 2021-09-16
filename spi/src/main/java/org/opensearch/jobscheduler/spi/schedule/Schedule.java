@@ -66,7 +66,4 @@ public interface Schedule extends Writeable, ToXContentObject {
      * @return true if the job executes on time, otherwise false.
      */
     Boolean runningOnTime(Instant lastExecutionTime);
-
-    long getDelay();
-    void setDelay(long delay);
 }

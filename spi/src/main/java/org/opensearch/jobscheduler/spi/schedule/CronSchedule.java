@@ -103,16 +103,16 @@ public class CronSchedule implements Schedule {
         return this.expression;
     }
 
-    public long getDelay() { return this.scheduleDelay == null ? 0 : this.scheduleDelay; }
-
-    public void setDelay(long delay) { this.scheduleDelay = delay; }
-
     @Override
     public Instant getNextExecutionTime(Instant time) {
         Instant baseTime = time == null ? this.clock.instant() : time;
         long delay = scheduleDelay == null ? 0 : scheduleDelay;
-
-        // the executionTime object doesn't use the delay, need to remove the delay before and then add it back after
+        // The executionTime object doesn't know about the delay, so first subtract the delay from the baseTime in case
+        // this moves to the previous interval, then add the delay to the returned execution time to get the correct time.
+        // For example, say it is 10:07 AM with an hourly schedule and a delay of 15 minutes. The next execution time
+        // should be 10:15 AM, but executionTime.nextExecution( 10:07 AM ) would return the next execution as 11 AM.
+        // By subtracting the delay first, the ExecutionTime object is given the input time as 9:52 AM, it returns
+        // 10:00 AM, and after adding the delay, we get the correct next execution time of 10:15 AM.
         ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(baseTime.minusMillis(delay), this.timezone);
         ZonedDateTime nextExecutionTime = this.executionTime.nextExecution(zonedDateTime).orElse(null);
 
