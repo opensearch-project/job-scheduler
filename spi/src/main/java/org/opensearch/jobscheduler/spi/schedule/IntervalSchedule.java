@@ -118,6 +118,13 @@ public class IntervalSchedule implements Schedule {
         return this.unit;
     }
 
+    public Long getDelay() { return this.scheduleDelay; }
+
+    public void setDelay(Long delay) {
+        this.scheduleDelay = delay;
+        this.startTimeWithDelay = delay == null ? initialStartTime : initialStartTime.plusMillis(scheduleDelay);
+    }
+
     @Override
     public Instant getNextExecutionTime(Instant time) {
         Instant baseTime = time == null ? this.clock.instant() : time;

@@ -66,4 +66,18 @@ public interface Schedule extends Writeable, ToXContentObject {
      * @return true if the job executes on time, otherwise false.
      */
     Boolean runningOnTime(Instant lastExecutionTime);
+
+    /**
+     * Gets the delay parameter of the schedule.
+     *
+     * @return the delay parameter of the schedule as a Long.
+     */
+    Long getDelay();
+
+    /**
+     * Sets the delay parameter of the schedule.
+     *
+     * @param delay the delay parameter.
+     */
+    void setDelay(Long delay);
 }
