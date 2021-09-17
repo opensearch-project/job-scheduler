@@ -67,6 +67,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Ignore
 public class LockServiceIT extends OpenSearchIntegTestCase {
 
     static final String JOB_ID = "test_job_id";
