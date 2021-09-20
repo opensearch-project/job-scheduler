@@ -104,12 +104,10 @@ public class IntervalSchedule implements Schedule {
         clock = Clock.system(ZoneId.systemDefault());
     }
 
-    @VisibleForTesting
-    Instant getStartTime() {
+    public Instant getStartTime() {
         return this.startTimeWithDelay;
     }
 
-    @VisibleForTesting
     public int getInterval() {
         return this.interval;
     }
@@ -120,6 +118,7 @@ public class IntervalSchedule implements Schedule {
 
     public Long getDelay() { return this.scheduleDelay; }
 
+    @VisibleForTesting
     public void setDelay(Long delay) {
         this.scheduleDelay = delay;
         this.startTimeWithDelay = delay == null ? initialStartTime : initialStartTime.plusMillis(scheduleDelay);
@@ -212,9 +211,7 @@ public class IntervalSchedule implements Schedule {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(initialStartTime, interval, unit, intervalInMillis, scheduleDelay);
-    }
+    public int hashCode() { return Objects.hash(initialStartTime, interval, unit, intervalInMillis, scheduleDelay); }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {

@@ -74,10 +74,4 @@ public interface Schedule extends Writeable, ToXContentObject {
      */
     Long getDelay();
 
-    /**
-     * Sets the delay parameter of the schedule.
-     *
-     * @param delay the delay parameter.
-     */
-    void setDelay(Long delay);
 }

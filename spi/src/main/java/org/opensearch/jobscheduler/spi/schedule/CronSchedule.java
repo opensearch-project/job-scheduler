@@ -93,18 +93,17 @@ public class CronSchedule implements Schedule {
         this.executionTime = executionTime;
     }
 
-    @VisibleForTesting
-    ZoneId getTimeZone() {
+    public ZoneId getTimeZone() {
         return this.timezone;
     }
 
-    @VisibleForTesting
-    String getCronExpression() {
+    public String getCronExpression() {
         return this.expression;
     }
 
     public Long getDelay() { return this.scheduleDelay; }
 
+    @VisibleForTesting
     public void setDelay(Long delay) { this.scheduleDelay = delay; }
 
     @Override
