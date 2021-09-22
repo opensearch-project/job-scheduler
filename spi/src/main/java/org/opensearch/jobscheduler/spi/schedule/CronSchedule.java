@@ -103,9 +103,6 @@ public class CronSchedule implements Schedule {
 
     public Long getDelay() { return this.scheduleDelay; }
 
-    @VisibleForTesting
-    public void setDelay(Long delay) { this.scheduleDelay = delay; }
-
     @Override
     public Instant getNextExecutionTime(Instant time) {
         Instant baseTime = time == null ? this.clock.instant() : time;

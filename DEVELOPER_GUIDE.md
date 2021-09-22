@@ -49,7 +49,7 @@ Then you will find the built artifact located at `build/distributions` directory
 ## Install
 Once you have built the plugin from source code, run
 ```bash
-opensearch-plugin install file://build/distributions/opensearch-job-scheduler-1.1.0.0-SNAPSHOT.zip
+opensearch-plugin install file:///path/to/target/releases/opensearch-job-scheduler-<version>.zip
 ```
 to install the JobScheduler plugin to your OpenSearch.
 
