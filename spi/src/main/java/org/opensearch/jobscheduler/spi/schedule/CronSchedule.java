@@ -195,7 +195,11 @@ public class CronSchedule implements Schedule {
 
     @Override
     public int hashCode() {
-        return Objects.hash(timezone, expression, scheduleDelay);
+        if (scheduleDelay == null) {
+            return Objects.hash(timezone, expression);
+        } else {
+            return Objects.hash(timezone, expression, scheduleDelay);
+        }
     }
 
     @Override

@@ -205,7 +205,13 @@ public class IntervalSchedule implements Schedule {
     }
 
     @Override
-    public int hashCode() { return Objects.hash(initialStartTime, interval, unit, intervalInMillis, scheduleDelay); }
+    public int hashCode() {
+        if (scheduleDelay == null) {
+            return Objects.hash(initialStartTime, interval, unit, intervalInMillis);
+        } else {
+            return Objects.hash(initialStartTime, interval, unit, intervalInMillis, scheduleDelay);
+        }
+    }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
