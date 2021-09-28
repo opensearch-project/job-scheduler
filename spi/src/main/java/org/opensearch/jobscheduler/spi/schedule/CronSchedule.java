@@ -168,12 +168,26 @@ public class CronSchedule implements Schedule {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        return this.scheduleDelay == null ? toXContentNoDelay(builder) : toXContentWithDelay(builder);
+    }
+
+    private XContentBuilder toXContentNoDelay(XContentBuilder builder) throws IOException {
         builder.startObject()
                 .startObject(CRON_FIELD)
                 .field(EXPRESSION_FIELD, this.expression)
-                .field(TIMEZONE_FIELD, this.timezone.getId());
-        if (this.scheduleDelay != null) { builder.field(DELAY_FIELD, this.scheduleDelay); }
-                builder.endObject()
+                .field(TIMEZONE_FIELD, this.timezone.getId())
+                .endObject()
+                .endObject();
+        return builder;
+    }
+
+    private XContentBuilder toXContentWithDelay(XContentBuilder builder) throws IOException {
+        builder.startObject()
+                .startObject(CRON_FIELD)
+                .field(EXPRESSION_FIELD, this.expression)
+                .field(TIMEZONE_FIELD, this.timezone.getId())
+                .field(DELAY_FIELD, this.scheduleDelay)
+                .endObject()
                 .endObject();
         return builder;
     }
@@ -195,11 +209,7 @@ public class CronSchedule implements Schedule {
 
     @Override
     public int hashCode() {
-        if (scheduleDelay == null) {
-            return Objects.hash(timezone, expression);
-        } else {
-            return Objects.hash(timezone, expression, scheduleDelay);
-        }
+        return scheduleDelay == null ? Objects.hash(timezone, expression) : Objects.hash(timezone, expression, scheduleDelay);
     }
 
     @Override

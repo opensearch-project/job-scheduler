@@ -171,13 +171,28 @@ public class IntervalSchedule implements Schedule {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        return this.scheduleDelay == null ? toXContentNoDelay(builder) : toXContentWithDelay(builder);
+    }
+
+    private XContentBuilder toXContentNoDelay(XContentBuilder builder) throws IOException {
         builder.startObject()
                 .startObject(INTERVAL_FIELD)
                 .field(START_TIME_FIELD, this.initialStartTime.toEpochMilli())
                 .field(PERIOD_FIELD, this.interval)
-                .field(UNIT_FIELD, this.unit);
-        if (this.scheduleDelay != null) { builder.field(DELAY_FIELD, this.scheduleDelay); }
-                builder.endObject()
+                .field(UNIT_FIELD, this.unit)
+                .endObject()
+                .endObject();
+        return builder;
+    }
+
+    private XContentBuilder toXContentWithDelay(XContentBuilder builder) throws IOException {
+        builder.startObject()
+                .startObject(INTERVAL_FIELD)
+                .field(START_TIME_FIELD, this.initialStartTime.toEpochMilli())
+                .field(PERIOD_FIELD, this.interval)
+                .field(UNIT_FIELD, this.unit)
+                .field(DELAY_FIELD, this.scheduleDelay)
+                .endObject()
                 .endObject();
         return builder;
     }
@@ -206,11 +221,8 @@ public class IntervalSchedule implements Schedule {
 
     @Override
     public int hashCode() {
-        if (scheduleDelay == null) {
-            return Objects.hash(initialStartTime, interval, unit, intervalInMillis);
-        } else {
-            return Objects.hash(initialStartTime, interval, unit, intervalInMillis, scheduleDelay);
-        }
+        return scheduleDelay == null ? Objects.hash(initialStartTime, interval, unit, intervalInMillis) :
+                Objects.hash(initialStartTime, interval, unit, intervalInMillis, scheduleDelay);
     }
 
     @Override

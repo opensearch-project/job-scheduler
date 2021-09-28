@@ -235,13 +235,13 @@ public class CronScheduleTests extends OpenSearchTestCase {
         CronSchedule cronScheduleFour = new CronSchedule("1 * * * *", ZoneId.of("PST8PDT"), DELAY);
         CronSchedule cronScheduleFive = new CronSchedule("1 * * * *", ZoneId.of("PST8PDT"), DELAY);
 
-        Assert.assertEquals(cronScheduleOne, cronScheduleTwo);
-        Assert.assertNotEquals(cronScheduleOne, cronScheduleThree);
-        Assert.assertEquals(cronScheduleOne.hashCode(), cronScheduleTwo.hashCode());
-        Assert.assertNotEquals(cronScheduleThree, cronScheduleFour);
-        Assert.assertNotEquals(cronScheduleThree.hashCode(), cronScheduleFour.hashCode());
-        Assert.assertEquals(cronScheduleFour, cronScheduleFive);
-        Assert.assertEquals(cronScheduleFour.hashCode(), cronScheduleFive.hashCode());
+        Assert.assertEquals("Identical cron schedules were not equal", cronScheduleOne, cronScheduleTwo);
+        Assert.assertNotEquals("Different cron schedules were called equal", cronScheduleOne, cronScheduleThree);
+        Assert.assertEquals("Identical cron schedules had different hash codes", cronScheduleOne.hashCode(), cronScheduleTwo.hashCode());
+        Assert.assertNotEquals("Different cron schedules were called equal", cronScheduleThree, cronScheduleFour);
+        Assert.assertNotEquals("Different cron schedules had the same hash code", cronScheduleThree.hashCode(), cronScheduleFour.hashCode());
+        Assert.assertEquals("Identical cron schedules were not equal", cronScheduleFour, cronScheduleFive);
+        Assert.assertEquals("Identical cron schedules had different hash codes", cronScheduleFour.hashCode(), cronScheduleFive.hashCode());
     }
 
     public void testCronScheduleAsStream() throws Exception {

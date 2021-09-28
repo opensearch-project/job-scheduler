@@ -217,12 +217,12 @@ public class IntervalScheduleTests extends OpenSearchTestCase {
         IntervalSchedule intervalScheduleFour = new IntervalSchedule(Instant.ofEpochMilli(epochMilli), 4, ChronoUnit.MINUTES, 5000);
         IntervalSchedule intervalScheduleFive = new IntervalSchedule(Instant.ofEpochMilli(epochMilli), 4, ChronoUnit.MINUTES, 5000);
 
-        Assert.assertEquals(intervalScheduleOne, intervalScheduleTwo);
-        Assert.assertNotEquals(intervalScheduleOne, intervalScheduleThree);
-        Assert.assertEquals(intervalScheduleOne.hashCode(), intervalScheduleTwo.hashCode());
-        Assert.assertNotEquals(intervalScheduleOne, intervalScheduleFour);
-        Assert.assertEquals(intervalScheduleFour, intervalScheduleFive);
-        Assert.assertEquals(intervalScheduleFour.hashCode(), intervalScheduleFive.hashCode());
+        Assert.assertEquals("Identical interval schedules were not equal", intervalScheduleOne, intervalScheduleTwo);
+        Assert.assertNotEquals("Different interval schedules were called equal", intervalScheduleOne, intervalScheduleThree);
+        Assert.assertEquals("Identical interval schedules had different hash codes", intervalScheduleOne.hashCode(), intervalScheduleTwo.hashCode());
+        Assert.assertNotEquals("Different interval schedules were called equal", intervalScheduleOne, intervalScheduleFour);
+        Assert.assertEquals("Identical interval schedules were not equal", intervalScheduleFour, intervalScheduleFive);
+        Assert.assertEquals("Identical interval schedules had different hash codes", intervalScheduleFour.hashCode(), intervalScheduleFive.hashCode());
     }
 
     public void testIntervalScheduleAsStream() throws Exception {
