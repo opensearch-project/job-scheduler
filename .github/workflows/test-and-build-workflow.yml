@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: 'opensearch-project/OpenSearch'
-          ref: '1.1'
+          ref: '1.2'
           path: OpenSearch
       - name: Build OpenSearch
         working-directory: ./OpenSearch
@@ -39,11 +39,11 @@ jobs:
       # job-scheduler
       - name: Build and Test
         run: |
-          ./gradlew build -Dopensearch.version=1.1.0-SNAPSHOT
+          ./gradlew build -Dopensearch.version=1.2.0-SNAPSHOT
 
       - name: Publish to Maven Local
         run: |
-          ./gradlew publishToMavenLocal -Dopensearch.version=1.1.0-SNAPSHOT
+          ./gradlew publishToMavenLocal -Dopensearch.version=1.2.0-SNAPSHOT
           
       - name: Upload Coverage Report
         uses: codecov/codecov-action@v1
