@@ -41,6 +41,7 @@ apply plugin: 'opensearch.java-rest-test'
 repositories {
     mavenLocal()
     mavenCentral()
+    maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
 }
 
 ext {
