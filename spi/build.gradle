@@ -77,6 +77,15 @@ shadowJar {
     classifier = null
 }
 
+tasks.withType(Jar) { task ->
+    task.doLast {
+        ant.checksum algorithm: 'md5', file: it.archivePath
+        ant.checksum algorithm: 'sha1', file: it.archivePath
+        ant.checksum algorithm: 'sha-256', file: it.archivePath, fileext: '.sha256'
+        ant.checksum algorithm: 'sha-512', file: it.archivePath, fileext: '.sha512'
+    }
+}
+
 test {
     doFirst {
         // reverse operation of https://github.com/elastic/elasticsearch/blob/7.6/buildSrc/src/main/groovy/org/elasticsearch/gradle/BuildPlugin.groovy#L736-L743
@@ -146,24 +155,7 @@ publishing {
         }
     }
 
-    repositories {
-        maven {
-            name = "sonatype-staging"
-            url "https://aws.oss.sonatype.org/service/local/staging/deploy/maven2"
-            credentials {
-                username project.hasProperty('ossrhUsername') ? project.property('ossrhUsername') : ''
-                password project.hasProperty('ossrhPassword') ? project.property('ossrhPassword') : ''
-            }
-        }
-    }
-
     // TODO - enabled debug logging for the time being, remove this eventually
     gradle.startParameter.setShowStacktrace(ShowStacktrace.ALWAYS)
     gradle.startParameter.setLogLevel(LogLevel.DEBUG)
 }
-
-signing {
-    required { gradle.taskGraph.hasTask("publishShadowPublicationToSonatype-stagingRepository") }
-    sign publishing.publications.shadow
-}
-
