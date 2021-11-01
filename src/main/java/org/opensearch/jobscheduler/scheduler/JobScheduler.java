@@ -167,7 +167,10 @@ public class JobScheduler {
                 double jitter = jobParameter.getJitter() == null ? 0d : jobParameter.getJitter();
                 jitter = jitter > jitterLimit ? jitterLimit : jitter;
                 jitter = jitter < 0 ? 0 : jitter;
-                long jitterMillis = Math.round(Randomness.get().nextLong() % interval.toMillis() * jitter);
+                long randomLong = Randomness.get().nextLong();
+                if (randomLong == Long.MIN_VALUE) randomLong += 17; // to ensure the * -1 below doesn't fail to change to positive
+                long randomPositiveLong = randomLong < 0 ? randomLong * -1 : randomLong;
+                long jitterMillis = Math.round(randomPositiveLong % interval.toMillis() * jitter);
                 if (jitter > 0) {
                     log.info("Will delay {} miliseconds for next execution of job {}", jitterMillis, jobParameter.getName());
                 }
