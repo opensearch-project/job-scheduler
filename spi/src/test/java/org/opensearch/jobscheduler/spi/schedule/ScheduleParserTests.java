@@ -41,7 +41,7 @@ import java.time.temporal.ChronoUnit;
 public class ScheduleParserTests extends OpenSearchTestCase {
 
     public void testParseCronSchedule() throws IOException {
-        String cronScheduleJsonStr = "{\"cron\":{\"expression\":\"* * * * *\",\"timezone\":\"PST8PDT\"}}";
+        String cronScheduleJsonStr = "{\"cron\":{\"expression\":\"* * * * *\",\"timezone\":\"PST8PDT\", \"schedule_delay\":1234}}";
 
         XContentParser parser = this.createParser(XContentType.JSON.xContent(), new BytesArray(cronScheduleJsonStr));
         parser.nextToken();
@@ -53,20 +53,21 @@ public class ScheduleParserTests extends OpenSearchTestCase {
     }
 
     public void testParseIntervalSchedule() throws IOException {
-        String intervalScheduleJsonStr = "{\"interval\":{\"start_time\":1546329600000,\"period\":1,\"unit\":\"Minutes\"}}";
+        String intervalScheduleJsonStr = "{\"interval\":{\"start_time\":1546329600000,\"period\":1,\"unit\":\"Minutes\"" +
+                ", \"schedule_delay\":1234}}";
 
         XContentParser parser = this.createParser(XContentType.JSON.xContent(), new BytesArray(intervalScheduleJsonStr));
         parser.nextToken();
         Schedule schedule = ScheduleParser.parse(parser);
 
         Assert.assertTrue(schedule instanceof IntervalSchedule);
-        Assert.assertEquals(Instant.ofEpochMilli(1546329600000L), ((IntervalSchedule)schedule).getStartTime());
+        Assert.assertEquals(Instant.ofEpochMilli(1546329600000L).plusMillis(1234), ((IntervalSchedule)schedule).getStartTime());
         Assert.assertEquals(1, ((IntervalSchedule)schedule).getInterval());
         Assert.assertEquals(ChronoUnit.MINUTES, ((IntervalSchedule)schedule).getUnit());
     }
 
     @Test (expected = IllegalArgumentException.class)
-    public void testUnknownScheudleType() throws IOException {
+    public void testUnknownScheduleType() throws IOException {
         String scheduleJsonStr = "{\"unknown_type\":{\"field\":\"value\"}}";
 
         XContentParser parser = this.createParser(XContentType.JSON.xContent(), new BytesArray(scheduleJsonStr));
