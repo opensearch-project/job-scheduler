@@ -61,6 +61,7 @@ public class CronSchedule implements Schedule {
     private String expression;
     private ExecutionTime executionTime;
     private Clock clock;
+    private Long scheduleDelay;
 
     public CronSchedule(String expression, ZoneId timezone) {
         this.expression = expression;
@@ -69,9 +70,15 @@ public class CronSchedule implements Schedule {
         clock = Clock.system(timezone);
     }
 
+    public CronSchedule(String expression, ZoneId timezone, long scheduleDelay) {
+        this(expression, timezone);
+        this.scheduleDelay = scheduleDelay;
+    }
+
     public CronSchedule(StreamInput input) throws IOException {
         timezone = input.readZoneId();
         expression = input.readString();
+        scheduleDelay = input.readOptionalLong();
         executionTime = ExecutionTime.forCron(cronParser.parse(expression));
         clock = Clock.system(timezone);
     }
@@ -86,29 +93,36 @@ public class CronSchedule implements Schedule {
         this.executionTime = executionTime;
     }
 
-    @VisibleForTesting
-    ZoneId getTimeZone() {
+    public ZoneId getTimeZone() {
         return this.timezone;
     }
 
-    @VisibleForTesting
-    String getCronExpression() {
+    public String getCronExpression() {
         return this.expression;
     }
+
+    public Long getDelay() { return this.scheduleDelay; }
 
     @Override
     public Instant getNextExecutionTime(Instant time) {
         Instant baseTime = time == null ? this.clock.instant() : time;
-
-        ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(baseTime, this.timezone);
+        long delay = scheduleDelay == null ? 0 : scheduleDelay;
+        // The executionTime object doesn't know about the delay, so first subtract the delay from the baseTime in case
+        // this moves to the previous interval, then add the delay to the returned execution time to get the correct time.
+        // For example, say it is 10:07 AM with an hourly schedule and a delay of 15 minutes. The next execution time
+        // should be 10:15 AM, but executionTime.nextExecution( 10:07 AM ) would return the next execution as 11 AM.
+        // By subtracting the delay first, the ExecutionTime object is given the input time as 9:52 AM, it returns
+        // 10:00 AM, and after adding the delay, we get the correct next execution time of 10:15 AM.
+        ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(baseTime.minusMillis(delay), this.timezone);
         ZonedDateTime nextExecutionTime = this.executionTime.nextExecution(zonedDateTime).orElse(null);
 
-        return nextExecutionTime == null ? null : nextExecutionTime.toInstant();
+        return nextExecutionTime == null ? null : nextExecutionTime.toInstant().plusMillis(delay);
     }
 
     @Override
     public Duration nextTimeToExecute() {
-        Instant now = this.clock.instant();
+        long delay = scheduleDelay == null ? 0 : scheduleDelay;
+        Instant now = this.clock.instant().minusMillis(delay);
         ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(now, this.timezone);
         Optional<Duration> timeToNextExecution = this.executionTime.timeToNextExecution(zonedDateTime);
         return timeToNextExecution.orElse(null);
@@ -116,29 +130,31 @@ public class CronSchedule implements Schedule {
 
     @Override
     public Tuple<Instant, Instant> getPeriodStartingAt(Instant startTime) {
+        long delay = scheduleDelay == null ? 0 : scheduleDelay;
         Instant realStartTime;
         if (startTime != null) {
             realStartTime = startTime;
         } else {
             Instant now = this.clock.instant();
-            Optional<ZonedDateTime> lastExecutionTime = this.executionTime.lastExecution(ZonedDateTime.ofInstant(now, this.timezone));
+            Optional<ZonedDateTime> lastExecutionTime = this.executionTime.lastExecution(ZonedDateTime.ofInstant(now.minusMillis(delay), this.timezone));
             if (!lastExecutionTime.isPresent()) {
                 return new Tuple<>(now, now);
             }
-            realStartTime = lastExecutionTime.get().toInstant();
+            realStartTime = lastExecutionTime.get().toInstant().plusMillis(delay);
         }
-        ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(realStartTime, this.timezone);
+        ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(realStartTime.minusMillis(delay), this.timezone);
         ZonedDateTime newEndTime = executionTime.nextExecution(zonedDateTime).orElse(null);
-        return new Tuple<>(realStartTime, newEndTime == null ? null : newEndTime.toInstant());
+        return new Tuple<>(realStartTime, newEndTime == null ? null : newEndTime.toInstant().plusMillis(delay));
     }
 
     @Override
     public Boolean runningOnTime(Instant lastExecutionTime) {
+        long delay = scheduleDelay == null ? 0 : scheduleDelay;
         if (lastExecutionTime == null) {
             return true;
         }
 
-        Instant now = this.clock.instant();
+        Instant now = this.clock.instant().minusMillis(delay);
         ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(now, timezone);
         Optional<ZonedDateTime> expectedExecutionTime = this.executionTime.lastExecution(zonedDateTime);
 
@@ -147,15 +163,30 @@ public class CronSchedule implements Schedule {
         }
         ZonedDateTime actualExecutionTime = ZonedDateTime.ofInstant(lastExecutionTime, timezone);
 
-        return ChronoUnit.SECONDS.between(expectedExecutionTime.get(), actualExecutionTime) == 0L;
+        return ChronoUnit.SECONDS.between(expectedExecutionTime.get().plus(delay, ChronoUnit.MILLIS), actualExecutionTime) == 0L;
     }
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        return this.scheduleDelay == null ? toXContentNoDelay(builder) : toXContentWithDelay(builder);
+    }
+
+    private XContentBuilder toXContentNoDelay(XContentBuilder builder) throws IOException {
         builder.startObject()
                 .startObject(CRON_FIELD)
                 .field(EXPRESSION_FIELD, this.expression)
                 .field(TIMEZONE_FIELD, this.timezone.getId())
+                .endObject()
+                .endObject();
+        return builder;
+    }
+
+    private XContentBuilder toXContentWithDelay(XContentBuilder builder) throws IOException {
+        builder.startObject()
+                .startObject(CRON_FIELD)
+                .field(EXPRESSION_FIELD, this.expression)
+                .field(TIMEZONE_FIELD, this.timezone.getId())
+                .field(DELAY_FIELD, this.scheduleDelay)
                 .endObject()
                 .endObject();
         return builder;
@@ -172,17 +203,19 @@ public class CronSchedule implements Schedule {
         if (o == null || getClass() != o.getClass()) return false;
         CronSchedule cronSchedule = (CronSchedule) o;
         return timezone.equals(cronSchedule.timezone) &&
-                expression.equals(cronSchedule.expression);
+                expression.equals(cronSchedule.expression) &&
+                Objects.equals(scheduleDelay, cronSchedule.scheduleDelay);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(timezone, expression);
+        return scheduleDelay == null ? Objects.hash(timezone, expression) : Objects.hash(timezone, expression, scheduleDelay);
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         out.writeZoneId(timezone);
         out.writeString(expression);
+        out.writeOptionalLong(scheduleDelay);
     }
 }

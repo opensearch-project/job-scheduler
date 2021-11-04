@@ -45,13 +45,14 @@ ext {
 repositories {
     mavenLocal()
     mavenCentral()
+    maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
 }
 
 dependencies {
     compileOnly project(path: ":${rootProject.name}-spi", configuration: 'shadow')
 }
 
-licenseHeaders.enabled = false
+licenseHeaders.enabled = true
 validateNebulaPom.enabled = false
 testingConventions.enabled = false
 loggerUsageCheck.enabled = false
