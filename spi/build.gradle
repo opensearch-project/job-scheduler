@@ -113,16 +113,13 @@ task javadocJar(type: Jar) {
     dependsOn javadoc
 }
 
-tasks.withType(Jar) { task ->
-    task.doLast {
-        ant.checksum algorithm: 'md5', file: it.archivePath
-        ant.checksum algorithm: 'sha1', file: it.archivePath
-        ant.checksum algorithm: 'sha-256', file: it.archivePath, fileext: '.sha256'
-        ant.checksum algorithm: 'sha-512', file: it.archivePath, fileext: '.sha512'
-    }
-}
-
 publishing {
+    repositories {
+        maven {
+            name = 'staging'
+            url = "${rootProject.buildDir}/local-staging-repo"
+        }
+    }
     publications {
         shadow(MavenPublication) { publication ->
             project.shadow.component(publication)
