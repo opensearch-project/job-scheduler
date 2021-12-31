@@ -75,6 +75,14 @@ allprojects {
     plugins.withId('java') {
         sourceCompatibility = targetCompatibility = "1.8"
     }
+
+    // Force certain dependencies here so they reflect across all sub-projects
+    configurations.all {
+        if (it.state != Configuration.State.UNRESOLVED) return
+        resolutionStrategy {
+            force "junit:junit:4.13.1"
+        }
+    }
 }
 
 repositories {
