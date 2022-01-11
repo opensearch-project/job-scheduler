@@ -28,11 +28,11 @@ jobs:
       # job-scheduler
       - name: Build and Test
         run: |
-          ./gradlew build -Dopensearch.version=1.3.0-SNAPSHOT
+          ./gradlew build
 
       - name: Publish to Maven Local
         run: |
-          ./gradlew publishToMavenLocal -Dopensearch.version=1.3.0-SNAPSHOT
+          ./gradlew publishToMavenLocal
           
       - name: Upload Coverage Report
         uses: codecov/codecov-action@v1
