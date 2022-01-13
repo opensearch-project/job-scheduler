@@ -2,6 +2,7 @@
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
  */
+import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 
 buildscript {
     ext {
@@ -74,6 +75,39 @@ allprojects {
 
     plugins.withId('java') {
         sourceCompatibility = targetCompatibility = "1.8"
+    }
+
+}
+allprojects {
+    // Default to the apache license
+    project.ext.licenseName = 'The Apache Software License, Version 2.0'
+    project.ext.licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    plugins.withType(ShadowPlugin).whenPluginAdded {
+        publishing {
+            repositories {
+                maven {
+                    name = 'staging'
+                    url = "${rootProject.buildDir}/local-staging-repo"
+                }
+            }
+            publications {
+                // add license information to generated poms
+                all {
+                    pom.withXml { XmlProvider xml ->
+                        Node node = xml.asNode()
+                        node.appendNode('inceptionYear', '2021')
+
+                        Node license = node.appendNode('licenses').appendNode('license')
+                        license.appendNode('name', project.licenseName)
+                        license.appendNode('url', project.licenseUrl)
+
+                        Node developer = node.appendNode('developers').appendNode('developer')
+                        developer.appendNode('name', 'OpenSearch')
+                        developer.appendNode('url', 'https://github.com/opensearch-project/job-scheduler')
+                    }
+                }
+            }
+        }
     }
 }
 
