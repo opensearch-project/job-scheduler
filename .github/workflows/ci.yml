@@ -11,7 +11,10 @@ jobs:
   build:
     strategy:
       matrix:
-        java: [14]
+        java: 
+          - 8
+          - 11
+          - 14
 
     name: Build and Test
     runs-on: ubuntu-latest
@@ -25,7 +28,6 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
 
-      # job-scheduler
       - name: Build and Test
         run: |
           ./gradlew build
@@ -39,3 +41,4 @@ jobs:
         with:
           file: ./build/reports/jacoco/test/jacocoTestReport.xml
           flags: plugin
+
