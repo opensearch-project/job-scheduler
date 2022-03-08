@@ -215,7 +215,7 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
 
         ActionFuture<DeleteResponse> actionFuture = Mockito.mock(ActionFuture.class);
         Mockito.when(this.client.delete(Mockito.any())).thenReturn(actionFuture);
-        DeleteResponse response = new DeleteResponse(new ShardId(new Index("name","uuid"), 0), "id", 1L, 2L, 3L, true);
+        DeleteResponse response = new DeleteResponse(new ShardId(new Index("name","uuid"), 0), "type", "id", 1L, 2L, 3L, true);
         Mockito.when(actionFuture.actionGet()).thenReturn(response);
 
         this.sweeper.postDelete(shardId, delete, deleteResult);

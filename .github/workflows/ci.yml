@@ -11,7 +11,8 @@ jobs:
   build:
     strategy:
       matrix:
-        java:
+        java: 
+          - 8
           - 11
           - 14
 
