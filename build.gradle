@@ -74,10 +74,11 @@ allprojects {
     apply from: "$rootDir/build-tools/repositories.gradle"
 
     plugins.withId('java') {
-        sourceCompatibility = targetCompatibility = "1.8"
+        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_11
     }
-
 }
+
 allprojects {
     // Default to the apache license
     project.ext.licenseName = 'The Apache Software License, Version 2.0'
