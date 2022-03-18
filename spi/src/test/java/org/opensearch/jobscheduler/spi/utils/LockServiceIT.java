@@ -84,17 +84,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                 .thenReturn(false)
                 .thenReturn(true);
         try {
-            /*
-                This sample index will be what is read in by the indexMetadata.mapping().sourceAsMap() call in
-                SchemaUtils.shouldUpdateIndex. Once this is read -- the shouldUpdate ought to return true.
-                This will cause the check and update to create a put request to update the mapping to the new mapping.
-                If the put request fails, then there is a problem with the way checkAndUpdate is working and that should
-                be investigated.
-
-                All this will run when any of the tests that acquire a lock run because the acquisition of the lock
-                triggers the call the LockService.checkAndUpdateMappings.
-
-             */
+            // This sample index will read in by the indexMetadata.mapping().sourceAsMap(), and cause SchemaUtils.shouldUpdateIndex
+            // to be true, leading to a put request to update the mapping to the new lock mapping as a part of every test.
             String indexContent = "{\"testIndex\":{\"settings\":{\"index\":{\"creation_date\":\"1558407515699\"," +
                     "\"number_of_shards\":\"1\",\"number_of_replicas\":\"1\",\"uuid\":\"t-VBBW6aR6KpJ3XP5iISOA\"," +
                     "\"version\":{\"created\":\"6040399\"},\"provided_name\":\"data_test\"}},\"mapping_version\":123," +
@@ -107,7 +98,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
 
             // create an indexMetdata map with the index Content
             Map<String, IndexMetadata> indexMetadataHashMap = new HashMap<>();
-            indexMetadataHashMap.put(".opendistro-job-scheduler-lock", indexMetadata);
+            indexMetadataHashMap.put(LockService.LOCK_INDEX_NAME, indexMetadata);
             ImmutableOpenMap.Builder<String, IndexMetadata> mapBuilder = new ImmutableOpenMap.Builder<>();
             mapBuilder.putAll(indexMetadataHashMap);
             ImmutableOpenMap<String, IndexMetadata> indexMetadataMap = mapBuilder.build();
@@ -124,12 +115,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
         Instant testTime = Instant.now();
         lockService.setTime(testTime);
         lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
                 lock -> {
-                    // assertEquals("", lock.toString());
                     assertNotNull("Expected to successfully grab lock.", lock);
                     assertEquals("job_id does not match.", JOB_ID + uniqSuffix, lock.getJobId());
                     assertEquals("job_index_name does not match.", JOB_INDEX_NAME + uniqSuffix, lock.getJobIndexName());
@@ -185,19 +175,13 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                                             assertTrue("Failed to delete lock.", deleted);
                                             latch.countDown();
                                         },
-                                        exception -> {
-                                            fail(exception.getMessage());
-                                        }
+                                        exception -> fail(exception.getMessage())
                                 ));
                             },
-                            exception -> {
-                                fail(exception.getMessage());
-                            }
+                            exception -> fail(exception.getMessage())
                     ));
                 },
-                exception -> {
-                    fail(exception.getMessage());
-                }
+                exception -> fail(exception.getMessage())
         ));
         latch.await(5L, TimeUnit.SECONDS);
     }
@@ -243,7 +227,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
         lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
                 lock -> {
@@ -278,7 +262,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
         lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
                 lock -> {
@@ -363,7 +347,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         // Set lock time in the past.
         lockService.setTime(Instant.now().minus(Duration.ofSeconds(LOCK_DURATION_SECONDS + LOCK_DURATION_SECONDS)));
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
 
         lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
@@ -496,7 +480,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         final LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
 
         lockService.createLockIndex(ActionListener.wrap(
@@ -571,7 +555,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         final LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
         lockService.createLockIndex(ActionListener.wrap(
                 created -> {

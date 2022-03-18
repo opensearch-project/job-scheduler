@@ -100,15 +100,15 @@ public final class LockService {
         } else {
             final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(lockMapping());
             client.admin().indices().create(request, ActionListener.wrap(
-                    response -> listener.onResponse(response.isAcknowledged()),
-                    exception -> {
-                        if (exception instanceof ResourceAlreadyExistsException
-                                || exception.getCause() instanceof ResourceAlreadyExistsException) {
-                            checkAndUpdateLockMapping(listener);
-                        } else {
-                            listener.onFailure(exception);
-                        }
+                response -> listener.onResponse(response.isAcknowledged()),
+                exception -> {
+                    if (exception instanceof ResourceAlreadyExistsException
+                            || exception.getCause() instanceof ResourceAlreadyExistsException) {
+                        checkAndUpdateLockMapping(listener);
+                    } else {
+                        listener.onFailure(exception);
                     }
+                }
             ));
         }
     }
@@ -127,49 +127,9 @@ public final class LockService {
                             final JobExecutionContext context, ActionListener<LockModel> listener) {
         final String jobIndexName = context.getJobIndexName();
         final String jobId = context.getJobId();
-        if (jobParameter.getLockDurationSeconds() == null) {
-            listener.onFailure(new IllegalArgumentException("Job LockDuration should not be null"));
-        } else {
-            final long lockDurationSecond = jobParameter.getLockDurationSeconds();
-            createLockIndex(ActionListener.wrap(
-                    created -> {
-                        if (created) {
-                            try {
-                                findLock(LockModel.generateLockId(jobIndexName, jobId), ActionListener.wrap(
-                                        existingLock -> {
-                                            if (existingLock != null) {
-                                                if (isLockReleasedOrExpired(existingLock)) {
-                                                    // Lock is expired. Attempt to acquire lock.
-                                                    logger.debug("lock is released or expired: " + existingLock);
-                                                    LockModel updateLock = new LockModel(existingLock, getNow(),
-                                                            lockDurationSecond, false);
-                                                    updateLock(updateLock, listener);
-                                                } else {
-                                                    logger.debug("Lock is NOT released or expired. " + existingLock);
-                                                    // Lock is still not expired. Return null as we cannot acquire lock.
-                                                    listener.onResponse(null);
-                                                }
-                                            } else {
-                                                // There is no lock object and it is first time. Create new lock.
-                                                LockModel tempLock = new LockModel(jobIndexName, jobId, getNow(),
-                                                        lockDurationSecond, false);
-                                                logger.debug("Lock does not exist. Creating new lock" + tempLock);
-                                                createLock(tempLock, listener);
-                                            }
-                                        },
-                                        listener::onFailure
-                                ));
-                            } catch (VersionConflictEngineException e) {
-                                logger.debug("could not acquire lock {}", e.getMessage());
-                                listener.onResponse(null);
-                            }
-                        } else {
-                            listener.onResponse(null);
-                        }
-                    },
-                    listener::onFailure
-            ));
-        }
+        final String lockId = LockModel.generateLockId(jobIndexName, jobId);
+        final long lockDurationSeconds = jobParameter.getLockDurationSeconds();
+        acquireLockWithId(context, lockDurationSeconds, lockId, null, null, listener);
     }
 
     /**
@@ -190,6 +150,37 @@ public final class LockService {
                                       final Map<String, Object> resource,
                                       ActionListener<LockModel> listener) {
         final String jobIndexName = context.getJobIndexName();
+        try {
+            final String lockId = LockModel.generateResourceLockId(jobIndexName, resourceType, resource);
+            acquireLockWithId(context, lockDurationSeconds, lockId, resourceType, resource, listener);
+        } catch (IOException e) {
+            logger.debug("Failed to serialize resource in lock.");
+            listener.onFailure(e);
+        }
+    }
+
+    /**
+     * Attempts to acquire a lock with a given lock Id. If the lock does not exist it attempts to create the lock document.
+     * If the Lock document exists, it will try to update and acquire the lock.
+     *
+     * @param context a {@code JobExecutionContext} containing job index name and job id.
+     * @param lockDurationSeconds the amount of time in seconds that the lock should exist
+     * @param lockId the unique Id for the lock. This should be generated through LockModel.generateLockId or
+     *               LockModel.generateResourceLockId.
+     * @param resourceType the type of process that is acquiring the lock. Used decrease the scope of the lock. Can be
+     *                     null for non resource locks.
+     * @param resource the resource that is being locked. Can be null for non resource locks.
+     * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the lock if it was acquired
+     *                 or else null. Passes {@code IllegalArgumentException} to onFailure if the {@code ScheduledJobParameter} does not
+     *                 have {@code LockDurationSeconds}.
+     */
+    private void acquireLockWithId(final JobExecutionContext context,
+                                   final Long lockDurationSeconds,
+                                   final String lockId,
+                                   final String resourceType,
+                                   final Map<String, Object> resource,
+                                   ActionListener<LockModel> listener) {
+        final String jobIndexName = context.getJobIndexName();
         final String jobId = context.getJobId();
         if (lockDurationSeconds == null) {
             listener.onFailure(new IllegalArgumentException("Job LockDuration should not be null"));
@@ -198,7 +189,7 @@ public final class LockService {
                     created -> {
                         if (created) {
                             try {
-                                findLock(LockModel.generateResourceLockId(jobIndexName, resourceType, resource), ActionListener.wrap(
+                                findLock(lockId, ActionListener.wrap(
                                         existingLock -> {
                                             if (existingLock != null) {
                                                 if (isLockReleasedOrExpired(existingLock)) {
@@ -214,8 +205,8 @@ public final class LockService {
                                                 }
                                             } else {
                                                 // There is no lock object and it is first time. Create new lock.
-                                                LockModel tempLock = new LockModel(jobIndexName, jobId, resourceType, resource, getNow(),
-                                                        lockDurationSeconds, false);
+                                                LockModel tempLock = new LockModel(jobIndexName, jobId, resourceType,
+                                                        resource, getNow(), lockDurationSeconds, false);
                                                 logger.debug("Lock does not exist. Creating new lock" + tempLock);
                                                 createLock(tempLock, listener);
                                             }
@@ -310,28 +301,27 @@ public final class LockService {
     private void findLock(final String lockId, ActionListener<LockModel> listener) {
         GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
         client.get(getRequest, ActionListener.wrap(
-                        response -> {
-                            if (!response.isExists()) {
-                                listener.onResponse(null);
-                            } else {
-                                try {
-                                    XContentParser parser = XContentType.JSON.xContent()
-                                            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE,
-                                                    response.getSourceAsString());
-                                    parser.nextToken();
-                                    listener.onResponse(LockModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
-                                } catch (IOException e) {
-                                    logger.error("IOException occurred finding lock", e);
-                                    listener.onResponse(null);
-                                }
-                            }
-                        },
-                        exception -> {
-                            logger.error("Exception occurred finding lock", exception);
-                            listener.onFailure(exception);
+                response -> {
+                    if (!response.isExists()) {
+                        listener.onResponse(null);
+                    } else {
+                        try {
+                            XContentParser parser = XContentType.JSON.xContent()
+                                    .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE,
+                                            response.getSourceAsString());
+                            parser.nextToken();
+                            listener.onResponse(LockModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
+                        } catch (IOException e) {
+                            logger.error("IOException occurred finding lock", e);
+                            listener.onResponse(null);
                         }
+                    }
+                },
+                exception -> {
+                    logger.error("Exception occurred finding lock", exception);
+                    listener.onFailure(exception);
+                }
         ));
-
     }
 
     /**
@@ -359,9 +349,7 @@ public final class LockService {
                 logger.debug("Failed to serialize resource in lock.");
                 listener.onFailure(e);
             }
-
         }
-
     }
 
     /**

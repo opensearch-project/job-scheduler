@@ -1,12 +1,6 @@
 /*
+ * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
- *
- * The OpenSearch Contributors require contributions made to
- * this file be licensed under the Apache-2.0 license or a
- * compatible open source license.
- *
- * Modifications Copyright OpenSearch Contributors. See
- * GitHub history for details.
  */
 
 package org.opensearch.jobscheduler.spi.utils;
@@ -37,7 +31,7 @@ public class SchemaUtils {
     private static final long DEFAULT_SCHEMA_VERSION = 1L;
     private static final Logger logger = LogManager.getLogger(SchemaUtils.class);
 
-    public static long schemaVersion(String mapping) throws IOException {
+    public static long getSchemaVersion(String mapping) throws IOException {
         XContentParser xcp = XContentType.JSON.xContent().createParser(NamedXContentRegistry.EMPTY,
                 LoggingDeprecationHandler.INSTANCE, mapping);
         while (!xcp.isClosed()) {
@@ -49,7 +43,6 @@ public class SchemaUtils {
                 } else {
                     while (xcp.nextToken() != Token.END_OBJECT) {
                         if (xcp.currentName().equals(SCHEMA_VERSION)) {
-                            // throw new IOException(xcp.currentName() + xcp.currentToken());
                             return xcp.longValue();
                         }
                         else {
@@ -85,13 +78,12 @@ public class SchemaUtils {
         return newVersion > oldVersion;
     }
 
-
     public static void checkAndUpdateLockIndexMapping(String mapping, ClusterService clusterService,
                                                       IndicesAdminClient client, ActionListener<AcknowledgedResponse> listener) {
         ClusterState clusterState = clusterService.state();
         if (clusterState.metadata().indices().containsKey(LockService.LOCK_INDEX_NAME)) {
             try {
-                long newSchemaVersion = schemaVersion(mapping);
+                long newSchemaVersion = getSchemaVersion(mapping);
                 IndexMetadata indexMetadata = clusterState.metadata().indices().get(LockService.LOCK_INDEX_NAME);
                 if (shouldUpdateIndex(indexMetadata, newSchemaVersion)) {
                     PutMappingRequest putMappingRequest = new PutMappingRequest(LockService.LOCK_INDEX_NAME).type(_DOC).source(mapping, XContentType.JSON);
@@ -103,8 +95,8 @@ public class SchemaUtils {
                 listener.onResponse(new AcknowledgedResponse(false));
             }
         } else {
+            logger.error("Job scheduler lock index does not exist.");
             listener.onResponse(new AcknowledgedResponse(false));
         }
     }
-
 }
