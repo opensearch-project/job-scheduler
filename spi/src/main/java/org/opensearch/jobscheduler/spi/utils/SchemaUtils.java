@@ -86,7 +86,7 @@ public class SchemaUtils {
                 long newSchemaVersion = getSchemaVersion(mapping);
                 IndexMetadata indexMetadata = clusterState.metadata().indices().get(LockService.LOCK_INDEX_NAME);
                 if (shouldUpdateIndex(indexMetadata, newSchemaVersion)) {
-                    PutMappingRequest putMappingRequest = new PutMappingRequest(LockService.LOCK_INDEX_NAME).type(_DOC).source(mapping, XContentType.JSON);
+                    PutMappingRequest putMappingRequest = new PutMappingRequest(LockService.LOCK_INDEX_NAME).source(mapping, XContentType.JSON);
                     client.putMapping(putMappingRequest, listener);
                 } else {
                     listener.onResponse(new AcknowledgedResponse(true));
