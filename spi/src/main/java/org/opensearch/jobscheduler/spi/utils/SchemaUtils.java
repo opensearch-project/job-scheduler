@@ -27,7 +27,6 @@ import java.util.Map;
 public class SchemaUtils {
     private static final String _META = "_meta";
     private static final String SCHEMA_VERSION = "schema_version";
-    private static final String _DOC = "_doc";
     private static final long DEFAULT_SCHEMA_VERSION = 1L;
     private static final Logger logger = LogManager.getLogger(SchemaUtils.class);
 
