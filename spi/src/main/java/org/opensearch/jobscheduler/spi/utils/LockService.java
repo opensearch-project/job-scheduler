@@ -71,8 +71,11 @@ public final class LockService {
     }
 
     private void checkAndUpdateLockMapping(ActionListener<Boolean> listener) {
-        SchemaUtils.checkAndUpdateLockIndexMapping(lockMapping(), clusterService,
-                client.admin().indices(), new ActionListener<AcknowledgedResponse>() {
+        SchemaUtils.checkAndUpdateLockIndexMapping(
+                lockMapping(),
+                clusterService,
+                client.admin().indices(),
+                new ActionListener<AcknowledgedResponse>() {
                     @Override
                     public void onResponse(AcknowledgedResponse acknowledgedResponse) {
                         if (!acknowledgedResponse.isAcknowledged()) {
@@ -99,17 +102,20 @@ public final class LockService {
             listener.onResponse(true);
         } else {
             final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(lockMapping());
-            client.admin().indices().create(request, ActionListener.wrap(
-                response -> listener.onResponse(response.isAcknowledged()),
-                exception -> {
-                    if (exception instanceof ResourceAlreadyExistsException
-                            || exception.getCause() instanceof ResourceAlreadyExistsException) {
-                        checkAndUpdateLockMapping(listener);
-                    } else {
-                        listener.onFailure(exception);
-                    }
-                }
-            ));
+            client.admin().indices().create(
+                    request,
+                    ActionListener.wrap(
+                            response -> listener.onResponse(response.isAcknowledged()),
+                            exception -> {
+                                if (exception instanceof ResourceAlreadyExistsException
+                                        || exception.getCause() instanceof ResourceAlreadyExistsException) {
+                                    checkAndUpdateLockMapping(listener);
+                                } else {
+                                    listener.onFailure(exception);
+                                }
+                            }
+                    )
+            );
         }
     }
 
@@ -362,19 +368,22 @@ public final class LockService {
      */
     public void deleteLock(final String lockId, ActionListener<Boolean> listener) {
         DeleteRequest deleteRequest = new DeleteRequest(LOCK_INDEX_NAME).id(lockId);
-        checkAndUpdateLockMapping(ActionListener.wrap(
-                updated -> client.delete(deleteRequest, ActionListener.wrap(
-                        response -> listener.onResponse(response.getResult() == DocWriteResponse.Result.DELETED ||
-                                response.getResult() == DocWriteResponse.Result.NOT_FOUND),
-                        exception -> {
-                            if (exception instanceof IndexNotFoundException
-                                    || exception.getCause() instanceof IndexNotFoundException) {
-                                listener.onResponse(true);
-                            } else {
-                                listener.onFailure(exception);
-                            }
-                        })),
-                listener::onFailure));
+        checkAndUpdateLockMapping(
+                ActionListener.wrap(
+                        updated -> client.delete(deleteRequest, ActionListener.wrap(
+                                response -> listener.onResponse(response.getResult() == DocWriteResponse.Result.DELETED ||
+                                        response.getResult() == DocWriteResponse.Result.NOT_FOUND),
+                                exception -> {
+                                    if (exception instanceof IndexNotFoundException
+                                            || exception.getCause() instanceof IndexNotFoundException) {
+                                        listener.onResponse(true);
+                                    } else {
+                                        listener.onFailure(exception);
+                                    }
+                                })),
+                        listener::onFailure
+                )
+        );
     }
 
     /**

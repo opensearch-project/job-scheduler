@@ -277,7 +277,7 @@ public final class LockModel implements ToXContentObject {
             .field(RELEASED, this.released);
         if (resource != null) {
             builder.field(RESOURCE, this.resource)
-                .field(RESOURCE_TYPE, this.resourceType);
+                    .field(RESOURCE_TYPE, this.resourceType);
         }
         return builder.endObject();
     }

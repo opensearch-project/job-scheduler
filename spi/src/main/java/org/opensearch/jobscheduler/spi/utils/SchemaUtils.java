@@ -43,8 +43,7 @@ public class SchemaUtils {
                     while (xcp.nextToken() != Token.END_OBJECT) {
                         if (xcp.currentName().equals(SCHEMA_VERSION)) {
                             return xcp.longValue();
-                        }
-                        else {
+                        } else {
                             xcp.nextToken();
                         }
                     }

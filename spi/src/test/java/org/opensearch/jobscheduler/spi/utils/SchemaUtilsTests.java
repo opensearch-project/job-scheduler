@@ -9,6 +9,7 @@ import org.opensearch.cluster.metadata.IndexMetadata;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.test.OpenSearchTestCase;
+
 import java.io.IOException;
 
 public class SchemaUtilsTests extends OpenSearchTestCase {
