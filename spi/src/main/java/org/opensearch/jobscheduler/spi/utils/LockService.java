@@ -38,7 +38,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Map;
 
 public final class LockService {
     private static final Logger logger = LogManager.getLogger(LockService.class);
@@ -250,7 +249,7 @@ public final class LockService {
                                     .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE,
                                             response.getSourceAsString());
                             parser.nextToken();
-                            listener.onResponse(LockModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
+                            listener.onResponse(LockModel.parseWithID(parser, response.getSeqNo(), response.getPrimaryTerm(), response.getId()));
                         } catch (IOException e) {
                             logger.error("IOException occurred finding lock", e);
                             listener.onResponse(null);

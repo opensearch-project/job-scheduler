@@ -153,6 +153,23 @@ public final class LockModel implements ToXContentObject {
         );
     }
 
+    /*
+     * Parses the LockModel while also taking in the lockID, which will be the document ID of the lock being parsed.
+     */
+    public static LockModel parseWithID(final XContentParser parser, long seqNo, long primaryTerm, String lockId) throws IOException {
+        LockModel lockNoID = parse(parser, seqNo, primaryTerm);
+        return new LockModel(
+                lockNoID.jobIndexName,
+                lockNoID.jobId,
+                requireNonNull(lockId, "LockId cannot be when explicitly provided in the parser"),
+                lockNoID.lockTime,
+                lockNoID.lockDurationSeconds,
+                lockNoID.released,
+                seqNo,
+                primaryTerm
+        );
+    }
+
     @Override public XContentBuilder toXContent(final XContentBuilder builder, final Params params) throws IOException {
         builder.startObject()
             .field(JOB_INDEX_NAME, this.jobIndexName)
