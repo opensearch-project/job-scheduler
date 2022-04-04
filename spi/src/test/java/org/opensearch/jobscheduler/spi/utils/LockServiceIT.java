@@ -117,17 +117,56 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         latch.await(5L, TimeUnit.SECONDS);
     }
 
+    public void testSanityWithCustomLockID() throws Exception {
+        String lockID = "sanity_test_lock";
+        String uniqSuffix = "_sanity";
+        CountDownLatch latch = new CountDownLatch(1);
+        LockService lockService = new LockService(client(), this.clusterService);
+        final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
+                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+        Instant testTime = Instant.now();
+        lockService.setTime(testTime);
+        lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
+                lock -> {
+                    assertNotNull("Expected to successfully grab lock.", lock);
+                    assertEquals("job_id does not match.", JOB_ID + uniqSuffix, lock.getJobId());
+                    assertEquals("job_index_name does not match.", JOB_INDEX_NAME + uniqSuffix, lock.getJobIndexName());
+                    assertEquals("lock_id does not match.", lockID, lock.getLockId());
+                    assertEquals("lock_duration_seconds does not match.", LOCK_DURATION_SECONDS, lock.getLockDurationSeconds());
+                    assertEquals("lock_time does not match.", testTime.getEpochSecond(), lock.getLockTime().getEpochSecond());
+                    assertFalse("Lock should not be released.", lock.isReleased());
+                    assertFalse("Lock should not expire.", lock.isExpired());
+                    lockService.release(lock, ActionListener.wrap(
+                            released -> {
+                                assertTrue("Failed to release lock.", released);
+                                lockService.deleteLock(lock.getLockId(), ActionListener.wrap(
+                                        deleted -> {
+                                            assertTrue("Failed to delete lock.", deleted);
+                                            latch.countDown();
+                                        },
+                                        exception -> fail(exception.getMessage())
+                                ));
+                            },
+                            exception -> fail(exception.getMessage())
+                    ));
+                },
+                exception -> fail(exception.getMessage())
+        ));
+        latch.await(5L, TimeUnit.SECONDS);
+    }
+
     public void testSecondAcquireLockFail() throws Exception {
         String uniqSuffix = "_second_acquire";
+        String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
             lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
-        lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
+        lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                 lock -> {
                     assertNotNull("Expected to successfully grab lock", lock);
-                    lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
+                    lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                             lock2 -> {
                                 assertNull("Expected to failed to get lock.", lock2);
                                 lockService.release(lock, ActionListener.wrap(
@@ -154,18 +193,19 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
 
     public void testLockReleasedAndAcquired() throws Exception {
         String uniqSuffix = "_lock_release+acquire";
+        String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
             lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
-        lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
+        lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                 lock -> {
                     assertNotNull("Expected to successfully grab lock", lock);
                     lockService.release(lock, ActionListener.wrap(
                             released -> {
                                 assertTrue("Failed to release lock.", released);
-                                lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
+                                lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                                         lock2 -> {
                                             assertNotNull("Expected to successfully grab lock2", lock2);
                                             lockService.release(lock2, ActionListener.wrap(
@@ -195,6 +235,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
 
     public void testLockExpired() throws Exception {
         String uniqSuffix = "_lock_expire";
+        String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         // Set lock time in the past.
@@ -203,12 +244,12 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
 
-        lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
+        lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                 lock -> {
                     assertNotNull("Expected to successfully grab lock", lock);
                     // Set lock back to current time to make the lock expire.
                     lockService.setTime(null);
-                    lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
+                    lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                             lock2 -> {
                                 assertNotNull("Expected to successfully grab lock", lock2);
                                 lockService.release(lock, ActionListener.wrap(
@@ -280,11 +321,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
     @Ignore
     public void testMultiThreadCreateLock() throws Exception {
         String uniqSuffix = "_multi_thread_create";
+        String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
         final LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
             lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
-
 
         lockService.createLockIndex(ActionListener.wrap(
                 created -> {
@@ -293,7 +334,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                         final AtomicReference<LockModel> lockModelAtomicReference = new AtomicReference<>(null);
                         Callable<Boolean> callable = () -> {
                             CountDownLatch callableLatch = new CountDownLatch(1);
-                            lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
+                            lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                                     lock -> {
                                         if (lock != null) {
                                             lockModelAtomicReference.set(lock);
@@ -355,6 +396,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
     @Ignore
     public void testMultiThreadAcquireLock() throws Exception {
         String uniqSuffix = "_multi_thread_acquire";
+        String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
         final LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
@@ -365,7 +407,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                     if (created) {
                         // Set lock time in the past.
                         lockService.setTime(Instant.now().minus(Duration.ofSeconds(LOCK_DURATION_SECONDS + LOCK_DURATION_SECONDS)));
-                        lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
+                        lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                                 createdLock -> {
                                     assertNotNull(createdLock);
                                     // Set lock back to current time to make the lock expire.
@@ -375,7 +417,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                                     final AtomicReference<LockModel> lockModelAtomicReference = new AtomicReference<>(null);
                                     Callable<Boolean> callable = () -> {
                                         CountDownLatch callableLatch = new CountDownLatch(1);
-                                        lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
+                                        lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                                                 lock -> {
                                                     if (lock != null) {
                                                         lockModelAtomicReference.set(lock);
@@ -430,12 +472,13 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
 
     public void testRenewLock() throws Exception {
         String uniqSuffix = "_lock_renew";
+        String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
                 lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
-        lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
+        lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                 lock -> {
                     assertNotNull("Expected to successfully grab lock", lock);
                     // Set the time of LockService (the 'lockTime' of acquired locks) to a fixed time.
