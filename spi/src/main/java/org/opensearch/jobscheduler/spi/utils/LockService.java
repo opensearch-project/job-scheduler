@@ -114,8 +114,8 @@ public final class LockService {
      * Attempts to acquire a lock with a specific lock Id. If the lock does not exist it attempts to create the lock document.
      * If the Lock document exists, it will try to update and acquire the lock.
      *
+     * @param jobParameter a {@code ScheduledJobParameter} containing the lock duration.
      * @param context a {@code JobExecutionContext} containing job index name and job id.
-     * @param lockDurationSeconds the amount of time in seconds that the lock should exist
      * @param lockId the unique Id for the lock. This should represent the resource that the lock is on, whether it be
      *               a job, or some other arbitrary resource.
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the lock if it was acquired
