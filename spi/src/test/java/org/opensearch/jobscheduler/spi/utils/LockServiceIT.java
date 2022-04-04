@@ -80,7 +80,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
         Instant testTime = Instant.now();
         lockService.setTime(testTime);
         lockService.acquireLock(TEST_SCHEDULED_JOB_PARAM, context, ActionListener.wrap(
@@ -119,7 +119,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
         Instant testTime = Instant.now();
         lockService.setTime(testTime);
         lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
@@ -157,7 +157,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
         lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                 lock -> {
@@ -193,7 +193,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
         lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                 lock -> {
@@ -237,7 +237,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         // Set lock time in the past.
         lockService.setTime(Instant.now().minus(Duration.ofSeconds(LOCK_DURATION_SECONDS + LOCK_DURATION_SECONDS)));
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
         lockService.acquireLockWithId(TEST_SCHEDULED_JOB_PARAM, context, lockID, ActionListener.wrap(
                 lock -> {
@@ -320,7 +320,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         final LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
         lockService.createLockIndex(ActionListener.wrap(
                 created -> {
@@ -395,7 +395,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         final LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(Instant.now(), new JobDocVersion(0, 0, 0),
-                lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
+            lockService, JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix);
 
         lockService.createLockIndex(ActionListener.wrap(
                 created -> {
