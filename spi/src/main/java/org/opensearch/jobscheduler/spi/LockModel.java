@@ -43,7 +43,7 @@ public final class LockModel implements ToXContentObject {
      * @param primaryTerm primary term from OpenSearch document.
      */
     public LockModel(final LockModel copyLock, long seqNo, long primaryTerm) {
-        this(copyLock.jobIndexName, copyLock.jobId, copyLock.lockId, copyLock.lockTime, copyLock.lockDurationSeconds,
+        this(copyLock.jobIndexName, copyLock.jobId, copyLock.lockTime, copyLock.lockDurationSeconds,
             copyLock.released, seqNo, primaryTerm);
     }
 
@@ -54,7 +54,7 @@ public final class LockModel implements ToXContentObject {
      * @param released boolean flag to indicate if the lock is released
      */
     public LockModel(final LockModel copyLock, final boolean released) {
-        this(copyLock.jobIndexName, copyLock.jobId, copyLock.lockId, copyLock.lockTime, copyLock.lockDurationSeconds,
+        this(copyLock.jobIndexName, copyLock.jobId, copyLock.lockTime, copyLock.lockDurationSeconds,
             released, copyLock.seqNo, copyLock.primaryTerm);
     }
 
@@ -68,8 +68,7 @@ public final class LockModel implements ToXContentObject {
      */
     public LockModel(final LockModel copyLock,
                      final Instant updateLockTime, final long lockDurationSeconds, final boolean released) {
-        this(copyLock.jobIndexName, copyLock.jobId, copyLock.lockId, updateLockTime, lockDurationSeconds, released,
-                copyLock.seqNo, copyLock.primaryTerm);
+        this(copyLock.jobIndexName, copyLock.jobId, updateLockTime, lockDurationSeconds, released, copyLock.seqNo, copyLock.primaryTerm);
     }
 
     public LockModel(String jobIndexName, String jobId, Instant lockTime, long lockDurationSeconds, boolean released) {
@@ -77,26 +76,9 @@ public final class LockModel implements ToXContentObject {
             SequenceNumbers.UNASSIGNED_SEQ_NO, SequenceNumbers.UNASSIGNED_PRIMARY_TERM);
     }
 
-    public LockModel(String jobIndexName, String jobId, String lockId, Instant lockTime, long lockDurationSeconds, boolean released) {
-        this(jobIndexName, jobId, lockId, lockTime, lockDurationSeconds, released,
-                SequenceNumbers.UNASSIGNED_SEQ_NO, SequenceNumbers.UNASSIGNED_PRIMARY_TERM);
-    }
-
     public LockModel(String jobIndexName, String jobId, Instant lockTime,
                      long lockDurationSeconds, boolean released, long seqNo, long primaryTerm) {
         this.lockId = jobIndexName + LOCK_ID_DELIMITR + jobId;
-        this.jobIndexName = jobIndexName;
-        this.jobId = jobId;
-        this.lockTime = lockTime;
-        this.lockDurationSeconds = lockDurationSeconds;
-        this.released = released;
-        this.seqNo = seqNo;
-        this.primaryTerm = primaryTerm;
-    }
-
-    public LockModel(String jobIndexName, String jobId, String lockId, Instant lockTime,
-                     long lockDurationSeconds, boolean released, long seqNo, long primaryTerm) {
-        this.lockId = lockId;
         this.jobIndexName = jobIndexName;
         this.jobId = jobId;
         this.lockTime = lockTime;
@@ -150,23 +132,6 @@ public final class LockModel implements ToXContentObject {
             requireNonNull(released, "released cannot be null"),
             seqNo,
             primaryTerm
-        );
-    }
-
-    /*
-     * Parses the LockModel while also taking in the lockID, which will be the document ID of the lock being parsed.
-     */
-    public static LockModel parseWithID(final XContentParser parser, long seqNo, long primaryTerm, String lockId) throws IOException {
-        LockModel lockNoID = parse(parser, seqNo, primaryTerm);
-        return new LockModel(
-                lockNoID.jobIndexName,
-                lockNoID.jobId,
-                requireNonNull(lockId, "LockId cannot be when explicitly provided in the parser"),
-                lockNoID.lockTime,
-                lockNoID.lockDurationSeconds,
-                lockNoID.released,
-                seqNo,
-                primaryTerm
         );
     }
 
