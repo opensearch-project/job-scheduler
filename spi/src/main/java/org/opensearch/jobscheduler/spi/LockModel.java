@@ -80,6 +80,8 @@ public final class LockModel implements ToXContentObject {
                      long lockDurationSeconds, boolean released, long seqNo, long primaryTerm) {
         this.lockId = jobIndexName + LOCK_ID_DELIMITR + jobId;
         this.jobIndexName = jobIndexName;
+        // The jobId parameter does not necessarily need to represent the id of a job scheduler job, as it is being used
+        // to scope the lock, and could represent any resource.
         this.jobId = jobId;
         this.lockTime = lockTime;
         this.lockDurationSeconds = lockDurationSeconds;

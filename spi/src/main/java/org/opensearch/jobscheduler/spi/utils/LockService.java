@@ -106,22 +106,46 @@ public final class LockService {
                                  final JobExecutionContext context, ActionListener<LockModel> listener) {
         final String jobIndexName = context.getJobIndexName();
         final String jobId = context.getJobId();
-        if (jobParameter.getLockDurationSeconds() == null) {
+        final long lockDurationSeconds = jobParameter.getLockDurationSeconds();
+        acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, listener);
+    }
+
+    /**
+     * Attempts to acquire a lock with a specific lock Id. If the lock does not exist it attempts to create the lock document.
+     * If the Lock document exists, it will try to update and acquire the lock.
+     *
+     * @param jobIndexName a non-null job index name.
+     * @param lockDurationSeconds the amount of time in seconds that the lock should exist
+     * @param lockId the unique Id for the lock. This should represent the resource that the lock is on, whether it be
+     *               a job, or some other arbitrary resource. If the lockID matches a jobID, then the lock will be deleted
+     *               when the job is deleted.
+     * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the lock if it was acquired
+     *                 or else null. Passes {@code IllegalArgumentException} to onFailure if the {@code ScheduledJobParameter} does not
+     *                 have {@code LockDurationSeconds}.
+     */
+    public void acquireLockWithId(final String jobIndexName,
+                                  final Long lockDurationSeconds,
+                                  final String lockId,
+                                  ActionListener<LockModel> listener) {
+        if (lockDurationSeconds == null) {
             listener.onFailure(new IllegalArgumentException("Job LockDuration should not be null"));
+        } else if (jobIndexName == null) {
+            listener.onFailure(new IllegalArgumentException("Job index name should not be null"));
+        } else if (lockId == null) {
+            listener.onFailure(new IllegalArgumentException("Lock ID should not be null"));
         } else {
-            final long lockDurationSecond = jobParameter.getLockDurationSeconds();
             createLockIndex(ActionListener.wrap(
                     created -> {
                         if (created) {
                             try {
-                                findLock(LockModel.generateLockId(jobIndexName, jobId), ActionListener.wrap(
+                                findLock(LockModel.generateLockId(jobIndexName, lockId), ActionListener.wrap(
                                         existingLock -> {
                                             if (existingLock != null) {
                                                 if (isLockReleasedOrExpired(existingLock)) {
                                                     // Lock is expired. Attempt to acquire lock.
                                                     logger.debug("lock is released or expired: " + existingLock);
                                                     LockModel updateLock = new LockModel(existingLock, getNow(),
-                                                            lockDurationSecond, false);
+                                                            lockDurationSeconds, false);
                                                     updateLock(updateLock, listener);
                                                 } else {
                                                     logger.debug("Lock is NOT released or expired. " + existingLock);
@@ -130,8 +154,9 @@ public final class LockService {
                                                 }
                                             } else {
                                                 // There is no lock object and it is first time. Create new lock.
-                                                LockModel tempLock = new LockModel(jobIndexName, jobId, getNow(),
-                                                        lockDurationSecond, false);
+                                                // Note that the lockID will be set to {jobIndexName}-{lockId}
+                                                LockModel tempLock = new LockModel(jobIndexName, lockId, getNow(),
+                                                        lockDurationSeconds, false);
                                                 logger.debug("Lock does not exist. Creating new lock" + tempLock);
                                                 createLock(tempLock, listener);
                                             }
