@@ -53,6 +53,16 @@ opensearch-plugin install file:///path/to/target/releases/opensearch-job-schedul
 ```
 to install the JobScheduler plugin to your OpenSearch.
 
+## To Publish generated plugin zips to maven repo
+The generated plugin zip `opensearch-job-scheduler-<version>.zip` after the build, inside the folder `build/distributions` can be published to maven repo. This can be done by including the project `pluginZips` inside `settings.gradle` file. Once added the generated plugin zip will be published to maven repo with following maven coordinates
+```
+  <groupId>org.opensearch.plugin</groupId>
+  <artifactId>opensearch-security</artifactId>
+  <version><version></version>
+  <packaging>zip</packaging>
+```
+To skip the publish, while this sub-project is still included, pass the flag as ` ext.publish = 'skip'` to file `build.gradle` inside `maven/plugin-zips/` folder.
+
 ## Develop a plugin that extends JobScheduler
 JobScheduler plugin provides a SPI for other plugins to implement. Essentially, you need to
 1. Define your *JobParameter* type by implementing `ScheduledJobParameter` interface
