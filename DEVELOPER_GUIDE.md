@@ -6,6 +6,7 @@
     - [Build](#build)
         - [Building from the command line](#building-from-the-command-line)
         - [Debugging](#debugging)
+    - [Publish zips to maven](#to-publish-generated-plugin-zips-to-maven-repo)
     - [Using IntelliJ IDEA](#using-intellij-idea)
     - [Submitting Changes](#submitting-changes)
 
