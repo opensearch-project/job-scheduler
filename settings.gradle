@@ -10,4 +10,7 @@ project(":spi").name = rootProject.name + "-spi"
 
 include "sample-extension-plugin"
 project(":sample-extension-plugin").name = rootProject.name + "-sample-extension"
-include "zipsmaven"
+
+//Adding pluginZips project under maven folder, this is to publish generated plugin zips to maven repo
+include 'pluginZips'
+project(':pluginZips').projectDir = file('maven/plugin-zips')
