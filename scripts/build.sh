@@ -76,3 +76,4 @@ cp -r ./build/local-staging-repo/org/opensearch/. $OUTPUT/maven/org/opensearch
 [ -z "$OUTPUT" ] && OUTPUT=artifacts
 mkdir -p $OUTPUT/plugins
 cp ./build/distributions/*.zip $OUTPUT/plugins
+realpath $OUTPUT/plugins
