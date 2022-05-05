@@ -225,13 +225,13 @@ task integTestRemote(type: RestIntegTestTask) {
 
     if (System.getProperty("tests.rest.cluster") != null) {
         filter {
-            includeTestsMatching "org.opensearch.alerting.resthandler.*IT"
+            includeTestsMatching "org.opensearch.jobscheduler.*RestIT"
         }
     }
 
     if (System.getProperty("https") == null || System.getProperty("https") == "false") {
         filter {
-            excludeTestsMatching "org.opensearch.alerting.resthandler.Secure*IT"
+            excludeTestsMatching "org.opensearch.jobscheduler.Secure*IT"
         }
     }
 }

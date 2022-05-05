@@ -209,4 +209,46 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         Thread.sleep(waitForInMs);
         return countRecordsInTestIndex(index);
     }
+
+    @SuppressWarnings("unchecked")
+    protected long getLockTimeByJobId(String jobId) throws IOException {
+        String entity = "{\n" +
+                "    \"query\": {\n" +
+                "        \"match\": {\n" +
+                "            \"job_id\": {\n" +
+                "                \"query\": \"" + jobId + "\"\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}";
+        Response response = makeRequest(client(), "POST", "/" + ".opendistro-job-scheduler-lock" + "/_search",
+                Collections.emptyMap(), new StringEntity(entity, ContentType.APPLICATION_JSON));
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(NamedXContentRegistry.EMPTY,
+                LoggingDeprecationHandler.INSTANCE, response.getEntity().getContent()).map();
+        List<Map<String, Object>> hits = (List<Map<String, Object>>)((Map<String, Object>) responseJson.get("hits")).get("hits");
+        if (hits.size() == 0) {
+            return 0L;
+        }
+        Map<String, Object> lockSource = (Map<String, Object>) hits.get(0).get("_source");
+        return Long.parseLong(lockSource.get("lock_time").toString());
+    }
+
+    @SuppressWarnings("unchecked")
+    protected boolean doesLockExistByLockTime(long lockTime) throws IOException {
+        String entity = "{\n" +
+                "    \"query\": {\n" +
+                "        \"match\": {\n" +
+                "            \"lock_time\": {\n" +
+                "                \"query\": " + lockTime + "\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}";
+        Response response = makeRequest(client(), "POST", "/" + ".opendistro-job-scheduler-lock" + "/_search",
+                Collections.emptyMap(), new StringEntity(entity, ContentType.APPLICATION_JSON));
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(NamedXContentRegistry.EMPTY,
+                LoggingDeprecationHandler.INSTANCE, response.getEntity().getContent()).map();
+        List<Map<String, Object>> hits = (List<Map<String, Object>>)((Map<String, Object>) responseJson.get("hits")).get("hits");
+        return hits.size() == 1;
+    }
 }
