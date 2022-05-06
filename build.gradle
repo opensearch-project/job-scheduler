@@ -138,7 +138,7 @@ def opensearch_tmp_dir = rootProject.file('build/private/opensearch_tmp').absolu
 opensearch_tmp_dir.mkdirs()
 
 task integTest(type: RestIntegTestTask) {
-    description = "Run tests against a cluster that has security enabled"
+    description = "Run tests against a cluster"
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
 }
@@ -226,12 +226,6 @@ task integTestRemote(type: RestIntegTestTask) {
     if (System.getProperty("tests.rest.cluster") != null) {
         filter {
             includeTestsMatching "org.opensearch.jobscheduler.*RestIT"
-        }
-    }
-
-    if (System.getProperty("https") == null || System.getProperty("https") == "false") {
-        filter {
-            excludeTestsMatching "org.opensearch.jobscheduler.Secure*IT"
         }
     }
 }

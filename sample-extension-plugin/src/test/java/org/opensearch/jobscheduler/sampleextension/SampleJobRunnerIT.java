@@ -46,12 +46,11 @@ public class SampleJobRunnerIT extends SampleExtensionIntegTestCase {
 
         // wait till the job runner runs for the first time after 1 min & inserts a record into the watched index & then delete the job.
         waitAndDeleteWatcherJob(schedJobParameter.getIndexToWatch(), jobId);
-        long actualCount = waitAndCountRecords(index, 180000);
+        long actualCount = waitAndCountRecords(index, 130000);
 
         // Asserts that in the last 3 mins, no new job ran to insert a record into the watched index & all locks are deleted for the job.
         Assert.assertEquals(1, actualCount);
         Assert.assertEquals(0L, getLockTimeByJobId(jobId));
-        deleteTestIndex(index);
     }
 
     public void testJobUpdateWithRescheduleJob() throws Exception {
@@ -72,16 +71,14 @@ public class SampleJobRunnerIT extends SampleExtensionIntegTestCase {
 
         // wait till the job runner runs for the first time after 1 min & inserts a record into the watched index & then update the job with new params.
         waitAndCreateWatcherJob(schedJobParameter.getIndexToWatch(), jobId, jobParameter);
-        long actualCount = waitAndCountRecords(newIndex, 180000);
+        long actualCount = waitAndCountRecords(newIndex, 130000);
 
         // Asserts that the job runner has the updated params & it inserted the record in the new watched index.
         Assert.assertEquals(1, actualCount);
-        long prevIndexActualCount = waitAndCountRecords(index, 2000);
+        long prevIndexActualCount = waitAndCountRecords(index, 0);
 
         // Asserts that the job runner no longer updates the old index as the job params have been updated.
         Assert.assertEquals(1, prevIndexActualCount);
-        deleteTestIndex(index);
-        deleteTestIndex(newIndex);
     }
 
     public void testAcquiredLockPreventExecOfTasks() throws Exception {
@@ -112,10 +109,8 @@ public class SampleJobRunnerIT extends SampleExtensionIntegTestCase {
 
         // Asserts that the new job ran after 2 mins after the first job lock is released. Hence new record is inserted into the watched index.
         // Also asserts that the old lock is released.
-        actualCount = waitAndCountRecords(index, 160000);
+        actualCount = waitAndCountRecords(index, 130000);
         Assert.assertEquals(2, actualCount);
         Assert.assertFalse(doesLockExistByLockTime(lockTime));
-
-        deleteTestIndex(index);
     }
 }
