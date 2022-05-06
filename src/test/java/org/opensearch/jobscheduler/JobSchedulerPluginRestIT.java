@@ -15,20 +15,14 @@ import org.opensearch.test.rest.OpenSearchRestTestCase;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 public class JobSchedulerPluginRestIT extends OpenSearchRestTestCase {
 
+    @SuppressWarnings("unchecked")
     public void testPluginsAreInstalled() throws IOException {
-        Request request = new Request("GET", "/_cluster/health");
+        Request request = new Request("GET", "/_cat/plugins?s=component&h=name,component,version,description&format=json");
         Response response = client().performRequest(request);
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(NamedXContentRegistry.EMPTY,
-                LoggingDeprecationHandler.INSTANCE, response.getEntity().getContent()).map();
-        Assert.assertEquals("green", responseJson.get("status").toString().toLowerCase(Locale.ROOT));
-
-        request = new Request("GET", "/_cat/plugins?s=component&h=name,component,version,description&format=json");
-        response = client().performRequest(request);
         List<Object> pluginsList = JsonXContent.jsonXContent.createParser(NamedXContentRegistry.EMPTY,
                 LoggingDeprecationHandler.INSTANCE, response.getEntity().getContent()).list();
         Assert.assertTrue(pluginsList.stream().map(o -> (Map<String, Object>) o).anyMatch(plugin -> plugin.get("component")
