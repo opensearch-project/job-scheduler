@@ -5,6 +5,9 @@
 
 package org.opensearch.jobscheduler.sampleextension;
 
+import org.opensearch.action.index.IndexRequest;
+import org.opensearch.client.Client;
+import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
@@ -18,6 +21,7 @@ import org.opensearch.plugins.Plugin;
 import org.opensearch.threadpool.ThreadPool;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * A sample job runner class.
@@ -54,6 +58,7 @@ public class SampleJobRunner implements ScheduledJobRunner {
 
     private ClusterService clusterService;
     private ThreadPool threadPool;
+    private Client client;
 
     private SampleJobRunner() {
         // Singleton class, use getJobRunner method instead of constructor
@@ -64,6 +69,9 @@ public class SampleJobRunner implements ScheduledJobRunner {
     }
     public void setThreadPool(ThreadPool threadPool) {
         this.threadPool = threadPool;
+    }
+    public void setClient(Client client) {
+        this.client = client;
     }
 
     @Override
@@ -102,6 +110,8 @@ public class SampleJobRunner implements ScheduledJobRunner {
                                         .append(shardRouting.active() ? "active" : "inactive").append("\n");
                             }
                             log.info(msg.toString());
+                            runTaskForIntegrationTests(parameter);
+                            runTaskForLockIntegrationTests(parameter);
 
                             lockService.release(lock, ActionListener.wrap(
                                     released -> {
@@ -120,5 +130,17 @@ public class SampleJobRunner implements ScheduledJobRunner {
         };
 
         threadPool.generic().submit(runnable);
+    }
+
+    private void runTaskForIntegrationTests(SampleJobParameter jobParameter) {
+        this.client.index(new IndexRequest(jobParameter.getIndexToWatch())
+                .id(UUID.randomUUID().toString())
+                .source("{\"message\": \"message\"}", XContentType.JSON));
+    }
+
+    private void  runTaskForLockIntegrationTests(SampleJobParameter jobParameter) throws InterruptedException {
+        if (jobParameter.getName().equals("sample-job-lock-test-it")) {
+            Thread.sleep(180000);
+        }
     }
 }

@@ -5,6 +5,7 @@
 
 package org.opensearch.jobscheduler.sampleextension;
 
+import org.opensearch.action.support.WriteRequest;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.delete.DeleteRequest;
@@ -78,7 +79,8 @@ public class SampleExtensionRestHandler extends BaseRestHandler {
             IndexRequest indexRequest = new IndexRequest()
                     .index(SampleExtensionPlugin.JOB_INDEX_NAME)
                     .id(id)
-                    .source(jobParameter.toXContent(JsonXContent.contentBuilder(), null));
+                    .source(jobParameter.toXContent(JsonXContent.contentBuilder(), null))
+                    .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
             return restChannel -> {
                 // index the job parameter

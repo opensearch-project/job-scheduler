@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.opensearch.jobscheduler.smapleextension;
+package org.opensearch.jobscheduler.sampleextension;
 
 import org.opensearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.opensearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.opensearch.action.admin.cluster.node.info.NodeInfo;
 import org.opensearch.action.admin.cluster.node.info.NodesInfoRequest;
 import org.opensearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.opensearch.action.admin.cluster.node.info.PluginsAndModules;
@@ -16,6 +17,9 @@ import org.opensearch.test.OpenSearchIntegTestCase;
 import org.junit.Assert;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SampleExtensionPluginIT extends OpenSearchIntegTestCase {
 
@@ -28,7 +32,9 @@ public class SampleExtensionPluginIT extends OpenSearchIntegTestCase {
         nodesInfoRequest.addMetric(NodesInfoRequest.Metric.PLUGINS.metricName());
         NodesInfoResponse nodesInfoResponse = OpenSearchIntegTestCase.client().admin().cluster().nodesInfo(nodesInfoRequest)
                 .actionGet();
-        List<PluginInfo> pluginInfos = nodesInfoResponse.getNodes().get(0).getInfo(PluginsAndModules.class).getPluginInfos();
+        List<PluginInfo> pluginInfos = nodesInfoResponse.getNodes().stream()
+                .flatMap((Function<NodeInfo, Stream<PluginInfo>>) nodeInfo -> nodeInfo.getInfo(PluginsAndModules.class)
+                        .getPluginInfos().stream()).collect(Collectors.toList());
         Assert.assertTrue(pluginInfos.stream().anyMatch(pluginInfo -> pluginInfo.getName()
                 .equals("opensearch-job-scheduler")));
         Assert.assertTrue(pluginInfos.stream().anyMatch(pluginInfo -> pluginInfo.getName()

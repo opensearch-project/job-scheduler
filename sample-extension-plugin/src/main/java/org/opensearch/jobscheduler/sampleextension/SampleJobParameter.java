@@ -22,8 +22,10 @@ public class SampleJobParameter implements ScheduledJobParameter {
     public static final String NAME_FIELD = "name";
     public static final String ENABLED_FILED = "enabled";
     public static final String LAST_UPDATE_TIME_FIELD = "last_update_time";
+    public static final String LAST_UPDATE_TIME_FIELD_READABLE = "last_update_time_field";
     public static final String SCHEDULE_FIELD = "schedule";
     public static final String ENABLED_TIME_FILED = "enabled_time";
+    public static final String ENABLED_TIME_FILED_READABLE = "enabled_time_field";
     public static final String INDEX_NAME_FIELD = "index_name_to_watch";
     public static final String LOCK_DURATION_SECONDS = "lock_duration_seconds";
     public static final String JITTER = "jitter";
@@ -131,10 +133,10 @@ public class SampleJobParameter implements ScheduledJobParameter {
             .field(SCHEDULE_FIELD, this.schedule)
             .field(INDEX_NAME_FIELD, this.indexToWatch);
         if (this.enabledTime != null) {
-            builder.timeField(ENABLED_TIME_FILED, ENABLED_TIME_FILED, this.enabledTime.toEpochMilli());
+            builder.timeField(ENABLED_TIME_FILED, ENABLED_TIME_FILED_READABLE, this.enabledTime.toEpochMilli());
         }
         if (this.lastUpdateTime != null) {
-            builder.timeField(LAST_UPDATE_TIME_FIELD, LAST_UPDATE_TIME_FIELD, this.lastUpdateTime.toEpochMilli());
+            builder.timeField(LAST_UPDATE_TIME_FIELD, LAST_UPDATE_TIME_FIELD_READABLE, this.lastUpdateTime.toEpochMilli());
         }
         if (this.lockDurationSeconds != null) {
             builder.field(LOCK_DURATION_SECONDS, this.lockDurationSeconds);
