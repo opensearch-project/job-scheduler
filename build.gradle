@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
+import org.opensearch.gradle.test.RestIntegTestTask
 
 buildscript {
     ext {
@@ -126,6 +127,109 @@ dependencies {
 
 // RPM & Debian build
 apply plugin: 'nebula.ospackage'
+
+def es_tmp_dir = rootProject.file('build/private/es_tmp').absoluteFile
+es_tmp_dir.mkdirs()
+
+File repo = file("$buildDir/testclusters/repo")
+def _numNodes = findProperty('numNodes') as Integer ?: 1
+
+def opensearch_tmp_dir = rootProject.file('build/private/opensearch_tmp').absoluteFile
+opensearch_tmp_dir.mkdirs()
+
+task integTest(type: RestIntegTestTask) {
+    description = "Run tests against a cluster"
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+}
+tasks.named("check").configure { dependsOn(integTest) }
+
+integTest {
+    if (project.hasProperty('excludeTests')) {
+        project.properties['excludeTests']?.replaceAll('\\s', '')?.split('[,;]')?.each {
+            exclude "${it}"
+        }
+    }
+    systemProperty 'tests.security.manager', 'false'
+    systemProperty 'java.io.tmpdir', es_tmp_dir.absolutePath
+
+    systemProperty "https", System.getProperty("https")
+    systemProperty "user", System.getProperty("user")
+    systemProperty "password", System.getProperty("password")
+    // Tell the test JVM if the cluster JVM is running under a debugger so that tests can use longer timeouts for
+    // requests. The 'doFirst' delays reading the debug setting on the cluster till execution time.
+    doFirst {
+        // Tell the test JVM if the cluster JVM is running under a debugger so that tests can
+        // use longer timeouts for requests.
+        def isDebuggingCluster = getDebug() || System.getProperty("test.debug") != null
+        systemProperty 'cluster.debug', isDebuggingCluster
+        // Set number of nodes system property to be used in tests
+        systemProperty 'cluster.number_of_nodes', "${_numNodes}"
+        // There seems to be an issue when running multi node run or integ tasks with unicast_hosts
+        // not being written, the waitForAllConditions ensures it's written
+        getClusters().forEach { cluster ->
+            cluster.waitForAllConditions()
+        }
+    }
+
+    // The -Dcluster.debug option makes the cluster debuggable; this makes the tests debuggable
+    if (System.getProperty("test.debug") != null) {
+        jvmArgs '-agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=8000'
+    }
+}
+Zip bundle = (Zip) project.getTasks().getByName("bundlePlugin");
+integTest.dependsOn(bundle)
+integTest.getClusters().forEach{c -> {
+    c.plugin(project.getObjects().fileProperty().value(bundle.getArchiveFile()))
+}}
+
+testClusters.integTest {
+    testDistribution = 'INTEG_TEST'
+
+    // Cluster shrink exception thrown if we try to set numberOfNodes to 1, so only apply if > 1
+    if (_numNodes > 1) numberOfNodes = _numNodes
+    // When running integration tests it doesn't forward the --debug-jvm to the cluster anymore
+    // i.e. we have to use a custom property to flag when we want to debug OpenSearch JVM
+    // since we also support multi node integration tests we increase debugPort per node
+    if (System.getProperty("cluster.debug") != null) {
+        def debugPort = 5005
+        nodes.forEach { node ->
+            node.jvmArgs("-agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=*:${debugPort}")
+            debugPort += 1
+        }
+    }
+    setting 'path.repo', repo.absolutePath
+}
+
+run {
+    doFirst {
+        // There seems to be an issue when running multi node run or integ tasks with unicast_hosts
+        // not being written, the waitForAllConditions ensures it's written
+        getClusters().forEach { cluster ->
+            cluster.waitForAllConditions()
+        }
+    }
+    useCluster testClusters.integTest
+}
+
+task integTestRemote(type: RestIntegTestTask) {
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    systemProperty 'tests.security.manager', 'false'
+    systemProperty 'java.io.tmpdir', opensearch_tmp_dir.absolutePath
+
+    systemProperty "https", System.getProperty("https")
+    systemProperty "security", System.getProperty("security")
+    systemProperty "user", System.getProperty("user")
+    systemProperty "password", System.getProperty("password")
+
+    if (System.getProperty("tests.rest.cluster") != null) {
+        filter {
+            includeTestsMatching "org.opensearch.jobscheduler.*RestIT"
+        }
+    }
+}
+integTestRemote.enabled = System.getProperty("tests.rest.cluster") != null
 
 // This is afterEvaluate because the bundlePlugin ZIP task is updated afterEvaluate and changes the ZIP name to match the plugin name
 afterEvaluate {
