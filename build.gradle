@@ -31,6 +31,7 @@ plugins {
 apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-rest-test'
+apply plugin: 'opensearch.pluginzip'
 
 ext {
     projectSubstitutions = [:]
@@ -107,6 +108,29 @@ allprojects {
                         Node developer = node.appendNode('developers').appendNode('developer')
                         developer.appendNode('name', 'OpenSearch')
                         developer.appendNode('url', 'https://github.com/opensearch-project/job-scheduler')
+                    }
+                }
+            }
+        }
+    }
+}
+
+publishing {
+    publications {
+        pluginZip(MavenPublication) { publication ->
+            pom {
+                name = "opensearch-job-scheduler"
+                description = "OpenSearch Job Scheduler plugin"
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+                developers {
+                    developer {
+                        name = "OpenSearch"
+                        url = "https://github.com/opensearch-project/job-scheduler"
                     }
                 }
             }
