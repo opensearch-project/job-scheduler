@@ -25,14 +25,14 @@ jobs:
 
       - name: Edit the issue template
         run: |
-          echo "https://github.com/opensearch-project/job-scheduler/pull/${{ env.PR_NUMBER }}." >> ./ci/documentation/issue.md
+          echo "https://github.com/opensearch-project/job-scheduler/pull/${{ env.PR_NUMBER }}." >> ./.github/ISSUE_TEMPLATE/documentation.md
 
       - name: Create Issue From File
         id: create-issue
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: Add documentation related to new feature
-          content-filepath: ./ci/documentation/issue.md
+          content-filepath: ./.github/ISSUE_TEMPLATE/documentation.md
           labels: documentation
           repository: opensearch-project/documentation-website
           token: ${{ steps.github_app_token.outputs.token }}
