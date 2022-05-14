@@ -40,8 +40,8 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         return createWatcherJobWithClient(client(), jobId, jobParameter);
     }
 
-    protected String createWatcherJob(String jobId, String jobParameter) throws IOException {
-        return createWatcherJobWithClient(client(), jobId, jobParameter);
+    protected String createWatcherJobJson(String jobId, String jobParameter) throws IOException {
+        return createWatcherJobJsonWithClient(client(), jobId, jobParameter);
     }
 
     protected SampleJobParameter createWatcherJobWithClient(RestClient client, String jobId, SampleJobParameter jobParameter) throws IOException {
@@ -55,7 +55,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         return getJobParameter(client, responseJson.get("_id").toString());
     }
 
-    protected String createWatcherJobWithClient(RestClient client, String jobId, String jobParameter) throws IOException {
+    protected String createWatcherJobJsonWithClient(RestClient client, String jobId, String jobParameter) throws IOException {
         Response response = makeRequest(client, "PUT",
                 "/" + SampleExtensionPlugin.JOB_INDEX_NAME + "/_doc/" + jobId + "?refresh",
                 Collections.emptyMap(),

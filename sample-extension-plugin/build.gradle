@@ -129,7 +129,7 @@ testClusters.integTest {
 
 String bwcJobSchedulerVersion = "1.13.0.0"
 String baseName = "jobSchedulerBwcCluster"
-String bwcFilePath = "src/test/resources/bwc"
+String bwcFilePath = "src/test/resources/bwc/job-scheduler/"
 
 String bwc_js_download_url = "https://github.com/opendistro-for-elasticsearch/job-scheduler/releases/download/v" +
         bwcJobSchedulerVersion + "/job-scheduler-artifacts.zip"
@@ -139,7 +139,7 @@ String bwcJobSchedulerPlugin = "job-scheduler-artifacts.zip"
     testClusters {
         "${baseName}$i" {
             testDistribution = "ARCHIVE"
-            versions = ["7.10.2","2.0.0-alpha1-SNAPSHOT"]
+            versions = ["7.10.2",opensearch_version]
             numberOfNodes = 3
             plugin(provider(new Callable<RegularFile>(){
                 @Override
@@ -147,7 +147,7 @@ String bwcJobSchedulerPlugin = "job-scheduler-artifacts.zip"
                     return new RegularFile() {
                         @Override
                         File getAsFile() {
-                            File dir = new File(rootDir.path + "/sample-extension-plugin/" + bwcFilePath + "/job-scheduler/" + bwcJobSchedulerVersion)
+                            File dir = new File(rootDir.path + "/sample-extension-plugin/" + bwcFilePath + bwcJobSchedulerVersion)
 
                             if (!dir.exists()) {
                                 dir.mkdirs()
@@ -156,7 +156,7 @@ String bwcJobSchedulerPlugin = "job-scheduler-artifacts.zip"
                             if (!f.exists()) {
                                 new URL(bwc_js_download_url).withInputStream{ ins -> f.withOutputStream{ it << ins }}
                             }
-                            return fileTree(bwcFilePath + "/job-scheduler/" + bwcJobSchedulerVersion).getSingleFile()
+                            return fileTree(bwcFilePath + bwcJobSchedulerVersion).getSingleFile()
                         }
                     }
                 }
