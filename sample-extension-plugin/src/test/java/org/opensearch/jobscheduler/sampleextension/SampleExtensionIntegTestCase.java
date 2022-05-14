@@ -40,6 +40,10 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         return createWatcherJobWithClient(client(), jobId, jobParameter);
     }
 
+    protected String createWatcherJob(String jobId, String jobParameter) throws IOException {
+        return createWatcherJobWithClient(client(), jobId, jobParameter);
+    }
+
     protected SampleJobParameter createWatcherJobWithClient(RestClient client, String jobId, SampleJobParameter jobParameter) throws IOException {
         Map<String, String> params = getJobParameterAsMap(jobId, jobParameter);
         Response response = makeRequest(client, "POST", SampleExtensionRestHandler.WATCH_INDEX_URI, params, null);
@@ -49,6 +53,19 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(NamedXContentRegistry.EMPTY,
                 LoggingDeprecationHandler.INSTANCE, response.getEntity().getContent()).map();
         return getJobParameter(client, responseJson.get("_id").toString());
+    }
+
+    protected String createWatcherJobWithClient(RestClient client, String jobId, String jobParameter) throws IOException {
+        Response response = makeRequest(client, "PUT",
+                "/" + SampleExtensionPlugin.JOB_INDEX_NAME + "/_doc/" + jobId + "?refresh",
+                Collections.emptyMap(),
+                new StringEntity(jobParameter, ContentType.APPLICATION_JSON));
+        Assert.assertEquals("Unable to create a watcher job",
+                RestStatus.CREATED, RestStatus.fromCode(response.getStatusLine().getStatusCode()));
+
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(NamedXContentRegistry.EMPTY,
+                LoggingDeprecationHandler.INSTANCE, response.getEntity().getContent()).map();
+        return responseJson.get("_id").toString();
     }
 
     protected void deleteWatcherJob(String jobId) throws IOException {
