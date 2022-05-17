@@ -1,7 +1,5 @@
 [![Test and Build Workflow](https://github.com/opensearch-project/job-scheduler/workflows/Build%20and%20Test/badge.svg)](https://github.com/opensearch-project/job-scheduler/actions)
-<a href="https://codecov.io/gh/opensearch-project/job-scheduler">
-<img src="https://codecov.io/gh/opensearch-project/job-scheduler/branch/main/graph/badge.svg?token=12VOC7OMP1"/>
-</a>
+[![codecov](https://codecov.io/gh/opensearch-project/job-scheduler/branch/main/graph/badge.svg)](https://codecov.io/gh/opensearch-project/job-scheduler)
 ![PRs welcome!](https://img.shields.io/badge/PRs-welcome!-success)
 
 <img src="https://opensearch.org/assets/brand/SVG/Logo/opensearch_logo_default.svg" height="64px"/>
