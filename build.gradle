@@ -32,6 +32,7 @@ apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-rest-test'
 apply plugin: 'opensearch.pluginzip'
+apply from: 'build-tools/opensearchplugin-coverage.gradle'
 
 ext {
     projectSubstitutions = [:]
