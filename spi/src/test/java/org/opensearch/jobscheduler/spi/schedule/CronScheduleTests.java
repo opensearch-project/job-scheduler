@@ -38,12 +38,15 @@ public class CronScheduleTests extends OpenSearchTestCase {
     }
 
     public void testDifferentClocks() {
-        CronSchedule pdtClockCronSchedule = new CronSchedule("* * * * *", ZoneId.systemDefault());
-        CronSchedule utcClockCronSchedule = new CronSchedule("* * * * *", ZoneId.systemDefault());
-        Instant instant = Instant.ofEpochSecond(1539715678L);
+        Clock pdtClock = Clock.system(ZoneId.of("America/Los_Angeles"));
+        Clock utcClock = Clock.system(ZoneId.of("UTC"));
+        CronSchedule pdtClockCronSchedule = new CronSchedule("* * * * *", ZoneId.of("America/Los_Angeles"));
+        pdtClockCronSchedule.setClock(pdtClock);
+        CronSchedule utcClockCronSchedule = new CronSchedule("* * * * *", ZoneId.of("UTC"));
+        utcClockCronSchedule.setClock(utcClock);
         assertEquals("Next execution time based on different clock should be same.",
-            pdtClockCronSchedule.getNextExecutionTime(instant.atZone(ZoneId.of("America/Los_Angeles")).toInstant()),
-            utcClockCronSchedule.getNextExecutionTime(instant.atZone(ZoneId.of("UTC")).toInstant()));
+            pdtClockCronSchedule.getNextExecutionTime(null),
+            utcClockCronSchedule.getNextExecutionTime(null));
     }
 
     public void testNextTimeToExecute() {
