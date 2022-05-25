@@ -38,8 +38,9 @@ public class CronScheduleTests extends OpenSearchTestCase {
     }
 
     public void testDifferentClocks() {
-        Clock pdtClock = Clock.system(ZoneId.of("America/Los_Angeles"));
-        Clock utcClock = Clock.system(ZoneId.of("UTC"));
+        Instant now = Instant.now();
+        Clock pdtClock = Clock.fixed(now, ZoneId.of("America/Los_Angeles"));
+        Clock utcClock = Clock.fixed(now, ZoneId.of("UTC"));
         CronSchedule pdtClockCronSchedule = new CronSchedule("* * * * *", ZoneId.of("America/Los_Angeles"));
         pdtClockCronSchedule.setClock(pdtClock);
         CronSchedule utcClockCronSchedule = new CronSchedule("* * * * *", ZoneId.of("UTC"));
