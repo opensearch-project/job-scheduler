@@ -1,7 +1,7 @@
 # -*-perl-*-
 
 package.Opendistro-job-scheduler = {
-    interfaces = (opensearch_1.2.0);
+    interfaces = (opensearch_1.3.2);
 
     deploy = {
         generic = true;
@@ -14,7 +14,7 @@ package.Opendistro-job-scheduler = {
 
     build-system = custom-build;
     build-tools = {
-        opensearch_1.2.0 = {
+        opensearch_1.3.2 = {
             BrazilPath = 1.1;
         };
     };
@@ -24,7 +24,7 @@ package.Opendistro-job-scheduler = {
     # Use dependencies instead if you intend for these dependencies to
     # be exported to other packages that build against you.
     dependencies = {
-        opensearch_1.2.0 = {
+        opensearch_1.3.2 = {
         };
     };
 };
