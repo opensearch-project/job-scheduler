@@ -6,7 +6,7 @@ import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 
 buildscript {
     ext {
-        opensearch_version = System.getProperty("opensearch.version", "1.3.3-SNAPSHOT")
+        opensearch_version = project.property('opensearch.version')
     }
 
     repositories {
@@ -61,7 +61,7 @@ testClusters.javaRestTest {
 }
 
 ext {
-    isSnapshot = "true" == System.getProperty("build.snapshot", "true")
+    isSnapshot = project.property('build.snapshot')
 }
 
 allprojects {
@@ -107,6 +107,15 @@ allprojects {
                     }
                 }
             }
+        }
+    }
+}
+
+task setVersion() {
+    if(project.hasProperty('newVersion')) {
+        ant.propertyfile(
+            file: "gradle.properties") {
+            entry( key: "opensearch.version", value: "${newVersion}")
         }
     }
 }
