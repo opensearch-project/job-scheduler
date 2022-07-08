@@ -6,7 +6,7 @@ import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 
 buildscript {
     ext {
-        opensearch_version = project.property('opensearch.version')
+        opensearch_version = System.getProperty("opensearch.version", "1.3.4-SNAPSHOT")
     }
 
     repositories {
@@ -61,7 +61,7 @@ testClusters.javaRestTest {
 }
 
 ext {
-    isSnapshot = project.property('build.snapshot')
+    isSnapshot = "true" == System.getProperty("build.snapshot", "true")
 }
 
 allprojects {
@@ -107,15 +107,6 @@ allprojects {
                     }
                 }
             }
-        }
-    }
-}
-
-task setVersion() {
-    if(project.hasProperty('newVersion')) {
-        ant.propertyfile(
-            file: "gradle.properties") {
-            entry( key: "opensearch.version", value: "${newVersion}")
         }
     }
 }
@@ -189,6 +180,19 @@ afterEvaluate {
             include archiveName
             rename archiveName, "${packageName}-${version}.deb"
             doLast { delete file("$buildDir/distributions/$archiveName") }
+        }
+    }
+}
+task versionIncrement {
+    onlyIf { System.getProperty('newVersion') }
+    doLast {
+        ext.newVersion = System.getProperty('newVersion')
+        println "Setting version to ${newVersion}."
+        final String workingDir = project.buildDir.toString() + "/../"
+        ant.replaceregexp(match: opensearch_version.tokenize('-')[0], replace: newVersion.tokenize('-')[0], flags:'g', byline:true) {
+            fileset(dir: workingDir) {
+                include(name: "build.gradle")
+            }
         }
     }
 }
