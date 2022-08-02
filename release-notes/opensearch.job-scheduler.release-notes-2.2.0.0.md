@@ -6,4 +6,4 @@ Compatible with OpenSearch 2.2.0
 * bump version to 2.2.0 ([#215](https://github.com/opensearch-project/job-scheduler/pull/215))
 
 ### Documentation
-* Added 2.2 release notes. ([#216](https://github.com/opensearch-project/job-scheduler/pull/216))
+* Added 2.2 release notes. ([#217](https://github.com/opensearch-project/job-scheduler/pull/217))
