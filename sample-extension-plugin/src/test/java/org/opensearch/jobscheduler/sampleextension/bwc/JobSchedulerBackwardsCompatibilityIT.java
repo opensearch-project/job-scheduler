@@ -36,28 +36,12 @@ public class JobSchedulerBackwardsCompatibilityIT extends SampleExtensionIntegTe
 
             switch (CLUSTER_TYPE) {
                 case OLD:
+                case MIXED:
                     /*
                     * as only the old version of job-scheduler plugin is loaded, we only assert that it is loaded.
                      */
-                    Assert.assertTrue(pluginNames.contains("opendistro-job-scheduler"));
+                    Assert.assertTrue(pluginNames.contains("opensearch-job-scheduler"));
                     break;
-                case MIXED:
-                    /*
-                    * for a 3-node mixedClusterTask, 1st node is upgraded, & 2 remaining nodes still have old versions.
-                    * for a 3-node twoThirdsUpgradedClusterTask, 2 nodes are upgraded, & 1 remaining node still have old versions.
-                    * for a 3-node rollingUpgradeClusterTask, all 3 nodes are upgraded.
-                    * so for first 2 scenarios, we assert, 3rd node still has older version of job-scheduler plugin & 1st/2nd node is upgraded to use latest plugins.
-                    * we cannot trigger a call for scheduling watcher job, as the older nodes do not have sample-extension plugin.
-                     */
-                    Map<String, Object> responseForOldNode = getAsMap(getPluginUriForMixedCluster("third"));
-                    Map<String, Map<String, Object>> responseMapForOldNode = (Map<String, Map<String, Object>>) responseForOldNode.get("nodes");
-
-                    for (Map<String, Object> respValuesForOldNode: responseMapForOldNode.values()) {
-                        List<Map<String, Object>> pluginsForOldNode = (List<Map<String, Object>>) respValuesForOldNode.get("plugins");
-                        List<String> pluginNamesForOldNode = pluginsForOldNode.stream().map(plugin -> plugin.get("name").toString()).collect(Collectors.toList());
-                        Assert.assertTrue("third".equals(System.getProperty("tests.rest.bwcsuite_round")) ||
-                                pluginNamesForOldNode.contains("opendistro-job-scheduler"));
-                    }
                 case UPGRADED:
                     /*
                     * As cluster is fully upgraded either by full restart or rolling upgrade, we assert, that all nodes are upgraded to use latest plugins.
