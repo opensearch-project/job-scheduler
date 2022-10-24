@@ -43,12 +43,24 @@ jacocoTestReport {
 }
 check.dependsOn jacocoTestReport
 
+def slf4j_version_of_cronutils = "1.7.30"
 dependencies {
     compileOnly "org.opensearch:opensearch:${opensearch_version}"
+    // slf4j is the runtime dependency of cron-utils
+    // if cron-utils version gets bumped, pls check the slf4j version cron-utils depending on
+    //  and bump if needed
     implementation "com.cronutils:cron-utils:9.2.0"
+    runtimeOnly "org.slf4j:slf4j-api:${slf4j_version_of_cronutils}"
 
     testImplementation "org.opensearch.test:framework:${opensearch_version}"
     testImplementation "org.apache.logging.log4j:log4j-core:${versions.log4j}"
+}
+
+configurations.all {
+    if (it.state != Configuration.State.UNRESOLVED) return
+    resolutionStrategy {
+        force "org.slf4j:slf4j-api:${slf4j_version_of_cronutils}"
+    }
 }
 
 shadowJar {
