@@ -9,4 +9,4 @@ Compatible with OpenSearch 2.4.0
 * Add slf4j which is the dep of cronutils. ([#256](https://github.com/opensearch-project/job-scheduler/pull/256)) ([#257](https://github.com/opensearch-project/job-scheduler/pull/257))
 
 ### Documentation
-* Added 2.4 release notes. ([#]())
+* Added 2.4 release notes. ([#258](https://github.com/opensearch-project/job-scheduler/pull/258))
