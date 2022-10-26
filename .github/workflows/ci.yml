@@ -13,7 +13,7 @@ jobs:
       matrix:
         java: [11, 17]
 
-    name: Build and Test (Linux)
+    name: Build and Test
     runs-on: ubuntu-latest
 
     steps:
@@ -25,7 +25,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
 
-      - name: Build and Test (Linux)
+      - name: Build and Test
         run: |
           ./gradlew build
 
@@ -42,7 +42,7 @@ jobs:
       matrix:
         java: [11, 17]
 
-    name: Build and Test (Windows)
+    name: Build and Test
     runs-on: windows-latest
 
     steps:
@@ -54,7 +54,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
 
-      - name: Build and Test (Windows)
+      - name: Build and Test
         run: |
           ./gradlew build -x integTest
 
