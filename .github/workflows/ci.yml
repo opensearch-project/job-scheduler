@@ -8,11 +8,11 @@ on:
       - "*"
 
 jobs:
-  linux-build:
+  build:
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]
         java: [11, 17]
-          os: [ubuntu-latest, windows-latest]
 
     # Job name
     name: Build and Test
