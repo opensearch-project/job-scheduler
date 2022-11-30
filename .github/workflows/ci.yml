@@ -11,13 +11,14 @@ jobs:
   build:
     strategy:
       matrix:
+          os: [ubuntu-latest, windows-latest]
         java: 
           - 8
           - 11
           - 14
 
     name: Build and Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout
