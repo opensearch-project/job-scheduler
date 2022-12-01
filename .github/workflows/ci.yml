@@ -12,12 +12,9 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        java: 
-          - 8
-          - 11
-          - 14
+        java: [8, 11, 14] 
 
-    name: Build and Test
+    name: Build and Test JDK
     runs-on: ${{ matrix.os }}
 
     steps:
