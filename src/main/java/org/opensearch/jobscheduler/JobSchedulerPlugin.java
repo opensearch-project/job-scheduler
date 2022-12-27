@@ -5,6 +5,15 @@
 
 package org.opensearch.jobscheduler;
 
+import org.opensearch.action.ActionRequest;
+import org.opensearch.action.ActionResponse;
+import org.opensearch.client.node.NodeClient;
+import org.opensearch.cluster.node.DiscoveryNodes;
+import org.opensearch.common.settings.*;
+import org.opensearch.extensions.ExtensionsSettings;
+import org.opensearch.jobscheduler.model.JobDetails;
+import org.opensearch.jobscheduler.rest.RestGetJobIndexAction;
+import org.opensearch.jobscheduler.rest.RestGetJobTypeAction;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
@@ -20,36 +29,35 @@ import org.opensearch.cluster.metadata.IndexNameExpressionResolver;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.ParseField;
 import org.opensearch.common.io.stream.NamedWriteableRegistry;
-import org.opensearch.common.settings.Setting;
-import org.opensearch.common.settings.Settings;
 import org.opensearch.common.util.concurrent.OpenSearchExecutors;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
 import org.opensearch.env.Environment;
 import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
+import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.repositories.RepositoriesService;
+import org.opensearch.rest.BaseRestHandler;
+import org.opensearch.rest.RestController;
+import org.opensearch.rest.RestHandler;
+import org.opensearch.rest.RestRequest;
 import org.opensearch.script.ScriptService;
 import org.opensearch.threadpool.ExecutorBuilder;
 import org.opensearch.threadpool.FixedExecutorBuilder;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.watcher.ResourceWatcherService;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.IOException;
+import java.util.*;
 import java.util.function.Supplier;
 
+import com.google.common.collect.ImmutableList;
 
-public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
+public class JobSchedulerPlugin extends Plugin implements ActionPlugin, ExtensiblePlugin {
 
     public static final String OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME = "open_distro_job_scheduler";
+    public static final String JS_BASE_URI = "/_plugins/_job_scheduler";
 
     private static final Logger log = LogManager.getLogger(JobSchedulerPlugin.class);
 
@@ -58,10 +66,12 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
     private LockService lockService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
+    private HashMap<String, JobDetails> jobDetailsHashMap;
 
     public JobSchedulerPlugin() {
         this.indicesToListen = new HashSet<>();
         this.indexToJobProviders = new HashMap<>();
+        this.jobDetailsHashMap=new HashMap<>();
     }
 
     @Override
@@ -155,4 +165,20 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
         return new JobSweeper(settings, client, clusterService, threadPool, registry,
                               this.indexToJobProviders, scheduler, lockService);
     }
+
+    @Override
+    public List getRestHandlers(
+            Settings settings,
+            RestController restController,
+            ClusterSettings clusterSettings,
+            IndexScopedSettings indexScopedSettings,
+            SettingsFilter settingsFilter,
+            IndexNameExpressionResolver indexNameExpressionResolver,
+            Supplier<DiscoveryNodes> nodesInCluster
+    ) {
+        RestGetJobIndexAction restGetJobIndexAction = new RestGetJobIndexAction(jobDetailsHashMap);
+        RestGetJobTypeAction restGetJobTypeAction = new RestGetJobTypeAction();
+        return ImmutableList.of(restGetJobIndexAction,restGetJobTypeAction);
+    }
+
 }
