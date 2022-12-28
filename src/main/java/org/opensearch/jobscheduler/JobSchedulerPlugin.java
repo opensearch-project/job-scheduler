@@ -34,6 +34,10 @@ import org.opensearch.common.xcontent.NamedXContentRegistry;
 import org.opensearch.env.Environment;
 import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
+import org.opensearch.jobscheduler.transport.GetJobIndexAction;
+import org.opensearch.jobscheduler.transport.GetJobIndexTransportAction;
+import org.opensearch.jobscheduler.transport.GetJobTypeAction;
+import org.opensearch.jobscheduler.transport.GetJobTypeTransportAction;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.plugins.Plugin;
@@ -177,8 +181,16 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
             Supplier<DiscoveryNodes> nodesInCluster
     ) {
         RestGetJobIndexAction restGetJobIndexAction = new RestGetJobIndexAction(jobDetailsHashMap);
-        RestGetJobTypeAction restGetJobTypeAction = new RestGetJobTypeAction();
+        RestGetJobTypeAction restGetJobTypeAction = new RestGetJobTypeAction(jobDetailsHashMap);
         return ImmutableList.of(restGetJobIndexAction,restGetJobTypeAction);
     }
 
+//    @Override
+//    public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
+//        return Arrays
+//                .asList(
+//                        new ActionHandler<>(GetJobIndexAction.INSTANCE, GetJobIndexTransportAction.class),
+//                        new ActionHandler<>(GetJobTypeAction.INSTANCE, GetJobTypeTransportAction.class)
+//                );
+//    }
 }

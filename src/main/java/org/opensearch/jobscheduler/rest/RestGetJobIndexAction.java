@@ -12,9 +12,7 @@ import org.opensearch.common.xcontent.ToXContent;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.model.JobDetails;
-import org.opensearch.jobscheduler.transport.GetJobIndexAction;
-import org.opensearch.jobscheduler.transport.GetJobIndexRequest;
-import org.opensearch.jobscheduler.transport.RestJobDetailsResponse;
+import org.opensearch.jobscheduler.transport.GetJobDetailsResponse;
 import org.opensearch.rest.*;
 import org.opensearch.rest.action.RestResponseListener;
 
@@ -53,55 +51,55 @@ public class RestGetJobIndexAction extends BaseRestHandler {
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
+        logger.info("In Prepare request method");
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
-        String jobIndex = restRequest.param("jobIndex");
-        String jobParamAction= restRequest.param("jobParamAction");
-        String jobRunnerAction= restRequest.param("jobRunnerAction");
-        String extensionId= restRequest.param("extensionId");
-        GetJobIndexRequest getJobIndexRequest = new GetJobIndexRequest(jobIndex, jobParamAction,jobRunnerAction,extensionId);
-        RestRequest.Method method = restRequest.getHttpRequest().method();
-        return channel -> client
-                .execute(GetJobIndexAction.INSTANCE, getJobIndexRequest, getJobIndexResponse(channel, method,getJobIndexRequest,extensionId));
+
+        String jobIndex;
+        String jobParamAction;
+        String jobRunnerAction;
+        String extensionId=null;
+        try{
+            jobIndex = restRequest.param("jobIndex");
+            jobParamAction= restRequest.param("jobParamAction");
+            jobRunnerAction= restRequest.param("jobRunnerAction");
+            extensionId= restRequest.param("extensionId");
+        }catch (Exception e){
+            logger.info("Failed get job index for extensionId "+extensionId, e);
+            return channel -> getJobIndexResponse(channel, RestStatus.BAD_REQUEST);
+        }
+        //GetJobIndexRequest getJobIndexRequest = new GetJobIndexRequest(jobIndex, jobParamAction,jobRunnerAction,extensionId);
+
+        JobDetails jobDetails = jobDetailsHashMap.getOrDefault(extensionId,new JobDetails());
+        jobDetails.setJobIndex(jobIndex);
+        jobDetails.setJobParamAction(jobParamAction);
+        jobDetails.setJobRunnerAction(jobRunnerAction);
+
+        jobDetailsHashMap.put(extensionId,jobDetails);
+
+        logger.info("Job Details Map size jobIndex: "+jobDetailsHashMap.size() );
+        for (Map.Entry<String, JobDetails> map:jobDetailsHashMap.entrySet()){
+            logger.info("Key is: "+map.getValue()+" Value is : "+map.getValue().toString());
+        }
+
+        return channel -> getJobIndexResponse(channel, RestStatus.OK);
 
     }
 
-    private RestResponseListener<RestJobDetailsResponse> getJobIndexResponse(
+    private RestResponseListener<GetJobDetailsResponse> getJobIndexResponse(
             RestChannel channel,
-            RestRequest.Method method,
-            GetJobIndexRequest request,
-            String extensionId
+            RestStatus status
     ) {
-        try{
-            JobDetails jobDetails = new JobDetails();
-            jobDetails.setJobIndex(request.getJobIndex());
-            jobDetails.setJobParamAction(request.getJobParamAction());
-            jobDetails.setJobRunnerAction(request.getJobRunnerAction());
-
-            jobDetailsHashMap.put(extensionId,jobDetails);
-
-        } catch (Exception e) {
-            logger.error(e);
-        }
-
-        System.out.println("Job Details Map size : "+jobDetailsHashMap.size() );
-        for (Map.Entry<String, JobDetails> map:jobDetailsHashMap.entrySet()){
-            System.out.println("Key is: "+map.getValue()+" Value is : "+map.getValue().toString());
-        }
-
         return new RestResponseListener<>(channel) {
             @Override
-            public RestResponse buildResponse(RestJobDetailsResponse response) throws Exception {
-                RestStatus restStatus = RestStatus.CREATED;
-                if (method == RestRequest.Method.PUT) {
-                    restStatus = RestStatus.OK;
-                }
+            public RestResponse buildResponse(GetJobDetailsResponse response) throws Exception {
                 BytesRestResponse bytesRestResponse = new BytesRestResponse(
-                        restStatus,
+                        status,
                         response.toXContent(channel.newBuilder(), ToXContent.EMPTY_PARAMS)
                 );
                 return bytesRestResponse;
             }
         };
     }
+
 }

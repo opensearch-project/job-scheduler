@@ -10,34 +10,38 @@ import org.apache.logging.log4j.Logger;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.support.ActionFilters;
 import org.opensearch.action.support.HandledTransportAction;
+import org.opensearch.common.inject.Inject;
 import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.tasks.Task;
 import org.opensearch.transport.TransportService;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.opensearch.jobscheduler.utils.RestHandlerUtils.wrapRestActionListener;
 
-public class GetJobIndexTransportAction extends HandledTransportAction<GetJobIndexRequest,RestJobDetailsResponse> {
-    private static final Logger LOG = LogManager.getLogger(GetJobIndexTransportAction.class);
+public class GetJobIndexTransportAction extends HandledTransportAction<GetJobIndexRequest,GetJobDetailsResponse> {
+    private static final Logger logger = LogManager.getLogger(GetJobIndexTransportAction.class);
 
     private HashMap<String,JobDetails> jobDetailsHashMap;
 
     private String extensionId;
 
-    protected GetJobIndexTransportAction(String actionName, TransportService transportService, ActionFilters actionFilters, HashMap<String, JobDetails> jobDetailsHashMap, String extensionId) {
-        super(actionName, transportService, actionFilters, GetJobIndexRequest::new);
+
+    @Inject
+    public GetJobIndexTransportAction(String actionName, TransportService transportService, ActionFilters actionFilters, HashMap<String, JobDetails> jobDetailsHashMap, String extensionId) {
+        super(GetJobIndexAction.NAME, transportService, actionFilters, GetJobIndexRequest::new);
         this.jobDetailsHashMap= jobDetailsHashMap;
         this.extensionId=extensionId;
     }
 
 
     @Override
-    protected void doExecute(Task task, GetJobIndexRequest request, ActionListener<RestJobDetailsResponse> actionListener) {
+    protected void doExecute(Task task, GetJobIndexRequest request, ActionListener<GetJobDetailsResponse> actionListener) {
 
 
-        ActionListener<RestJobDetailsResponse> listener = wrapRestActionListener(actionListener, "");
+        ActionListener<GetJobDetailsResponse> listener = wrapRestActionListener(actionListener, "");
 
         try{
             JobDetails jobDetails = new JobDetails();
@@ -47,8 +51,13 @@ public class GetJobIndexTransportAction extends HandledTransportAction<GetJobInd
 
             jobDetailsHashMap.put(extensionId,jobDetails);
 
+            logger.info("Job Details Map size : "+jobDetailsHashMap.size() );
+            for (Map.Entry<String, JobDetails> map:jobDetailsHashMap.entrySet()){
+                logger.info("Key is: "+map.getValue()+" Value is : "+map.getValue().toString());
+            }
+
         } catch (Exception e) {
-            LOG.error(e);
+            //logger.info(e);
             listener.onFailure(e);
         }
 

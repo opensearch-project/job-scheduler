@@ -14,16 +14,16 @@ import org.opensearch.rest.RestStatus;
 
 import java.io.IOException;
 
-public class RestJobDetailsResponse extends ActionResponse implements ToXContentObject {
+public class GetJobDetailsResponse extends ActionResponse implements ToXContentObject {
 
     private final RestStatus restStatus;
 
-    public RestJobDetailsResponse(StreamInput in) throws IOException {
+    public GetJobDetailsResponse(StreamInput in) throws IOException {
         super(in);
         restStatus = in.readEnum(RestStatus.class);
     }
 
-    public RestJobDetailsResponse(String jobIndex, String jobParamAction, String jobRunnerAction, RestStatus restStatus) {
+    public GetJobDetailsResponse(RestStatus restStatus) {
         this.restStatus=restStatus;
     }
 

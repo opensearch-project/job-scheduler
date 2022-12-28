@@ -55,43 +55,38 @@ public class RestGetJobTypeAction extends BaseRestHandler {
     protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
-        String jobType = restRequest.param("jobType");
-        String extensionId= restRequest.param("extensionId");
-        GetJobTypeRequest getJobTypeRequest = new GetJobTypeRequest(jobType, extensionId);
-        RestRequest.Method method = restRequest.getHttpRequest().method();
-        return channel -> client
-                .execute(GetJobTypeAction.INSTANCE, getJobTypeRequest, getJobTypeResponse(channel, method,getJobTypeRequest,extensionId));
+        String jobType;
+        String extensionId=null;
+        try{
+            jobType = restRequest.param("jobType");
+            extensionId= restRequest.param("extensionId");
+        }catch (Exception e){
+            logger.info("Failed get job type for extensionId "+extensionId, e);
+            return channel -> getJobTypeResponse(channel, RestStatus.BAD_REQUEST);
+        }
 
+        //GetJobTypeRequest getJobTypeRequest = new GetJobTypeRequest(jobType, extensionId);
+        JobDetails jobDetails = jobDetailsHashMap.getOrDefault(extensionId,new JobDetails());
+        jobDetails.setJobType(jobType);
+        jobDetailsHashMap.put(extensionId,jobDetails);
+
+        logger.info("Job Details Map size jobType: "+jobDetailsHashMap.size() );
+        for (Map.Entry<String, JobDetails> map:jobDetailsHashMap.entrySet()){
+            logger.info("Key is: "+map.getValue()+" Value is : "+map.getValue().toString());
+        }
+
+        return channel -> getJobTypeResponse(channel, RestStatus.OK);
     }
 
-    private RestResponseListener<RestJobDetailsResponse> getJobTypeResponse(
+    private RestResponseListener<GetJobDetailsResponse> getJobTypeResponse(
             RestChannel channel,
-            RestRequest.Method method,
-            GetJobTypeRequest request,
-            String extensionId
+            RestStatus status
     ) {
-        try{
-            JobDetails jobDetails = jobDetailsHashMap.get(extensionId);
-            jobDetails.setJobType(request.getJobType());
-            jobDetailsHashMap.put(extensionId,jobDetails);
-
-        } catch (Exception e) {
-            logger.error(e);
-        }
-
-        System.out.println("Job Details Map size : "+jobDetailsHashMap.size() );
-        for (Map.Entry<String, JobDetails> map:jobDetailsHashMap.entrySet()){
-            System.out.println("Key is: "+map.getValue()+" Value is : "+map.getValue().toString());
-        }
         return new RestResponseListener<>(channel) {
             @Override
-            public RestResponse buildResponse(RestJobDetailsResponse response) throws Exception {
-                RestStatus restStatus = RestStatus.CREATED;
-                if (method == RestRequest.Method.PUT) {
-                    restStatus = RestStatus.OK;
-                }
+            public RestResponse buildResponse(GetJobDetailsResponse response) throws Exception {
                 BytesRestResponse bytesRestResponse = new BytesRestResponse(
-                        restStatus,
+                        status,
                         response.toXContent(channel.newBuilder(), ToXContent.EMPTY_PARAMS)
                 );
                 return bytesRestResponse;
