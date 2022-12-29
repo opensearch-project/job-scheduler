@@ -78,5 +78,4 @@
          assertThat(channel.responses().get(), equalTo(0));
          assertThat(channel.errors().get(), equalTo(0));
      }
- }
- 
+ } 

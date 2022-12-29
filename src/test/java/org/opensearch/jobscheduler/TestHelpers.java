@@ -21,4 +21,3 @@
          return BytesReference.bytes(builder).utf8ToString();
      }
  }
- 

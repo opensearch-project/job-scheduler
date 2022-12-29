@@ -72,5 +72,3 @@
          assertThat(channel.errors().get(), equalTo(0));
      }
  }
- 
- 
