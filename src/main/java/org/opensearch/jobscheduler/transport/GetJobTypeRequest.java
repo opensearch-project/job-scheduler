@@ -10,15 +10,20 @@ import org.opensearch.action.ActionRequestValidationException;
 import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.io.stream.StreamOutput;
 import org.opensearch.common.unit.TimeValue;
+import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.rest.RestRequest;
 
 import java.io.IOException;
 
 public class GetJobTypeRequest extends ActionRequest {
 
-    private String jobType;
+    private static String jobType;
 
-    private String extensionId;
+    private static String extensionId;
+
+    public static final String JOB_TYPE = "job_type";
+
+    public static final String EXTENSION_ID = "extension_id";
 
     public GetJobTypeRequest(String jobType,String extensionId){
         super();
@@ -58,5 +63,29 @@ public class GetJobTypeRequest extends ActionRequest {
     @Override
     public ActionRequestValidationException validate() {
         return null;
+    }
+
+    public static GetJobTypeRequest parse(
+            XContentParser parser) throws IOException {
+
+        while (parser.nextToken() != XContentParser.Token.END_OBJECT) {
+            String fieldName = parser.currentName();
+            parser.nextToken();
+
+            switch (fieldName) {
+                case JOB_TYPE:
+                    jobType = parser.text();
+                    break;
+                case EXTENSION_ID:
+                    extensionId = parser.text();
+                    break;
+                default:
+                    parser.skipChildren();
+                    break;
+            }
+
+        }
+        GetJobTypeRequest request = new GetJobTypeRequest(jobType,extensionId);
+        return request;
     }
 }

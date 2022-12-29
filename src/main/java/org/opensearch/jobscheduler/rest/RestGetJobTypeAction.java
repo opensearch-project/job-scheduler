@@ -12,8 +12,17 @@ import org.opensearch.common.xcontent.ToXContent;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.model.JobDetails;
-import org.opensearch.jobscheduler.transport.*;
-import org.opensearch.rest.*;
+import org.opensearch.jobscheduler.transport.GetJobDetailsResponse;
+import org.opensearch.jobscheduler.transport.GetJobTypeAction;
+import org.opensearch.jobscheduler.transport.GetJobTypeRequest;
+
+import org.opensearch.rest.BaseRestHandler;
+import org.opensearch.rest.RestChannel;
+import org.opensearch.rest.RestRequest;
+import org.opensearch.rest.RestStatus;
+import org.opensearch.rest.RestResponse;
+import org.opensearch.rest.BytesRestResponse;
+
 import org.opensearch.rest.action.RestResponseListener;
 
 import java.io.IOException;
@@ -48,34 +57,20 @@ public class RestGetJobTypeAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return unmodifiableList(asList(new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "get/_job_type"))));
+        return unmodifiableList(asList(new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_type"))));
     }
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
-        String jobType;
-        String extensionId=null;
-        try{
-            jobType = restRequest.param("jobType");
-            extensionId= restRequest.param("extensionId");
-        }catch (Exception e){
-            logger.info("Failed get job type for extensionId "+extensionId, e);
-            return channel -> getJobTypeResponse(channel, RestStatus.BAD_REQUEST);
-        }
+        GetJobTypeRequest getJobTypeRequest = GetJobTypeRequest.parse(parser);
 
-        //GetJobTypeRequest getJobTypeRequest = new GetJobTypeRequest(jobType, extensionId);
-        JobDetails jobDetails = jobDetailsHashMap.getOrDefault(extensionId,new JobDetails());
-        jobDetails.setJobType(jobType);
-        jobDetailsHashMap.put(extensionId,jobDetails);
+        JobDetails jobDetails = jobDetailsHashMap.getOrDefault(getJobTypeRequest.getExtensionId(),new JobDetails());
+        jobDetails.setJobType(getJobTypeRequest.getJobType());
+        jobDetailsHashMap.put(getJobTypeRequest.getExtensionId(),jobDetails);
 
-        logger.info("Job Details Map size jobType: "+jobDetailsHashMap.size() );
-        for (Map.Entry<String, JobDetails> map:jobDetailsHashMap.entrySet()){
-            logger.info("Key is: "+map.getValue()+" Value is : "+map.getValue().toString());
-        }
-
-        return channel -> getJobTypeResponse(channel, RestStatus.OK);
+        return channel -> client.execute(GetJobTypeAction.INSTANCE,getJobTypeRequest,getJobTypeResponse(channel, RestStatus.OK));
     }
 
     private RestResponseListener<GetJobDetailsResponse> getJobTypeResponse(

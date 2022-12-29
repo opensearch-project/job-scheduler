@@ -9,7 +9,11 @@ import org.opensearch.action.ActionRequest;
 import org.opensearch.action.ActionResponse;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.cluster.node.DiscoveryNodes;
-import org.opensearch.common.settings.*;
+import org.opensearch.common.settings.Setting;
+import org.opensearch.common.settings.Settings;
+import org.opensearch.common.settings.ClusterSettings;
+import org.opensearch.common.settings.IndexScopedSettings;
+import org.opensearch.common.settings.SettingsFilter;
 import org.opensearch.extensions.ExtensionsSettings;
 import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.jobscheduler.rest.RestGetJobIndexAction;
@@ -42,18 +46,22 @@ import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.repositories.RepositoriesService;
-import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.RestController;
-import org.opensearch.rest.RestHandler;
-import org.opensearch.rest.RestRequest;
 import org.opensearch.script.ScriptService;
 import org.opensearch.threadpool.ExecutorBuilder;
 import org.opensearch.threadpool.FixedExecutorBuilder;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.watcher.ResourceWatcherService;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableList;
@@ -185,12 +193,12 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         return ImmutableList.of(restGetJobIndexAction,restGetJobTypeAction);
     }
 
-//    @Override
-//    public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
-//        return Arrays
-//                .asList(
-//                        new ActionHandler<>(GetJobIndexAction.INSTANCE, GetJobIndexTransportAction.class),
-//                        new ActionHandler<>(GetJobTypeAction.INSTANCE, GetJobTypeTransportAction.class)
-//                );
-//    }
+    @Override
+    public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
+        return Arrays
+                .asList(
+                        new ActionHandler<>(GetJobIndexAction.INSTANCE, GetJobIndexTransportAction.class),
+                        new ActionHandler<>(GetJobTypeAction.INSTANCE, GetJobTypeTransportAction.class)
+                );
+    }
 }
