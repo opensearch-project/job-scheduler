@@ -36,6 +36,16 @@ public class GetJobDetailsResponse extends ActionResponse implements ToXContentO
         out.writeEnum(restStatus);
     }
 
+
+    public RestStatus getRestStatus() {
+        return restStatus;
+    }
+
+    public String getResponse() {
+        return response;
+    }
+
+    
     @Override
     public XContentBuilder toXContent(XContentBuilder xContentBuilder, Params params) throws IOException {
         return xContentBuilder
