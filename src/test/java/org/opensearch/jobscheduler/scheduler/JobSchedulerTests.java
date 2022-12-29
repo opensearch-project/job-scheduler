@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.scheduler;
 
 import org.opensearch.jobscheduler.spi.JobDocVersion;
@@ -28,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(RandomizedRunner.class)
-@SuppressWarnings({"rawtypes"})
+@SuppressWarnings({ "rawtypes" })
 public class JobSchedulerTests extends OpenSearchTestCase {
     private ThreadPool threadPool;
 
@@ -47,14 +50,19 @@ public class JobSchedulerTests extends OpenSearchTestCase {
         Schedule schedule = Mockito.mock(Schedule.class);
         ScheduledJobRunner runner = Mockito.mock(ScheduledJobRunner.class);
 
-        ScheduledJobParameter jobParameter = buildScheduledJobParameter("job-id", "dummy job name",
-                Instant.now().minus(1, ChronoUnit.HOURS), Instant.now(), schedule, true);
+        ScheduledJobParameter jobParameter = buildScheduledJobParameter(
+            "job-id",
+            "dummy job name",
+            Instant.now().minus(1, ChronoUnit.HOURS),
+            Instant.now(),
+            schedule,
+            true
+        );
 
         Mockito.when(schedule.getNextExecutionTime(Mockito.any())).thenReturn(Instant.now().plus(1, ChronoUnit.MINUTES));
 
         Scheduler.ScheduledCancellable cancellable = Mockito.mock(Scheduler.ScheduledCancellable.class);
         Mockito.when(this.threadPool.schedule(Mockito.any(), Mockito.any(), Mockito.anyString())).thenReturn(cancellable);
-
 
         boolean scheduled = this.scheduler.schedule("index", "job-id", jobParameter, runner, dummyVersion, jitterLimit);
         Assert.assertTrue(scheduled);
@@ -67,9 +75,14 @@ public class JobSchedulerTests extends OpenSearchTestCase {
     }
 
     public void testSchedule_disabledJob() {
-        ScheduledJobParameter jobParameter = buildScheduledJobParameter("job-id", "dummy job name",
-                Instant.now().minus(1, ChronoUnit.HOURS), Instant.now(),
-                new CronSchedule("* * * * *", ZoneId.systemDefault()), false);
+        ScheduledJobParameter jobParameter = buildScheduledJobParameter(
+            "job-id",
+            "dummy job name",
+            Instant.now().minus(1, ChronoUnit.HOURS),
+            Instant.now(),
+            new CronSchedule("* * * * *", ZoneId.systemDefault()),
+            false
+        );
         boolean scheduled = this.scheduler.schedule("index-name", "job-id", jobParameter, null, dummyVersion, jitterLimit);
         Assert.assertFalse(scheduled);
     }
@@ -126,15 +139,21 @@ public class JobSchedulerTests extends OpenSearchTestCase {
     }
 
     public void testReschedule_noEnableTime() {
-        ScheduledJobParameter jobParameter = buildScheduledJobParameter("job-id", "dummy job name",
-                null, null, null, false);
+        ScheduledJobParameter jobParameter = buildScheduledJobParameter("job-id", "dummy job name", null, null, null, false);
         Assert.assertFalse(this.scheduler.reschedule(jobParameter, null, null, dummyVersion, jitterLimit));
     }
 
     public void testReschedule_jobDescheduled() {
         Schedule schedule = Mockito.mock(Schedule.class);
-        ScheduledJobParameter jobParameter = buildScheduledJobParameter("job-id", "dummy job name",
-                Instant.now().minus(1, ChronoUnit.HOURS), Instant.now(), schedule, false, 0.6);
+        ScheduledJobParameter jobParameter = buildScheduledJobParameter(
+            "job-id",
+            "dummy job name",
+            Instant.now().minus(1, ChronoUnit.HOURS),
+            Instant.now(),
+            schedule,
+            false,
+            0.6
+        );
         JobSchedulingInfo jobSchedulingInfo = new JobSchedulingInfo("job-index", "job-id", jobParameter);
         Instant now = Instant.now();
         jobSchedulingInfo.setDescheduled(true);
@@ -148,8 +167,15 @@ public class JobSchedulerTests extends OpenSearchTestCase {
 
     public void testReschedule_scheduleJob() {
         Schedule schedule = Mockito.mock(Schedule.class);
-        ScheduledJobParameter jobParameter = buildScheduledJobParameter("job-id", "dummy job name",
-                Instant.now().minus(1, ChronoUnit.HOURS), Instant.now(), schedule, false, 0.6);
+        ScheduledJobParameter jobParameter = buildScheduledJobParameter(
+            "job-id",
+            "dummy job name",
+            Instant.now().minus(1, ChronoUnit.HOURS),
+            Instant.now(),
+            schedule,
+            false,
+            0.6
+        );
         JobSchedulingInfo jobSchedulingInfo = new JobSchedulingInfo("job-index", "job-id", jobParameter);
         Instant now = Instant.now();
         jobSchedulingInfo.setDescheduled(false);
@@ -166,13 +192,26 @@ public class JobSchedulerTests extends OpenSearchTestCase {
         Mockito.verify(this.threadPool).schedule(Mockito.any(), Mockito.any(), Mockito.anyString());
     }
 
-    static ScheduledJobParameter buildScheduledJobParameter(String id, String name, Instant updateTime,
-        Instant enableTime, Schedule schedule, boolean enabled) {
+    static ScheduledJobParameter buildScheduledJobParameter(
+        String id,
+        String name,
+        Instant updateTime,
+        Instant enableTime,
+        Schedule schedule,
+        boolean enabled
+    ) {
         return buildScheduledJobParameter(id, name, updateTime, enableTime, schedule, enabled, null);
     }
 
-    static ScheduledJobParameter buildScheduledJobParameter(String id, String name, Instant updateTime,
-            Instant enableTime, Schedule schedule, boolean enabled, Double jitter) {
+    static ScheduledJobParameter buildScheduledJobParameter(
+        String id,
+        String name,
+        Instant updateTime,
+        Instant enableTime,
+        Schedule schedule,
+        boolean enabled,
+        Double jitter
+    ) {
         return new ScheduledJobParameter() {
             @Override
             public String getName() {
@@ -199,7 +238,8 @@ public class JobSchedulerTests extends OpenSearchTestCase {
                 return enabled;
             }
 
-            @Override public Double getJitter() {
+            @Override
+            public Double getJitter() {
                 return jitter;
             }
 

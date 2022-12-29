@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.scheduler;
 
 import java.util.Map;
@@ -19,9 +22,9 @@ public class ScheduledJobInfo {
     }
 
     public Map<String, JobSchedulingInfo> getJobsByIndex(String indexName) {
-        if(!this.jobInfoMap.containsKey(indexName)) {
+        if (!this.jobInfoMap.containsKey(indexName)) {
             synchronized (this.jobInfoMap) {
-                if(!this.jobInfoMap.containsKey(indexName)) {
+                if (!this.jobInfoMap.containsKey(indexName)) {
                     this.jobInfoMap.put(indexName, new ConcurrentHashMap<>());
                 }
             }
@@ -34,9 +37,9 @@ public class ScheduledJobInfo {
     }
 
     public void addJob(String indexName, String jobId, JobSchedulingInfo jobInfo) {
-        if(!this.jobInfoMap.containsKey(indexName)) {
+        if (!this.jobInfoMap.containsKey(indexName)) {
             synchronized (this.jobInfoMap) {
-                if(!this.jobInfoMap.containsKey(indexName)) {
+                if (!this.jobInfoMap.containsKey(indexName)) {
                     jobInfoMap.put(indexName, new ConcurrentHashMap<>());
                 }
             }
@@ -46,7 +49,7 @@ public class ScheduledJobInfo {
     }
 
     public JobSchedulingInfo removeJob(String indexName, String jobId) {
-        if(this.jobInfoMap.containsKey(indexName)) {
+        if (this.jobInfoMap.containsKey(indexName)) {
             return this.jobInfoMap.get(indexName).remove(jobId);
         }
 

@@ -274,7 +274,7 @@ afterEvaluate {
         maintainer 'OpenSearch Team <opensearch@amazon.com>'
         url 'https://opensearch.org/downloads.html'
         summary '''
-         JobScheduler plugin for OpenSearch. 
+         JobScheduler plugin for OpenSearch.
          Reference documentation can be found at https://docs-beta.opensearch.org/.
     '''.stripIndent().replace('\n', ' ').trim()
     }
