@@ -185,12 +185,12 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         return ImmutableList.of(restGetJobIndexAction,restGetJobTypeAction);
     }
 
-//    @Override
-//    public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
-//        return Arrays
-//                .asList(
-//                        new ActionHandler<>(GetJobIndexAction.INSTANCE, GetJobIndexTransportAction.class),
-//                        new ActionHandler<>(GetJobTypeAction.INSTANCE, GetJobTypeTransportAction.class)
-//                );
-//    }
+   @Override
+   public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
+       return Arrays
+               .asList(
+                       new ActionHandler<>(GetJobIndexAction.INSTANCE, GetJobIndexTransportAction.class),
+                       new ActionHandler<>(GetJobTypeAction.INSTANCE, GetJobTypeTransportAction.class)
+               );
+   }
 }

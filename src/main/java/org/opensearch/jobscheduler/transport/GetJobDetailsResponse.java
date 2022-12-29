@@ -17,14 +17,18 @@ import java.io.IOException;
 public class GetJobDetailsResponse extends ActionResponse implements ToXContentObject {
 
     private final RestStatus restStatus;
+    private final String response;
+    private final static String RESPONSE="response";
 
     public GetJobDetailsResponse(StreamInput in) throws IOException {
         super(in);
         restStatus = in.readEnum(RestStatus.class);
+        response= in.readString();
     }
 
-    public GetJobDetailsResponse(RestStatus restStatus) {
+    public GetJobDetailsResponse(RestStatus restStatus, String response) {
         this.restStatus=restStatus;
+        this.response=response;
     }
 
     @Override
@@ -35,7 +39,8 @@ public class GetJobDetailsResponse extends ActionResponse implements ToXContentO
     @Override
     public XContentBuilder toXContent(XContentBuilder xContentBuilder, Params params) throws IOException {
         return xContentBuilder
-                .startObject()
-                .endObject();
+        .startObject()
+        .field(RESPONSE, response)
+        .endObject();
     }
 }

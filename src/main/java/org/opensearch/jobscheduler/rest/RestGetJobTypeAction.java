@@ -48,34 +48,20 @@ public class RestGetJobTypeAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return unmodifiableList(asList(new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "get/_job_type"))));
+        return unmodifiableList(asList(new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_type"))));
     }
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
-        String jobType;
-        String extensionId=null;
-        try{
-            jobType = restRequest.param("jobType");
-            extensionId= restRequest.param("extensionId");
-        }catch (Exception e){
-            logger.info("Failed get job type for extensionId "+extensionId, e);
-            return channel -> getJobTypeResponse(channel, RestStatus.BAD_REQUEST);
-        }
+        GetJobTypeRequest getJobTypeRequest = GetJobTypeRequest.parse(parser);
 
-        //GetJobTypeRequest getJobTypeRequest = new GetJobTypeRequest(jobType, extensionId);
-        JobDetails jobDetails = jobDetailsHashMap.getOrDefault(extensionId,new JobDetails());
-        jobDetails.setJobType(jobType);
-        jobDetailsHashMap.put(extensionId,jobDetails);
+        JobDetails jobDetails = jobDetailsHashMap.getOrDefault(getJobTypeRequest.getExtensionId(),new JobDetails());
+        jobDetails.setJobType(getJobTypeRequest.getJobType());
+        jobDetailsHashMap.put(getJobTypeRequest.getExtensionId(),jobDetails);
 
-        logger.info("Job Details Map size jobType: "+jobDetailsHashMap.size() );
-        for (Map.Entry<String, JobDetails> map:jobDetailsHashMap.entrySet()){
-            logger.info("Key is: "+map.getValue()+" Value is : "+map.getValue().toString());
-        }
-
-        return channel -> getJobTypeResponse(channel, RestStatus.OK);
+        return channel -> client.execute(GetJobTypeAction.INSTANCE,getJobTypeRequest,getJobTypeResponse(channel, RestStatus.OK));
     }
 
     private RestResponseListener<GetJobDetailsResponse> getJobTypeResponse(

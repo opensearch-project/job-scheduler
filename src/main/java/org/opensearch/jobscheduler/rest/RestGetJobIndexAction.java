@@ -13,6 +13,8 @@ import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.jobscheduler.transport.GetJobDetailsResponse;
+import org.opensearch.jobscheduler.transport.GetJobIndexAction;
+import org.opensearch.jobscheduler.transport.GetJobIndexRequest;
 import org.opensearch.rest.*;
 import org.opensearch.rest.action.RestResponseListener;
 
@@ -51,38 +53,19 @@ public class RestGetJobIndexAction extends BaseRestHandler {
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
-        logger.info("In Prepare request method");
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
-        String jobIndex;
-        String jobParamAction;
-        String jobRunnerAction;
-        String extensionId=null;
-        try{
-            jobIndex = restRequest.param("jobIndex");
-            jobParamAction= restRequest.param("jobParamAction");
-            jobRunnerAction= restRequest.param("jobRunnerAction");
-            extensionId= restRequest.param("extensionId");
-        }catch (Exception e){
-            logger.info("Failed get job index for extensionId "+extensionId, e);
-            return channel -> getJobIndexResponse(channel, RestStatus.BAD_REQUEST);
-        }
-        //GetJobIndexRequest getJobIndexRequest = new GetJobIndexRequest(jobIndex, jobParamAction,jobRunnerAction,extensionId);
+        GetJobIndexRequest getJobIndexRequest = GetJobIndexRequest.parse(parser);
 
-        JobDetails jobDetails = jobDetailsHashMap.getOrDefault(extensionId,new JobDetails());
-        jobDetails.setJobIndex(jobIndex);
-        jobDetails.setJobParamAction(jobParamAction);
-        jobDetails.setJobRunnerAction(jobRunnerAction);
+        JobDetails jobDetails = jobDetailsHashMap.getOrDefault(getJobIndexRequest.getExtensionId(),new JobDetails());
+        jobDetails.setJobIndex(getJobIndexRequest.getJobIndex());
+        jobDetails.setJobParamAction(getJobIndexRequest.getJobParamAction());
+        jobDetails.setJobRunnerAction(getJobIndexRequest.getJobRunnerAction());
 
-        jobDetailsHashMap.put(extensionId,jobDetails);
+        jobDetailsHashMap.put(getJobIndexRequest.getExtensionId(),jobDetails);
 
-        logger.info("Job Details Map size jobIndex: "+jobDetailsHashMap.size() );
-        for (Map.Entry<String, JobDetails> map:jobDetailsHashMap.entrySet()){
-            logger.info("Key is: "+map.getValue()+" Value is : "+map.getValue().toString());
-        }
-
-        return channel -> getJobIndexResponse(channel, RestStatus.OK);
+        return channel -> client.execute(GetJobIndexAction.INSTANCE,getJobIndexRequest,getJobIndexResponse(channel, RestStatus.OK));
 
     }
 
@@ -92,10 +75,10 @@ public class RestGetJobIndexAction extends BaseRestHandler {
     ) {
         return new RestResponseListener<>(channel) {
             @Override
-            public RestResponse buildResponse(GetJobDetailsResponse response) throws Exception {
+            public RestResponse buildResponse(GetJobDetailsResponse getJobDetailsResponse) throws Exception {
                 BytesRestResponse bytesRestResponse = new BytesRestResponse(
                         status,
-                        response.toXContent(channel.newBuilder(), ToXContent.EMPTY_PARAMS)
+                        getJobDetailsResponse.toXContent(channel.newBuilder(), ToXContent.EMPTY_PARAMS)
                 );
                 return bytesRestResponse;
             }
