@@ -26,6 +26,7 @@ buildscript {
 plugins {
     id 'nebula.ospackage' version "8.3.0"
     id 'java-library'
+    id "com.diffplug.spotless" version "6.12.0" apply false
 }
 
 apply plugin: 'opensearch.opensearchplugin'
@@ -33,6 +34,7 @@ apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-rest-test'
 apply plugin: 'opensearch.pluginzip'
 apply from: 'build-tools/opensearchplugin-coverage.gradle'
+apply from: 'gradle/formatting.gradle'
 
 ext {
     projectSubstitutions = [:]
@@ -272,7 +274,7 @@ afterEvaluate {
         maintainer 'OpenSearch Team <opensearch@amazon.com>'
         url 'https://opensearch.org/downloads.html'
         summary '''
-         JobScheduler plugin for OpenSearch. 
+         JobScheduler plugin for OpenSearch.
          Reference documentation can be found at https://docs-beta.opensearch.org/.
     '''.stripIndent().replace('\n', ' ').trim()
     }
