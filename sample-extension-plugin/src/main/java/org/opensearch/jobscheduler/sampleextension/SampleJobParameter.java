@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.sampleextension;
 
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -39,8 +42,7 @@ public class SampleJobParameter implements ScheduledJobParameter {
     private Long lockDurationSeconds;
     private Double jitter;
 
-    public SampleJobParameter() {
-    }
+    public SampleJobParameter() {}
 
     public SampleJobParameter(String id, String name, String indexToWatch, Schedule schedule, Long lockDurationSeconds, Double jitter) {
         this.jobName = name;
@@ -85,7 +87,8 @@ public class SampleJobParameter implements ScheduledJobParameter {
         return this.lockDurationSeconds;
     }
 
-    @Override public Double getJitter() {
+    @Override
+    public Double getJitter() {
         return jitter;
     }
 

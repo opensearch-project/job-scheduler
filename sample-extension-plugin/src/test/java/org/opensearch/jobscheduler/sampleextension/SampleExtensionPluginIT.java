@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.sampleextension;
 
 import org.opensearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -30,14 +33,16 @@ public class SampleExtensionPluginIT extends OpenSearchIntegTestCase {
 
         NodesInfoRequest nodesInfoRequest = new NodesInfoRequest();
         nodesInfoRequest.addMetric(NodesInfoRequest.Metric.PLUGINS.metricName());
-        NodesInfoResponse nodesInfoResponse = OpenSearchIntegTestCase.client().admin().cluster().nodesInfo(nodesInfoRequest)
-                .actionGet();
-        List<PluginInfo> pluginInfos = nodesInfoResponse.getNodes().stream()
-                .flatMap((Function<NodeInfo, Stream<PluginInfo>>) nodeInfo -> nodeInfo.getInfo(PluginsAndModules.class)
-                        .getPluginInfos().stream()).collect(Collectors.toList());
-        Assert.assertTrue(pluginInfos.stream().anyMatch(pluginInfo -> pluginInfo.getName()
-                .equals("opensearch-job-scheduler")));
-        Assert.assertTrue(pluginInfos.stream().anyMatch(pluginInfo -> pluginInfo.getName()
-                .equals("opensearch-job-scheduler-sample-extension")));
+        NodesInfoResponse nodesInfoResponse = OpenSearchIntegTestCase.client().admin().cluster().nodesInfo(nodesInfoRequest).actionGet();
+        List<PluginInfo> pluginInfos = nodesInfoResponse.getNodes()
+            .stream()
+            .flatMap(
+                (Function<NodeInfo, Stream<PluginInfo>>) nodeInfo -> nodeInfo.getInfo(PluginsAndModules.class).getPluginInfos().stream()
+            )
+            .collect(Collectors.toList());
+        Assert.assertTrue(pluginInfos.stream().anyMatch(pluginInfo -> pluginInfo.getName().equals("opensearch-job-scheduler")));
+        Assert.assertTrue(
+            pluginInfos.stream().anyMatch(pluginInfo -> pluginInfo.getName().equals("opensearch-job-scheduler-sample-extension"))
+        );
     }
 }

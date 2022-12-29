@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.spi;
 
 import org.opensearch.jobscheduler.spi.utils.LockService;
@@ -16,8 +19,13 @@ public class JobExecutionContext {
     private final String jobIndexName;
     private final String jobId;
 
-    public JobExecutionContext(Instant expectedExecutionTime, JobDocVersion jobVersion, LockService lockService,
-                               String jobIndexName, String jobId) {
+    public JobExecutionContext(
+        Instant expectedExecutionTime,
+        JobDocVersion jobVersion,
+        LockService lockService,
+        String jobIndexName,
+        String jobId
+    ) {
         this.expectedExecutionTime = expectedExecutionTime;
         this.jobVersion = jobVersion;
         this.lockService = lockService;

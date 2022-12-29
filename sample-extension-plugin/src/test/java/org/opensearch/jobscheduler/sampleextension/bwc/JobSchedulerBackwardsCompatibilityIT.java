@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.sampleextension.bwc;
 
 import org.junit.Assert;
@@ -30,7 +33,7 @@ public class JobSchedulerBackwardsCompatibilityIT extends SampleExtensionIntegTe
         Map<String, Object> response = getAsMap(uri);
         Map<String, Map<String, Object>> responseMap = (Map<String, Map<String, Object>>) response.get("nodes");
 
-        for (Map<String, Object> respValues: responseMap.values()) {
+        for (Map<String, Object> respValues : responseMap.values()) {
             List<Map<String, Object>> plugins = (List<Map<String, Object>>) respValues.get("plugins");
             List<String> pluginNames = plugins.stream().map(plugin -> plugin.get("name").toString()).collect(Collectors.toList());
 
@@ -50,13 +53,19 @@ public class JobSchedulerBackwardsCompatibilityIT extends SampleExtensionIntegTe
                     * we cannot trigger a call for scheduling watcher job, as the older nodes do not have sample-extension plugin.
                      */
                     Map<String, Object> responseForOldNode = getAsMap(getPluginUriForMixedCluster("third"));
-                    Map<String, Map<String, Object>> responseMapForOldNode = (Map<String, Map<String, Object>>) responseForOldNode.get("nodes");
+                    Map<String, Map<String, Object>> responseMapForOldNode = (Map<String, Map<String, Object>>) responseForOldNode.get(
+                        "nodes"
+                    );
 
-                    for (Map<String, Object> respValuesForOldNode: responseMapForOldNode.values()) {
+                    for (Map<String, Object> respValuesForOldNode : responseMapForOldNode.values()) {
                         List<Map<String, Object>> pluginsForOldNode = (List<Map<String, Object>>) respValuesForOldNode.get("plugins");
-                        List<String> pluginNamesForOldNode = pluginsForOldNode.stream().map(plugin -> plugin.get("name").toString()).collect(Collectors.toList());
-                        Assert.assertTrue("third".equals(System.getProperty("tests.rest.bwcsuite_round")) ||
-                                pluginNamesForOldNode.contains("opendistro-job-scheduler"));
+                        List<String> pluginNamesForOldNode = pluginsForOldNode.stream()
+                            .map(plugin -> plugin.get("name").toString())
+                            .collect(Collectors.toList());
+                        Assert.assertTrue(
+                            "third".equals(System.getProperty("tests.rest.bwcsuite_round"))
+                                || pluginNamesForOldNode.contains("opendistro-job-scheduler")
+                        );
                     }
                 case UPGRADED:
                     /*
@@ -79,16 +88,20 @@ public class JobSchedulerBackwardsCompatibilityIT extends SampleExtensionIntegTe
             case MIXED: {
                 return getPluginUriForMixedCluster(System.getProperty("tests.rest.bwcsuite_round"));
             }
-            case UPGRADED: return "_nodes/plugins";
+            case UPGRADED:
+                return "_nodes/plugins";
         }
         return null;
     }
 
     private String getPluginUriForMixedCluster(String node) {
         switch (node) {
-            case "second": return "_nodes/" + CLUSTER_NAME + "-1/plugins";
-            case "third": return "_nodes/" + CLUSTER_NAME + "-2/plugins";
-            default: return "_nodes/" + CLUSTER_NAME + "-0/plugins";
+            case "second":
+                return "_nodes/" + CLUSTER_NAME + "-1/plugins";
+            case "third":
+                return "_nodes/" + CLUSTER_NAME + "-2/plugins";
+            default:
+                return "_nodes/" + CLUSTER_NAME + "-0/plugins";
         }
     }
 
@@ -96,6 +109,7 @@ public class JobSchedulerBackwardsCompatibilityIT extends SampleExtensionIntegTe
         OLD,
         MIXED,
         UPGRADED;
+
         static ClusterType parse(String value) {
             switch (value) {
                 case "old_cluster":
@@ -120,22 +134,29 @@ public class JobSchedulerBackwardsCompatibilityIT extends SampleExtensionIntegTe
         * Thus, failure to schedule the job would mean, backward incompatible changes were made in the serde logic.
         * & the assert would fail.
          */
-        String jobParameter =
-                 "{" +
-                    "\"name\":\"sample-job-it\"," +
-                    "\"enabled\":true," +
-                    "\"enabled_time\":" + now.toEpochMilli() + ", " +
-                    "\"last_update_time\":" + now.toEpochMilli() + ", " +
-                    "\"schedule\":{" +
-                        "\"interval\":{" +
-                            "\"start_time\":" + now.toEpochMilli() + "," +
-                            "\"period\":1," +
-                            "\"unit\":\"Minutes\"" +
-                        "}" +
-                    "}," +
-                    "\"index_name_to_watch\":\"" + index + "\"," +
-                    "\"lock_duration_seconds\":120" +
-                 "}";
+        String jobParameter = "{"
+            + "\"name\":\"sample-job-it\","
+            + "\"enabled\":true,"
+            + "\"enabled_time\":"
+            + now.toEpochMilli()
+            + ", "
+            + "\"last_update_time\":"
+            + now.toEpochMilli()
+            + ", "
+            + "\"schedule\":{"
+            + "\"interval\":{"
+            + "\"start_time\":"
+            + now.toEpochMilli()
+            + ","
+            + "\"period\":1,"
+            + "\"unit\":\"Minutes\""
+            + "}"
+            + "},"
+            + "\"index_name_to_watch\":\""
+            + index
+            + "\","
+            + "\"lock_duration_seconds\":120"
+            + "}";
 
         // Creates a new watcher job.
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);

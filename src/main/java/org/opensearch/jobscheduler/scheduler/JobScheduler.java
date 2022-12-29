@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.scheduler;
 
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
@@ -60,8 +63,14 @@ public class JobScheduler {
         return this.scheduledJobInfo.getJobsByIndex(indexName).keySet();
     }
 
-    public boolean schedule(String indexName, String docId, ScheduledJobParameter scheduledJobParameter,
-                            ScheduledJobRunner jobRunner, JobDocVersion version, Double jitterLimit) {
+    public boolean schedule(
+        String indexName,
+        String docId,
+        ScheduledJobParameter scheduledJobParameter,
+        ScheduledJobRunner jobRunner,
+        JobDocVersion version,
+        Double jitterLimit
+    ) {
         if (!scheduledJobParameter.isEnabled()) {
             return false;
         }
@@ -122,11 +131,15 @@ public class JobScheduler {
     }
 
     @VisibleForTesting
-    boolean reschedule(ScheduledJobParameter jobParameter, JobSchedulingInfo jobInfo, ScheduledJobRunner jobRunner,
-                       JobDocVersion version, Double jitterLimit) {
+    boolean reschedule(
+        ScheduledJobParameter jobParameter,
+        JobSchedulingInfo jobInfo,
+        ScheduledJobRunner jobRunner,
+        JobDocVersion version,
+        Double jitterLimit
+    ) {
         if (jobParameter.getEnabledTime() == null) {
-            log.info("There is no enable time of job {}, this job should never be scheduled.",
-                    jobParameter.getName());
+            log.info("There is no enable time of job {}, this job should never be scheduled.", jobParameter.getName());
             return false;
         }
 
@@ -170,8 +183,13 @@ public class JobScheduler {
             this.reschedule(jobParameter, jobInfo, jobRunner, version, jitterLimit);
 
             // invoke job runner
-            JobExecutionContext context = new JobExecutionContext(jobInfo.getExpectedPreviousExecutionTime(), version, lockService,
-                jobInfo.getIndexName(), jobInfo.getJobId());
+            JobExecutionContext context = new JobExecutionContext(
+                jobInfo.getExpectedPreviousExecutionTime(),
+                version,
+                lockService,
+                jobInfo.getIndexName(),
+                jobInfo.getJobId()
+            );
 
             jobRunner.runJob(jobParameter, context);
         };
@@ -180,8 +198,13 @@ public class JobScheduler {
             return false;
         }
 
-        jobInfo.setScheduledCancellable(this.threadPool.schedule(runnable, new TimeValue(duration.toNanos(),
-                        TimeUnit.NANOSECONDS), JobSchedulerPlugin.OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME));
+        jobInfo.setScheduledCancellable(
+            this.threadPool.schedule(
+                runnable,
+                new TimeValue(duration.toNanos(), TimeUnit.NANOSECONDS),
+                JobSchedulerPlugin.OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME
+            )
+        );
 
         return true;
     }

@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.sampleextension;
 
 import org.junit.Assert;
@@ -69,7 +72,8 @@ public class SampleJobRunnerIT extends SampleExtensionIntegTestCase {
         String newIndex = createTestIndex();
         jobParameter.setIndexToWatch(newIndex);
 
-        // wait till the job runner runs for the first time after 1 min & inserts a record into the watched index & then update the job with new params.
+        // wait till the job runner runs for the first time after 1 min & inserts a record into the watched index & then update the job with
+        // new params.
         waitAndCreateWatcherJob(schedJobParameter.getIndexToWatch(), jobId, jobParameter);
         long actualCount = waitAndCountRecords(newIndex, 130000);
 
@@ -86,7 +90,8 @@ public class SampleJobRunnerIT extends SampleExtensionIntegTestCase {
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-lock-test-it");
         jobParameter.setIndexToWatch(index);
-        // ensures that the next job tries to run even before the previous job finished & released its lock. Also look at SampleJobRunner.runTaskForLockIntegrationTests
+        // ensures that the next job tries to run even before the previous job finished & released its lock. Also look at
+        // SampleJobRunner.runTaskForLockIntegrationTests
         jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
         jobParameter.setLockDurationSeconds(120L);
 
@@ -107,7 +112,8 @@ public class SampleJobRunnerIT extends SampleExtensionIntegTestCase {
         Assert.assertEquals(1, actualCount);
         Assert.assertTrue(doesLockExistByLockTime(lockTime));
 
-        // Asserts that the new job ran after 2 mins after the first job lock is released. Hence new record is inserted into the watched index.
+        // Asserts that the new job ran after 2 mins after the first job lock is released. Hence new record is inserted into the watched
+        // index.
         // Also asserts that the old lock is released.
         actualCount = waitAndCountRecords(index, 130000);
         Assert.assertEquals(2, actualCount);

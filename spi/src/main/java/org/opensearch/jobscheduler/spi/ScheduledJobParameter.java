@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.spi;
 
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
@@ -61,5 +64,7 @@ public interface ScheduledJobParameter extends ToXContentObject {
      *
      * @return job execution jitter
      */
-    default Double getJitter() {return null;}
+    default Double getJitter() {
+        return null;
+    }
 }
