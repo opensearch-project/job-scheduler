@@ -11,6 +11,9 @@ package org.opensearch.jobscheduler.transport;
 import org.opensearch.action.ActionType;
 import org.opensearch.jobscheduler.constant.CommonValue;
 
+/**
+ * Get Job Index action
+ */
 public class GetJobIndexAction extends ActionType<GetJobDetailsResponse> {
 
     public static final String NAME = CommonValue.EXTERNAL_ACTION_PREFIX + "get/jobIndex";

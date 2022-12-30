@@ -8,12 +8,10 @@
  */
 package org.opensearch.jobscheduler.rest;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.bytes.BytesArray;
 import org.opensearch.common.xcontent.XContentType;
-import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.rest.RestRequest;
@@ -24,7 +22,6 @@ import org.opensearch.test.rest.FakeRestRequest;
 import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.List;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -34,27 +31,27 @@ public class RestGetJobIndexActionTests extends OpenSearchTestCase {
 
     private RestGetJobIndexAction action;
 
-    public Map<String, JobDetails> jobDetailsHashMap;
+    public Map<String, JobDetails> indexToJobDetails;
+
+    private String getJobIndexPath;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        jobDetailsHashMap = new HashMap<>();
-        action = new RestGetJobIndexAction(jobDetailsHashMap);
+        indexToJobDetails = new HashMap<>();
+        action = new RestGetJobIndexAction(indexToJobDetails);
+        getJobIndexPath = action.routes().get(0).getPath();
     }
 
     public void testGetNames() {
         String name = action.getName();
-        Assert.assertEquals(action.GET_JOB_INDEX_ACTION, name);
+        assertEquals(action.GET_JOB_INDEX_ACTION, name);
     }
 
     public void testGetRoutes() {
         List<RestHandler.Route> routes = action.routes();
 
-        Assert.assertEquals(
-            String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_index"),
-            routes.get(0).getPath()
-        );
+        assertEquals(getJobIndexPath, routes.get(0).getPath());
     }
 
     public void testPrepareRequest() throws IOException {
@@ -63,7 +60,7 @@ public class RestGetJobIndexActionTests extends OpenSearchTestCase {
             "{\"job_index\":\"demo_job_index\",\"job_runner_action\":\"action\",\"job_parser_action\":\"parser_action\",\"extension_id\":\"extension_id\"}";
         Map<String, String> params = new HashMap<>();
         FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.PUT)
-            .withPath("/_plugins/_job_scheduler/_get/_job_index")
+            .withPath(getJobIndexPath)
             .withParams(params)
             .withContent(new BytesArray(content), XContentType.JSON)
             .build();

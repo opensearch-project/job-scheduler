@@ -16,6 +16,9 @@ import org.opensearch.common.xcontent.XContentParser;
 
 import java.io.IOException;
 
+/**
+ * Get Job Type Request Model class
+ */
 public class GetJobTypeRequest extends ActionRequest {
 
     private static String jobType;

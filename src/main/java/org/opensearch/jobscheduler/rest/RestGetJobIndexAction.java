@@ -46,10 +46,10 @@ public class RestGetJobIndexAction extends BaseRestHandler {
 
     private final Logger logger = LogManager.getLogger(RestGetJobIndexAction.class);
 
-    private Map<String, JobDetails> jobDetailsHashMap;
+    private Map<String, JobDetails> indexToJobDetails;
 
-    public RestGetJobIndexAction(Map<String, JobDetails> jobDetailsHashMap) {
-        this.jobDetailsHashMap = jobDetailsHashMap;
+    public RestGetJobIndexAction(Map<String, JobDetails> indexToJobDetails) {
+        this.indexToJobDetails = indexToJobDetails;
     }
 
     @Override
@@ -71,12 +71,12 @@ public class RestGetJobIndexAction extends BaseRestHandler {
 
         GetJobIndexRequest getJobIndexRequest = GetJobIndexRequest.parse(parser);
 
-        JobDetails jobDetails = jobDetailsHashMap.getOrDefault(getJobIndexRequest.getExtensionId(), new JobDetails());
+        JobDetails jobDetails = indexToJobDetails.getOrDefault(getJobIndexRequest.getExtensionId(), new JobDetails());
         jobDetails.setJobIndex(getJobIndexRequest.getJobIndex());
         jobDetails.setJobParserAction(getJobIndexRequest.getJobParserAction());
         jobDetails.setJobRunnerAction(getJobIndexRequest.getJobRunnerAction());
 
-        jobDetailsHashMap.put(getJobIndexRequest.getExtensionId(), jobDetails);
+        indexToJobDetails.put(getJobIndexRequest.getExtensionId(), jobDetails);
 
         return channel -> client.execute(GetJobIndexAction.INSTANCE, getJobIndexRequest, getJobIndexResponse(channel, RestStatus.OK));
 

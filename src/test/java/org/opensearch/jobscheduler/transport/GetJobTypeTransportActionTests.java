@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.transport;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.support.ActionFilters;
@@ -34,22 +33,25 @@ public class GetJobTypeTransportActionTests extends OpenSearchTestCase {
         action = new GetJobTypeTransportAction("", mock(TransportService.class), mock(ActionFilters.class));
         request = new GetJobTypeRequest("demo_job_type", "extension_id");
         task = mock(Task.class);
-        response = new ActionListener<GetJobDetailsResponse>() {
+        response = new ActionListener<>() {
             @Override
             public void onResponse(GetJobDetailsResponse jobDetailsResponse) {
-                // onResponse will not be called as we do not have the AD index
-                Assert.assertEquals("success", jobDetailsResponse.getResponse());
+                assertEquals("success", jobDetailsResponse.getResponse());
             }
 
             @Override
             public void onFailure(Exception e) {
-                // Assert.assertTrue(true);
+                // As the onFailure method is not triggered from the execution of doExecute method, therefore assertFalse condition is
+                // defined.
+                assertFalse(true);
             }
         };
 
     }
 
     public void testGetJobTypeTransportAction() {
+        // do execute method with internally trigger onresponse method of the actionlistener.
+        // The definition of onResponse is defined in the setup() method above.
         action.doExecute(task, request, response);
     }
 }

@@ -17,6 +17,9 @@ import org.opensearch.rest.RestStatus;
 
 import java.io.IOException;
 
+/**
+ * Response for get jobIndex and get jobType apis
+ */
 public class GetJobDetailsResponse extends ActionResponse implements ToXContentObject {
 
     private final RestStatus restStatus;

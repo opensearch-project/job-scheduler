@@ -20,6 +20,9 @@ import org.opensearch.transport.TransportService;
 
 import static org.opensearch.jobscheduler.utils.RestHandlerUtils.wrapRestActionListener;
 
+/**
+ * Get Job Index Transport Action
+ */
 public class GetJobIndexTransportAction extends HandledTransportAction<GetJobIndexRequest, GetJobDetailsResponse> {
     private static final Logger logger = LogManager.getLogger(GetJobIndexTransportAction.class);
 

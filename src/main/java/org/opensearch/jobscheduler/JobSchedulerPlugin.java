@@ -79,12 +79,12 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private LockService lockService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
-    private Map<String, JobDetails> jobDetailsHashMap;
+    private Map<String, JobDetails> indexToJobDetails;
 
     public JobSchedulerPlugin() {
         this.indicesToListen = new HashSet<>();
         this.indexToJobProviders = new HashMap<>();
-        this.jobDetailsHashMap = new HashMap<>();
+        this.indexToJobDetails = new HashMap<>();
     }
 
     @Override
@@ -217,8 +217,8 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<DiscoveryNodes> nodesInCluster
     ) {
-        RestGetJobIndexAction restGetJobIndexAction = new RestGetJobIndexAction(jobDetailsHashMap);
-        RestGetJobTypeAction restGetJobTypeAction = new RestGetJobTypeAction(jobDetailsHashMap);
+        RestGetJobIndexAction restGetJobIndexAction = new RestGetJobIndexAction(indexToJobDetails);
+        RestGetJobTypeAction restGetJobTypeAction = new RestGetJobTypeAction(indexToJobDetails);
         return ImmutableList.of(restGetJobIndexAction, restGetJobTypeAction);
     }
 

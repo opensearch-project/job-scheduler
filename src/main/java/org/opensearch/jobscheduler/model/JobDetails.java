@@ -23,12 +23,24 @@ import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedT
  */
 public class JobDetails implements ToXContentObject {
 
+    /**
+     * jobIndex from the extension.
+     */
     private String jobIndex;
 
+    /**
+     * jobType from the extension.
+     */
     private String jobType;
 
+    /**
+     * jobParser action to trigger the response back to the extension.
+     */
     private String jobParserAction;
 
+    /**
+     * jobRunner action to trigger the response back to the extension.
+     */
     private String jobRunnerAction;
 
     public static final String JOB_INDEX = "job_index";
@@ -135,8 +147,8 @@ public class JobDetails implements ToXContentObject {
         JobDetails that = (JobDetails) o;
         return Objects.equals(jobIndex, that.jobIndex)
             && Objects.equals(jobType, that.jobType)
-            && jobParserAction.equals(that.jobParserAction)
-            && jobRunnerAction.equals(that.jobRunnerAction);
+            && Objects.equals(jobParserAction, that.jobParserAction)
+            && Objects.equals(jobRunnerAction, that.jobRunnerAction);
     }
 
     @Override

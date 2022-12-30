@@ -8,8 +8,10 @@
  */
 package org.opensearch.jobscheduler.transport;
 
+import org.opensearch.common.Strings;
 import org.opensearch.common.xcontent.ToXContent;
-import org.opensearch.jobscheduler.TestHelpers;
+
+import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.rest.RestStatus;
 import org.opensearch.test.OpenSearchTestCase;
 
@@ -19,9 +21,7 @@ public class GetJobDetailsResponseTests extends OpenSearchTestCase {
 
     public void testToXContent() throws IOException {
         GetJobDetailsResponse getJobDetailsResponse = new GetJobDetailsResponse(RestStatus.OK, "success");
-        String response = TestHelpers.xContentBuilderToString(
-            getJobDetailsResponse.toXContent(TestHelpers.xContentBuilder(), ToXContent.EMPTY_PARAMS)
-        );
+        String response = Strings.toString(getJobDetailsResponse.toXContent(JsonXContent.contentBuilder(), ToXContent.EMPTY_PARAMS));
         assertEquals("{\"response\":\"success\"}", response);
     }
 

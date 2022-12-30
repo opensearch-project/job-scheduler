@@ -17,6 +17,9 @@ import org.opensearch.common.xcontent.XContentParserUtils;
 
 import java.io.IOException;
 
+/**
+ * Get Job Index Request Model class
+ */
 public class GetJobIndexRequest extends ActionRequest {
 
     private static String jobIndex;

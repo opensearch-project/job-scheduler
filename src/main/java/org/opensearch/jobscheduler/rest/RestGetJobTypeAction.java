@@ -47,7 +47,7 @@ public class RestGetJobTypeAction extends BaseRestHandler {
 
     private final Logger logger = LogManager.getLogger(RestGetJobTypeAction.class);
 
-    private Map<String, JobDetails> jobDetailsHashMap;
+    private Map<String, JobDetails> indexToJobDetails;
 
     @Override
     public String getName() {
@@ -56,8 +56,8 @@ public class RestGetJobTypeAction extends BaseRestHandler {
 
     public RestGetJobTypeAction() {}
 
-    public RestGetJobTypeAction(Map<String, JobDetails> jobDetailsHashMap) {
-        this.jobDetailsHashMap = jobDetailsHashMap;
+    public RestGetJobTypeAction(Map<String, JobDetails> indexToJobDetails) {
+        this.indexToJobDetails = indexToJobDetails;
     }
 
     @Override
@@ -73,9 +73,9 @@ public class RestGetJobTypeAction extends BaseRestHandler {
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
         GetJobTypeRequest getJobTypeRequest = GetJobTypeRequest.parse(parser);
 
-        JobDetails jobDetails = jobDetailsHashMap.getOrDefault(getJobTypeRequest.getExtensionId(), new JobDetails());
+        JobDetails jobDetails = indexToJobDetails.getOrDefault(getJobTypeRequest.getExtensionId(), new JobDetails());
         jobDetails.setJobType(getJobTypeRequest.getJobType());
-        jobDetailsHashMap.put(getJobTypeRequest.getExtensionId(), jobDetails);
+        indexToJobDetails.put(getJobTypeRequest.getExtensionId(), jobDetails);
 
         return channel -> client.execute(GetJobTypeAction.INSTANCE, getJobTypeRequest, getJobTypeResponse(channel, RestStatus.OK));
     }
