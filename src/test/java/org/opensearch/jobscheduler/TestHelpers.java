@@ -16,7 +16,7 @@ import java.io.IOException;
 
 public class TestHelpers {
 
-    public static XContentBuilder builder() throws IOException {
+    public static XContentBuilder xContentBuilder() throws IOException {
         return XContentBuilder.builder(XContentType.JSON.xContent());
     }
 

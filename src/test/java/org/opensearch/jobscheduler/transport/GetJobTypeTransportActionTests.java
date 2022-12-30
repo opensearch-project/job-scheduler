@@ -10,7 +10,6 @@ package org.opensearch.jobscheduler.transport;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.support.ActionFilters;
 import org.opensearch.tasks.Task;
@@ -50,7 +49,6 @@ public class GetJobTypeTransportActionTests extends OpenSearchTestCase {
 
     }
 
-    @Test
     public void testGetJobTypeTransportAction() {
         action.doExecute(task, request, response);
     }

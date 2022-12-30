@@ -28,24 +28,27 @@ import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.action.RestResponseListener;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
 import static org.opensearch.rest.RestRequest.Method.PUT;
 
+/**
+ * This class consists of the REST handler to GET job index from extensions.
+ */
 public class RestGetJobIndexAction extends BaseRestHandler {
 
-    private static final String GET_JOB_INDEX_ACTION = "get_job_index_action";
+    public static final String GET_JOB_INDEX_ACTION = "get_job_index_action";
 
     private final Logger logger = LogManager.getLogger(RestGetJobIndexAction.class);
 
-    private HashMap<String, JobDetails> jobDetailsHashMap;
+    private Map<String, JobDetails> jobDetailsHashMap;
 
-    public RestGetJobIndexAction(HashMap<String, JobDetails> jobDetailsHashMap) {
+    public RestGetJobIndexAction(Map<String, JobDetails> jobDetailsHashMap) {
         this.jobDetailsHashMap = jobDetailsHashMap;
     }
 
@@ -70,7 +73,7 @@ public class RestGetJobIndexAction extends BaseRestHandler {
 
         JobDetails jobDetails = jobDetailsHashMap.getOrDefault(getJobIndexRequest.getExtensionId(), new JobDetails());
         jobDetails.setJobIndex(getJobIndexRequest.getJobIndex());
-        jobDetails.setJobParamAction(getJobIndexRequest.getJobParamAction());
+        jobDetails.setJobParserAction(getJobIndexRequest.getJobParserAction());
         jobDetails.setJobRunnerAction(getJobIndexRequest.getJobRunnerAction());
 
         jobDetailsHashMap.put(getJobIndexRequest.getExtensionId(), jobDetails);
@@ -83,11 +86,7 @@ public class RestGetJobIndexAction extends BaseRestHandler {
         return new RestResponseListener<>(channel) {
             @Override
             public RestResponse buildResponse(GetJobDetailsResponse getJobDetailsResponse) throws Exception {
-                BytesRestResponse bytesRestResponse = new BytesRestResponse(
-                    status,
-                    getJobDetailsResponse.toXContent(channel.newBuilder(), ToXContent.EMPTY_PARAMS)
-                );
-                return bytesRestResponse;
+                return new BytesRestResponse(status, getJobDetailsResponse.toXContent(channel.newBuilder(), ToXContent.EMPTY_PARAMS));
             }
         };
     }

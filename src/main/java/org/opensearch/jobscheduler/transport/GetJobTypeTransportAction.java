@@ -34,7 +34,6 @@ public class GetJobTypeTransportAction extends HandledTransportAction<GetJobType
             actionListener,
             "Failed to fetch job type for extensionId  :" + request.getExtensionId()
         );
-        GetJobDetailsResponse response = new GetJobDetailsResponse(RestStatus.OK, "success");
-        listener.onResponse(response);
+        listener.onResponse(new GetJobDetailsResponse(RestStatus.OK, "success"));
     }
 }

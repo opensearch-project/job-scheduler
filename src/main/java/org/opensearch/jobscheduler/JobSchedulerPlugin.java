@@ -79,7 +79,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private LockService lockService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
-    private HashMap<String, JobDetails> jobDetailsHashMap;
+    private Map<String, JobDetails> jobDetailsHashMap;
 
     public JobSchedulerPlugin() {
         this.indicesToListen = new HashSet<>();

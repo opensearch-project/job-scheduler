@@ -18,19 +18,22 @@ import java.util.Objects;
 
 import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
 
+/**
+ * This model class stores the job details of the extension.
+ */
 public class JobDetails implements ToXContentObject {
 
     private String jobIndex;
 
     private String jobType;
 
-    private String jobParamAction;
+    private String jobParserAction;
 
     private String jobRunnerAction;
 
     public static final String JOB_INDEX = "job_index";
     public static final String JOB_TYPE = "job_type";
-    public static final String JOB_PARAM_ACTION = "job_param_action";
+    public static final String JOB_PARSER_ACTION = "job_param_action";
     public static final String JOB_RUNNER_ACTION = "job_runner_action";
 
     public JobDetails() {}
@@ -38,7 +41,7 @@ public class JobDetails implements ToXContentObject {
     public JobDetails(String jobIndex, String jobType, String jobParamAction, String jobRunnerAction) {
         this.jobIndex = jobIndex;
         this.jobType = jobType;
-        this.jobParamAction = jobParamAction;
+        this.jobParserAction = jobParamAction;
         this.jobRunnerAction = jobRunnerAction;
     }
 
@@ -51,8 +54,8 @@ public class JobDetails implements ToXContentObject {
         if (jobType != null) {
             xContentBuilder.field(JOB_TYPE, jobType);
         }
-        if (jobParamAction != null) {
-            xContentBuilder.field(JOB_PARAM_ACTION, jobParamAction);
+        if (jobParserAction != null) {
+            xContentBuilder.field(JOB_PARSER_ACTION, jobParserAction);
         }
         if (jobRunnerAction != null) {
             xContentBuilder.field(JOB_RUNNER_ACTION, jobRunnerAction);
@@ -63,7 +66,7 @@ public class JobDetails implements ToXContentObject {
     public static JobDetails parse(XContentParser parser) throws IOException {
         String jobIndex = null;
         String jobType = null;
-        String jobParamAction = null;
+        String jobParserAction = null;
         String jobRunnerAction = null;
 
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.currentToken(), parser);
@@ -78,8 +81,8 @@ public class JobDetails implements ToXContentObject {
                 case JOB_TYPE:
                     jobType = parser.text();
                     break;
-                case JOB_PARAM_ACTION:
-                    jobParamAction = parser.text();
+                case JOB_PARSER_ACTION:
+                    jobParserAction = parser.text();
                     break;
                 case JOB_RUNNER_ACTION:
                     jobRunnerAction = parser.text();
@@ -90,7 +93,7 @@ public class JobDetails implements ToXContentObject {
             }
         }
 
-        return new JobDetails(jobIndex, jobType, jobParamAction, jobRunnerAction);
+        return new JobDetails(jobIndex, jobType, jobParserAction, jobRunnerAction);
     }
 
     public String getJobIndex() {
@@ -109,12 +112,12 @@ public class JobDetails implements ToXContentObject {
         this.jobType = jobType;
     }
 
-    public String getJobParamAction() {
-        return jobParamAction;
+    public String getJobParserAction() {
+        return jobParserAction;
     }
 
-    public void setJobParamAction(String jobParamAction) {
-        this.jobParamAction = jobParamAction;
+    public void setJobParserAction(String jobParamAction) {
+        this.jobParserAction = jobParamAction;
     }
 
     public String getJobRunnerAction() {
@@ -132,13 +135,13 @@ public class JobDetails implements ToXContentObject {
         JobDetails that = (JobDetails) o;
         return Objects.equals(jobIndex, that.jobIndex)
             && Objects.equals(jobType, that.jobType)
-            && jobParamAction.equals(that.jobParamAction)
+            && jobParserAction.equals(that.jobParserAction)
             && jobRunnerAction.equals(that.jobRunnerAction);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(jobIndex, jobType, jobParamAction, jobRunnerAction);
+        return Objects.hash(jobIndex, jobType, jobParserAction, jobRunnerAction);
     }
 
     @Override
@@ -150,8 +153,8 @@ public class JobDetails implements ToXContentObject {
             + ", jobType='"
             + jobType
             + '\''
-            + ", jobParamAction='"
-            + jobParamAction
+            + ", jobParserAction='"
+            + jobParserAction
             + '\''
             + ", jobRunnerAction='"
             + jobRunnerAction

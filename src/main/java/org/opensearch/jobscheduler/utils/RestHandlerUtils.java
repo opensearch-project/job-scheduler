@@ -30,10 +30,6 @@ public final class RestHandlerUtils {
 
     /**
      * Wrap action listener to avoid return verbose error message and wrong 500 error to user.
-     * Suggestion for exception handling in AD:
-     * 1. If the error is caused by wrong input, throw IllegalArgumentException exception.
-     * 2. For other errors, please use AnomalyDetectionException or its subclass, or use
-     *    OpenSearchStatusException.
      *
      * TODO: tune this function for wrapped exception, return root exception error message
      *

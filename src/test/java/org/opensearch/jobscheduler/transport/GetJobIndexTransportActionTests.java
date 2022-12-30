@@ -10,7 +10,6 @@ package org.opensearch.jobscheduler.transport;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.support.ActionFilters;
 import org.opensearch.tasks.Task;
@@ -33,7 +32,7 @@ public class GetJobIndexTransportActionTests extends OpenSearchTestCase {
     public void setUp() throws Exception {
         super.setUp();
         action = new GetJobIndexTransportAction("", mock(TransportService.class), mock(ActionFilters.class));
-        request = new GetJobIndexRequest("demo_job_index", "job_param_action", "job_runner_action", "extension_id");
+        request = new GetJobIndexRequest("demo_job_index", "job_parser_action", "job_runner_action", "extension_id");
         task = mock(Task.class);
         response = new ActionListener<GetJobDetailsResponse>() {
             @Override
@@ -50,7 +49,6 @@ public class GetJobIndexTransportActionTests extends OpenSearchTestCase {
 
     }
 
-    @Test
     public void testGetJobIndexTransportAction() {
         action.doExecute(task, request, response);
     }

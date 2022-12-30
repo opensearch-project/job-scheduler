@@ -29,22 +29,25 @@ import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.action.RestResponseListener;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
 import static org.opensearch.rest.RestRequest.Method.PUT;
 
+/**
+ * This class consists of the REST handler to GET job type from extensions.
+ */
 public class RestGetJobTypeAction extends BaseRestHandler {
 
-    private static final String GET_JOB_TYPE_ACTION = "get_job_type_action";
+    public static final String GET_JOB_TYPE_ACTION = "get_job_type_action";
 
     private final Logger logger = LogManager.getLogger(RestGetJobTypeAction.class);
 
-    private HashMap<String, JobDetails> jobDetailsHashMap;
+    private Map<String, JobDetails> jobDetailsHashMap;
 
     @Override
     public String getName() {
@@ -53,7 +56,7 @@ public class RestGetJobTypeAction extends BaseRestHandler {
 
     public RestGetJobTypeAction() {}
 
-    public RestGetJobTypeAction(HashMap<String, JobDetails> jobDetailsHashMap) {
+    public RestGetJobTypeAction(Map<String, JobDetails> jobDetailsHashMap) {
         this.jobDetailsHashMap = jobDetailsHashMap;
     }
 
@@ -81,11 +84,7 @@ public class RestGetJobTypeAction extends BaseRestHandler {
         return new RestResponseListener<>(channel) {
             @Override
             public RestResponse buildResponse(GetJobDetailsResponse response) throws Exception {
-                BytesRestResponse bytesRestResponse = new BytesRestResponse(
-                    status,
-                    response.toXContent(channel.newBuilder(), ToXContent.EMPTY_PARAMS)
-                );
-                return bytesRestResponse;
+                return new BytesRestResponse(status, response.toXContent(channel.newBuilder(), ToXContent.EMPTY_PARAMS));
             }
         };
     }
