@@ -33,15 +33,15 @@ public class JobDetails implements ToXContentObject {
 
     public static final String JOB_INDEX = "job_index";
     public static final String JOB_TYPE = "job_type";
-    public static final String JOB_PARSER_ACTION = "job_param_action";
+    public static final String JOB_PARSER_ACTION = "job_parser_action";
     public static final String JOB_RUNNER_ACTION = "job_runner_action";
 
     public JobDetails() {}
 
-    public JobDetails(String jobIndex, String jobType, String jobParamAction, String jobRunnerAction) {
+    public JobDetails(String jobIndex, String jobType, String jobParserAction, String jobRunnerAction) {
         this.jobIndex = jobIndex;
         this.jobType = jobType;
-        this.jobParserAction = jobParamAction;
+        this.jobParserAction = jobParserAction;
         this.jobRunnerAction = jobRunnerAction;
     }
 
@@ -116,8 +116,8 @@ public class JobDetails implements ToXContentObject {
         return jobParserAction;
     }
 
-    public void setJobParserAction(String jobParamAction) {
-        this.jobParserAction = jobParamAction;
+    public void setJobParserAction(String jobParserAction) {
+        this.jobParserAction = jobParserAction;
     }
 
     public String getJobRunnerAction() {

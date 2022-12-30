@@ -30,7 +30,7 @@ public class GetJobIndexRequest extends ActionRequest {
     public static final String JOB_INDEX = "job_index";
 
     public static final String EXTENSION_ID = "extension_id";
-    private static final String JOB_PARSER_ACTION = "job_param_action";
+    private static final String JOB_PARSER_ACTION = "job_parser_action";
     public static final String JOB_RUNNER_ACTION = "job_runner_action";
 
     public GetJobIndexRequest(StreamInput in) throws IOException {

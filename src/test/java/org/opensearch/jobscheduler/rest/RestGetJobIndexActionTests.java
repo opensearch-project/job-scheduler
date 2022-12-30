@@ -60,7 +60,7 @@ public class RestGetJobIndexActionTests extends OpenSearchTestCase {
     public void testPrepareRequest() throws IOException {
 
         String content =
-            "{\"job_index\":\"demo_job_index\",\"job_runner_action\":\"action\",\"job_param_action\":\"param_action\",\"extension_id\":\"extension_id\"}";
+            "{\"job_index\":\"demo_job_index\",\"job_runner_action\":\"action\",\"job_parser_action\":\"parser_action\",\"extension_id\":\"extension_id\"}";
         Map<String, String> params = new HashMap<>();
         FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.PUT)
             .withPath("/_plugins/_job_scheduler/_get/_job_index")
