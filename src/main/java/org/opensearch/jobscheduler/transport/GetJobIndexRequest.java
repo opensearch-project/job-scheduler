@@ -125,7 +125,6 @@ public class GetJobIndexRequest extends ActionRequest {
             }
 
         }
-        GetJobIndexRequest request = new GetJobIndexRequest(jobIndex, jobParserAction, jobRunnerAction, extensionId);
-        return request;
+        return new GetJobIndexRequest(jobIndex, jobParserAction, jobRunnerAction, extensionId);
     }
 }

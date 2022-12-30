@@ -12,6 +12,7 @@ import org.junit.Before;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.bytes.BytesArray;
 import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.rest.RestRequest;
@@ -22,6 +23,7 @@ import org.opensearch.test.rest.FakeRestRequest;
 import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.List;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -40,7 +42,7 @@ public class RestGetJobTypeActionTests extends OpenSearchTestCase {
         super.setUp();
         indexToJobDetails = new HashMap<>();
         action = new RestGetJobTypeAction(indexToJobDetails);
-        getJobTypePath = action.routes().get(0).getPath();
+        getJobTypePath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_type");
     }
 
     public void testGetNames() {

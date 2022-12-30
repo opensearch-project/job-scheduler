@@ -54,8 +54,6 @@ public class RestGetJobTypeAction extends BaseRestHandler {
         return GET_JOB_TYPE_ACTION;
     }
 
-    public RestGetJobTypeAction() {}
-
     public RestGetJobTypeAction(Map<String, JobDetails> indexToJobDetails) {
         this.indexToJobDetails = indexToJobDetails;
     }

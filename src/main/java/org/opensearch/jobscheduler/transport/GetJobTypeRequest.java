@@ -88,7 +88,6 @@ public class GetJobTypeRequest extends ActionRequest {
             }
 
         }
-        GetJobTypeRequest request = new GetJobTypeRequest(jobType, extensionId);
-        return request;
+        return new GetJobTypeRequest(jobType, extensionId);
     }
 }

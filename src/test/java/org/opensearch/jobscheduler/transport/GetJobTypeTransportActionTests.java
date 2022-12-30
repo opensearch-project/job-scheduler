@@ -43,7 +43,7 @@ public class GetJobTypeTransportActionTests extends OpenSearchTestCase {
             public void onFailure(Exception e) {
                 // As the onFailure method is not triggered from the execution of doExecute method, therefore assertFalse condition is
                 // defined.
-                assertFalse(true);
+                fail("On failure method is not triggered from the test written below");
             }
         };
 
