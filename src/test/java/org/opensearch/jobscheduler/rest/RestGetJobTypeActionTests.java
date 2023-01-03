@@ -8,47 +8,78 @@
  */
 package org.opensearch.jobscheduler.rest;
 
-// public class RestGetJobTypeActionTests extends OpenSearchTestCase {
-//
-// private RestGetJobTypeAction action;
-//
-// public Map<String, JobDetails> indexToJobDetails;
-//
-// private String getJobTypePath;
-//
-// @Before
-// public void setUp() throws Exception {
-// super.setUp();
-// indexToJobDetails = new HashMap<>();
-// action = new RestGetJobTypeAction(indexToJobDetails);
-// getJobTypePath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_type");
-// }
-//
-// public void testGetNames() {
-// String name = action.getName();
-// assertEquals(action.GET_JOB_TYPE_ACTION, name);
-// }
-//
-// public void testGetRoutes() {
-// List<RestHandler.Route> routes = action.routes();
-//
-// assertEquals(getJobTypePath, routes.get(0).getPath());
-// }
-//
-// public void testPrepareRequest() throws IOException {
-//
-// String content = "{\"job_type\":\"demo_job_type\",\"extension_id\":\"extension_id\"}";
-// Map<String, String> params = new HashMap<>();
-// FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.PUT)
-// .withPath(getJobTypePath)
-// .withParams(params)
-// .withContent(new BytesArray(content), XContentType.JSON)
-// .build();
-//
-// final FakeRestChannel channel = new FakeRestChannel(request, true, 0);
-// action.prepareRequest(request, mock(NodeClient.class));
-//
-// assertThat(channel.responses().get(), equalTo(0));
-// assertThat(channel.errors().get(), equalTo(0));
-// }
-// }
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import org.hamcrest.CoreMatchers;
+import org.junit.Before;
+import org.mockito.Mockito;
+import org.opensearch.action.ActionListener;
+import org.opensearch.client.node.NodeClient;
+import org.opensearch.common.bytes.BytesArray;
+import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.jobscheduler.JobSchedulerPlugin;
+import org.opensearch.jobscheduler.utils.JobDetailsService;
+import org.opensearch.rest.RestHandler;
+import org.opensearch.rest.RestRequest;
+import org.opensearch.test.OpenSearchTestCase;
+import org.opensearch.test.rest.FakeRestChannel;
+import org.opensearch.test.rest.FakeRestRequest;
+
+public class RestGetJobTypeActionTests extends OpenSearchTestCase {
+
+    private RestGetJobTypeAction action;
+
+    private String getJobTypePath;
+
+    private JobDetailsService jobDetailsService;
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        jobDetailsService = Mockito.mock(JobDetailsService.class);
+        action = new RestGetJobTypeAction(jobDetailsService);
+        getJobTypePath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_type");
+    }
+
+    public void testGetNames() {
+        String name = action.getName();
+        assertEquals(action.GET_JOB_TYPE_ACTION, name);
+    }
+
+    public void testGetRoutes() {
+        List<RestHandler.Route> routes = action.routes();
+
+        assertEquals(getJobTypePath, routes.get(0).getPath());
+    }
+
+    public void testPrepareRequest() throws IOException {
+
+        String content = "{\"job_type\":\"sample-job-type\",\"extension_id\":\"sample-extension\"}";
+        Map<String, String> params = new HashMap<>();
+        FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.PUT)
+            .withPath(getJobTypePath)
+            .withParams(params)
+            .withContent(new BytesArray(content), XContentType.JSON)
+            .build();
+
+        final FakeRestChannel channel = new FakeRestChannel(request, true, 0);
+        Mockito.doNothing()
+            .when(jobDetailsService)
+            .processJobDetailsForExtensionId(
+                null,
+                "sample-job-type",
+                null,
+                null,
+                "sample-extension",
+                JobDetailsService.JobDetailsRequestType.JOB_INDEX,
+                ActionListener.wrap(response -> {}, exception -> {})
+            );
+        action.prepareRequest(request, Mockito.mock(NodeClient.class));
+
+        assertThat(channel.responses().get(), CoreMatchers.equalTo(0));
+        assertThat(channel.errors().get(), CoreMatchers.equalTo(0));
+    }
+}

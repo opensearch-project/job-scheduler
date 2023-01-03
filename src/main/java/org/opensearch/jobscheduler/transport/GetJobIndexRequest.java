@@ -24,7 +24,7 @@ public class GetJobIndexRequest extends ActionRequest {
 
     private static String jobIndex;
 
-    private static String jobParserAction;
+    private static String jobParameterAction;
 
     private static String jobRunnerAction;
 
@@ -33,22 +33,22 @@ public class GetJobIndexRequest extends ActionRequest {
     public static final String JOB_INDEX = "job_index";
 
     public static final String EXTENSION_ID = "extension_id";
-    private static final String JOB_PARSER_ACTION = "job_parser_action";
+    private static final String JOB_PARAMETER_ACTION = "job_parser_action";
     public static final String JOB_RUNNER_ACTION = "job_runner_action";
 
     public GetJobIndexRequest(StreamInput in) throws IOException {
         super(in);
         jobIndex = in.readString();
-        jobParserAction = in.readString();
+        jobParameterAction = in.readString();
         jobRunnerAction = in.readString();
         extensionId = in.readString();
 
     }
 
-    public GetJobIndexRequest(String jobIndex, String jobParserAction, String jobRunnerAction, String extensionId) {
+    public GetJobIndexRequest(String jobIndex, String jobParameterAction, String jobRunnerAction, String extensionId) {
         super();
         this.jobIndex = jobIndex;
-        this.jobParserAction = jobParserAction;
+        this.jobParameterAction = jobParameterAction;
         this.jobRunnerAction = jobRunnerAction;
         this.extensionId = extensionId;
     }
@@ -57,7 +57,7 @@ public class GetJobIndexRequest extends ActionRequest {
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
         out.writeString(jobIndex);
-        out.writeString(jobParserAction);
+        out.writeString(jobParameterAction);
         out.writeString(jobRunnerAction);
         out.writeString(extensionId);
     }
@@ -70,12 +70,12 @@ public class GetJobIndexRequest extends ActionRequest {
         this.jobIndex = jobIndex;
     }
 
-    public String getJobParserAction() {
-        return jobParserAction;
+    public static String getJobParameterAction() {
+        return jobParameterAction;
     }
 
-    public void setJobParserAction(String jobParserAction) {
-        this.jobParserAction = jobParserAction;
+    public static void setJobParameterAction(String jobParameterAction) {
+        GetJobIndexRequest.jobParameterAction = jobParameterAction;
     }
 
     public String getJobRunnerAction() {
@@ -110,8 +110,8 @@ public class GetJobIndexRequest extends ActionRequest {
                 case JOB_INDEX:
                     jobIndex = parser.text();
                     break;
-                case JOB_PARSER_ACTION:
-                    jobParserAction = parser.text();
+                case JOB_PARAMETER_ACTION:
+                    jobParameterAction = parser.text();
                     break;
                 case JOB_RUNNER_ACTION:
                     jobRunnerAction = parser.text();
@@ -125,6 +125,6 @@ public class GetJobIndexRequest extends ActionRequest {
             }
 
         }
-        return new GetJobIndexRequest(jobIndex, jobParserAction, jobRunnerAction, extensionId);
+        return new GetJobIndexRequest(jobIndex, jobParameterAction, jobRunnerAction, extensionId);
     }
 }

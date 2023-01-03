@@ -36,7 +36,7 @@ public class JobDetails implements ToXContentObject {
     /**
      * jobParser action to trigger the response back to the extension.
      */
-    private String jobParserAction;
+    private String jobParameterAction;
 
     /**
      * jobRunner action to trigger the response back to the extension.
@@ -45,15 +45,15 @@ public class JobDetails implements ToXContentObject {
 
     public static final String JOB_INDEX = "job_index";
     public static final String JOB_TYPE = "job_type";
-    public static final String JOB_PARSER_ACTION = "job_parser_action";
+    public static final String JOB_PARAMETER_ACTION = "job_parser_action";
     public static final String JOB_RUNNER_ACTION = "job_runner_action";
 
     public JobDetails() {}
 
-    public JobDetails(String jobIndex, String jobType, String jobParserAction, String jobRunnerAction) {
+    public JobDetails(String jobIndex, String jobType, String jobParameterAction, String jobRunnerAction) {
         this.jobIndex = jobIndex;
         this.jobType = jobType;
-        this.jobParserAction = jobParserAction;
+        this.jobParameterAction = jobParameterAction;
         this.jobRunnerAction = jobRunnerAction;
     }
 
@@ -66,8 +66,8 @@ public class JobDetails implements ToXContentObject {
         if (jobType != null) {
             xContentBuilder.field(JOB_TYPE, jobType);
         }
-        if (jobParserAction != null) {
-            xContentBuilder.field(JOB_PARSER_ACTION, jobParserAction);
+        if (jobParameterAction != null) {
+            xContentBuilder.field(JOB_PARAMETER_ACTION, jobParameterAction);
         }
         if (jobRunnerAction != null) {
             xContentBuilder.field(JOB_RUNNER_ACTION, jobRunnerAction);
@@ -78,7 +78,7 @@ public class JobDetails implements ToXContentObject {
     public static JobDetails parse(XContentParser parser) throws IOException {
         String jobIndex = null;
         String jobType = null;
-        String jobParserAction = null;
+        String jobParameterAction = null;
         String jobRunnerAction = null;
 
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.currentToken(), parser);
@@ -93,8 +93,8 @@ public class JobDetails implements ToXContentObject {
                 case JOB_TYPE:
                     jobType = parser.text();
                     break;
-                case JOB_PARSER_ACTION:
-                    jobParserAction = parser.text();
+                case JOB_PARAMETER_ACTION:
+                    jobParameterAction = parser.text();
                     break;
                 case JOB_RUNNER_ACTION:
                     jobRunnerAction = parser.text();
@@ -105,11 +105,11 @@ public class JobDetails implements ToXContentObject {
             }
         }
 
-        return new JobDetails(jobIndex, jobType, jobParserAction, jobRunnerAction);
+        return new JobDetails(jobIndex, jobType, jobParameterAction, jobRunnerAction);
     }
 
     public JobDetails(final JobDetails copyJobDetails) {
-        this(copyJobDetails.jobIndex, copyJobDetails.jobType, copyJobDetails.jobParserAction, copyJobDetails.jobRunnerAction);
+        this(copyJobDetails.jobIndex, copyJobDetails.jobType, copyJobDetails.jobParameterAction, copyJobDetails.jobRunnerAction);
     }
 
     public String getJobIndex() {
@@ -128,12 +128,12 @@ public class JobDetails implements ToXContentObject {
         this.jobType = jobType;
     }
 
-    public String getJobParserAction() {
-        return jobParserAction;
+    public String getJobParameterAction() {
+        return jobParameterAction;
     }
 
-    public void setJobParserAction(String jobParserAction) {
-        this.jobParserAction = jobParserAction;
+    public void setJobParameterAction(String jobParameterAction) {
+        this.jobParameterAction = jobParameterAction;
     }
 
     public String getJobRunnerAction() {
@@ -151,13 +151,13 @@ public class JobDetails implements ToXContentObject {
         JobDetails that = (JobDetails) o;
         return Objects.equals(jobIndex, that.jobIndex)
             && Objects.equals(jobType, that.jobType)
-            && Objects.equals(jobParserAction, that.jobParserAction)
+            && Objects.equals(jobParameterAction, that.jobParameterAction)
             && Objects.equals(jobRunnerAction, that.jobRunnerAction);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(jobIndex, jobType, jobParserAction, jobRunnerAction);
+        return Objects.hash(jobIndex, jobType, jobParameterAction, jobRunnerAction);
     }
 
     @Override
@@ -169,8 +169,8 @@ public class JobDetails implements ToXContentObject {
             + ", jobType='"
             + jobType
             + '\''
-            + ", jobParserAction='"
-            + jobParserAction
+            + ", jobParameterAction='"
+            + jobParameterAction
             + '\''
             + ", jobRunnerAction='"
             + jobRunnerAction

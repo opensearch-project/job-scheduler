@@ -39,10 +39,11 @@ import org.opensearch.jobscheduler.model.JobDetails;
 
 import java.nio.charset.StandardCharsets;
 
-public final class JobDetailsService {
+public class JobDetailsService {
 
     private static final Logger logger = LogManager.getLogger(JobDetailsService.class);
     private static final String JOB_DETAILS_INDEX_NAME = ".opensearch-plugins-job-details";
+    private static final String PLUGINS_JOB_DETAILS_MAPPING_FILE = "/mappings/opensearch_plugins_job_details.json";
 
     private final Client client;
     private final ClusterService clusterService;
@@ -56,6 +57,11 @@ public final class JobDetailsService {
         return clusterService.state().routingTable().hasIndex(JOB_DETAILS_INDEX_NAME);
     }
 
+    /**
+     *
+     * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details index if it was created
+     *      *                 or else null.
+     */
     @VisibleForTesting
     void createJobDetailsIndex(ActionListener<Boolean> listener) {
         if (jobDetailsIndexExist()) {
@@ -75,23 +81,34 @@ public final class JobDetailsService {
         }
     }
 
-    public void processJobIndexForExtensionId(
+    /**
+     * Attempts to process job details with a specific extension Id. If the job details does not exist it attempts to create the job details document.
+     * If the job details document exists, it will try to update the job details.
+     *
+     * @param jobIndexName a non-null job index name.
+     * @param jobTypeName a non-null job type name.
+     * @param jobParameterActionName a non-null job parameter action name.
+     * @param jobRunnerActionName a non-null job runner action name.
+     * @param extensionId the unique Id for the job details.
+     * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was processed
+     *                 or else null.
+     */
+    public void processJobDetailsForExtensionId(
         final String jobIndexName,
         final String jobTypeName,
-        final String jobParserActionName,
+        final String jobParameterActionName,
         final String jobRunnerActionName,
         final String extensionId,
         final JobDetailsRequestType requestType,
         ActionListener<JobDetails> listener
     ) {
-        logger.info("Processing request");
         boolean isJobIndexRequest;
         if (requestType.JOB_INDEX == requestType) {
             isJobIndexRequest = true;
             if (jobIndexName == null) {
                 listener.onFailure(new IllegalArgumentException("Job Index Name should not be null"));
-            } else if (jobParserActionName == null) {
-                listener.onFailure(new IllegalArgumentException("Job Parser Action Name should not be null"));
+            } else if (jobParameterActionName == null) {
+                listener.onFailure(new IllegalArgumentException("Job Parameter Action Name should not be null"));
             } else if (jobRunnerActionName == null) {
                 listener.onFailure(new IllegalArgumentException("Job Runner Action Name should not be null"));
             }
@@ -107,16 +124,13 @@ public final class JobDetailsService {
             createJobDetailsIndex(ActionListener.wrap(created -> {
                 if (created) {
                     try {
-                        logger.info("Processing get request now");
-
                         findJobDetailsForExtensionId(extensionId, ActionListener.wrap(existingJobDetails -> {
                             if (existingJobDetails != null) {
                                 logger.debug("Updating job details for extension id: " + extensionId + existingJobDetails);
                                 JobDetails updateJobDetails = new JobDetails(existingJobDetails);
-                                logger.info("Processing update request now");
                                 if (isJobIndexRequest) {
                                     updateJobDetails.setJobIndex(jobIndexName);
-                                    updateJobDetails.setJobParserAction(jobParserActionName);
+                                    updateJobDetails.setJobParameterAction(jobParameterActionName);
                                     updateJobDetails.setJobRunnerAction(jobRunnerActionName);
                                 } else {
                                     updateJobDetails.setJobType(jobTypeName);
@@ -124,11 +138,10 @@ public final class JobDetailsService {
                                 updateJobDetailsForExtensionId(updateJobDetails, extensionId, listener);
 
                             } else {
-                                logger.info("Processing create request now");
                                 JobDetails tempJobDetails = new JobDetails();
                                 if (isJobIndexRequest) {
                                     tempJobDetails.setJobIndex(jobIndexName);
-                                    tempJobDetails.setJobParserAction(jobParserActionName);
+                                    tempJobDetails.setJobParameterAction(jobParameterActionName);
                                     tempJobDetails.setJobRunnerAction(jobRunnerActionName);
                                 } else {
                                     tempJobDetails.setJobType(jobTypeName);
@@ -153,8 +166,14 @@ public final class JobDetailsService {
         }
     }
 
+    /**
+     *
+     * @param tempJobDetails new job details object that need to be inserted as document in the index
+     * @param extensionId  unique id to create the entry for job details
+     * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was created
+     *      *                 or else null.
+     */
     private void createJobDetailsForExtensionId(final JobDetails tempJobDetails, String extensionId, ActionListener<JobDetails> listener) {
-        logger.info("Processing create Job details method now");
         try {
             final IndexRequest request = new IndexRequest(JOB_DETAILS_INDEX_NAME).id(extensionId)
                 .source(tempJobDetails.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
@@ -176,8 +195,13 @@ public final class JobDetailsService {
         }
     }
 
+    /**
+     *
+     * @param extensionId unique id to find the job details document in the index
+     * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was found
+     *      *                 or else null.
+     */
     private void findJobDetailsForExtensionId(final String extensionId, ActionListener<JobDetails> listener) {
-        logger.info("Processing find Job details method now");
         GetRequest getRequest = new GetRequest(JOB_DETAILS_INDEX_NAME).id(extensionId);
         client.get(getRequest, ActionListener.wrap(response -> {
             if (!response.isExists()) {
@@ -199,6 +223,12 @@ public final class JobDetailsService {
         }));
     }
 
+    /**
+     *
+     * @param extensionId unique id to find and delete the job details document in the index
+     * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was deleted
+     *      *                 or else null.
+     */
     public void deleteJobDetailsForExtension(final String extensionId, ActionListener<Boolean> listener) {
         DeleteRequest deleteRequest = new DeleteRequest(JOB_DETAILS_INDEX_NAME).id(extensionId);
         client.delete(deleteRequest, ActionListener.wrap(response -> {
@@ -215,12 +245,18 @@ public final class JobDetailsService {
         }));
     }
 
+    /**
+     *
+     * @param updateJobDetails update job details object entry
+     * @param extensionId unique id to find and update the corresponding document mapped to it
+     * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was updated
+     *      *                 or else null.
+     */
     private void updateJobDetailsForExtensionId(
         final JobDetails updateJobDetails,
         final String extensionId,
         ActionListener<JobDetails> listener
     ) {
-        logger.info("Processing update Job details method now");
         try {
             UpdateRequest updateRequest = new UpdateRequest().index(JOB_DETAILS_INDEX_NAME)
                 .id(extensionId)
@@ -250,7 +286,7 @@ public final class JobDetailsService {
 
     private String jobDetailsMapping() {
         try {
-            InputStream in = JobDetailsService.class.getResourceAsStream("/mappings/opensearch_plugins_job_details.json");
+            InputStream in = JobDetailsService.class.getResourceAsStream(PLUGINS_JOB_DETAILS_MAPPING_FILE);
             StringBuilder stringBuilder = new StringBuilder();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             for (String line; (line = bufferedReader.readLine()) != null;) {
@@ -260,16 +296,6 @@ public final class JobDetailsService {
         } catch (IOException e) {
             throw new IllegalArgumentException("JobDetails Mapping cannot be read correctly.");
         }
-        // String response = null;
-        // try {
-
-        // URL url = JobDetailsService.class.getClassLoader().getResource("mappings/opensearch_plugins_job_details.json");
-        // response = Resources.toString(url, Charsets.UTF_8);
-        // } catch (IOException e) {
-        // logger.info("getJobMapping failed", e);
-        // }
-
-        // return response;
     }
 
     public enum JobDetailsRequestType {

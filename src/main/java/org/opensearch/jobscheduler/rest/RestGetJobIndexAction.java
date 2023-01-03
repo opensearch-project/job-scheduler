@@ -19,8 +19,6 @@ import org.opensearch.jobscheduler.model.JobDetails;
 
 import org.opensearch.jobscheduler.transport.GetJobIndexRequest;
 
-import org.opensearch.jobscheduler.transport.GetJobIndexRequest;
-
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.RestRequest;
@@ -76,23 +74,22 @@ public class RestGetJobIndexAction extends BaseRestHandler {
         final JobDetails[] updateJobDetailsResponse = new JobDetails[1];
 
         String jobIndex = getJobIndexRequest.getJobIndex();
-        String jobParserAction = getJobIndexRequest.getJobParserAction();
+        String jobParameterAction = getJobIndexRequest.getJobParameterAction();
         String jobRunnerAction = getJobIndexRequest.getJobRunnerAction();
         String extensionId = getJobIndexRequest.getExtensionId();
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        jobDetailsService.processJobIndexForExtensionId(
+        jobDetailsService.processJobDetailsForExtensionId(
             jobIndex,
             null,
-            jobParserAction,
+            jobParameterAction,
             jobRunnerAction,
             extensionId,
             JobDetailsService.JobDetailsRequestType.JOB_INDEX,
-            new ActionListener<JobDetails>() {
+            new ActionListener<>() {
                 @Override
                 public void onResponse(JobDetails jobDetails) {
-                    logger.info("In On response");
                     if (jobDetails != null) {
                         restResponse[0] = "success";
                         updateJobDetailsResponse[0] = jobDetails;
@@ -113,9 +110,9 @@ public class RestGetJobIndexAction extends BaseRestHandler {
         );
 
         try {
-            latch.await(10, TimeUnit.SECONDS);
+            latch.await(5, TimeUnit.SECONDS);
         } catch (Exception e) {
-            logger.info("Could not get Job Index due to exception ", e);
+            logger.info("Could not process job index due to exception ", e);
         }
 
         return channel -> {
@@ -123,7 +120,6 @@ public class RestGetJobIndexAction extends BaseRestHandler {
             RestStatus restStatus = RestStatus.OK;
             BytesRestResponse bytesRestResponse;
             try {
-                logger.info("Returning Response");
                 builder.startObject();
                 builder.field("response", restResponse[0]);
                 if (restResponse[0] == "success") {

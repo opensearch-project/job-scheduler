@@ -76,7 +76,7 @@ public class RestGetJobTypeAction extends BaseRestHandler {
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        jobDetailsService.processJobIndexForExtensionId(
+        jobDetailsService.processJobDetailsForExtensionId(
             null,
             jobType,
             null,
@@ -86,7 +86,6 @@ public class RestGetJobTypeAction extends BaseRestHandler {
             new ActionListener<JobDetails>() {
                 @Override
                 public void onResponse(JobDetails jobDetails) {
-                    logger.info("In On response");
                     if (jobDetails != null) {
                         restResponse[0] = "success";
                         updateJobDetailsResponse[0] = jobDetails;
@@ -107,9 +106,9 @@ public class RestGetJobTypeAction extends BaseRestHandler {
         );
 
         try {
-            latch.await(10, TimeUnit.SECONDS);
+            latch.await(5, TimeUnit.SECONDS);
         } catch (Exception e) {
-            logger.info("Could not get Job Type due to exception ", e);
+            logger.info("Could not get job type due to exception ", e);
         }
 
         return channel -> {

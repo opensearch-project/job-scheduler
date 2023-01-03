@@ -8,48 +8,79 @@
  */
 package org.opensearch.jobscheduler.rest;
 
-// public class RestGetJobIndexActionTests extends OpenSearchTestCase {
-//
-// private RestGetJobIndexAction action;
-//
-// public Map<String, JobDetails> indexToJobDetails;
-//
-// private String getJobIndexPath;
-//
-// @Before
-// public void setUp() throws Exception {
-// super.setUp();
-// indexToJobDetails = new HashMap<>();
-// action = new RestGetJobIndexAction(indexToJobDetails);
-// getJobIndexPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_index");
-// }
-//
-// public void testGetNames() {
-// String name = action.getName();
-// assertEquals(action.GET_JOB_INDEX_ACTION, name);
-// }
-//
-// public void testGetRoutes() {
-// List<RestHandler.Route> routes = action.routes();
-//
-// assertEquals(getJobIndexPath, routes.get(0).getPath());
-// }
-//
-// public void testPrepareRequest() throws IOException {
-//
-// String content =
-// "{\"job_index\":\"demo_job_index\",\"job_runner_action\":\"action\",\"job_parser_action\":\"parser_action\",\"extension_id\":\"extension_id\"}";
-// Map<String, String> params = new HashMap<>();
-// FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.PUT)
-// .withPath(getJobIndexPath)
-// .withParams(params)
-// .withContent(new BytesArray(content), XContentType.JSON)
-// .build();
-//
-// final FakeRestChannel channel = new FakeRestChannel(request, true, 0);
-// action.prepareRequest(request, mock(NodeClient.class));
-//
-// assertThat(channel.responses().get(), equalTo(0));
-// assertThat(channel.errors().get(), equalTo(0));
-// }
-// }
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import static org.hamcrest.Matchers.equalTo;
+import org.junit.Before;
+import org.mockito.Mockito;
+import org.opensearch.action.ActionListener;
+import org.opensearch.client.node.NodeClient;
+import org.opensearch.common.bytes.BytesArray;
+import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.jobscheduler.JobSchedulerPlugin;
+import org.opensearch.jobscheduler.utils.JobDetailsService;
+import org.opensearch.rest.RestHandler;
+import org.opensearch.rest.RestRequest;
+import org.opensearch.test.OpenSearchTestCase;
+import org.opensearch.test.rest.FakeRestChannel;
+import org.opensearch.test.rest.FakeRestRequest;
+
+public class RestGetJobIndexActionTests extends OpenSearchTestCase {
+
+    private RestGetJobIndexAction action;
+
+    private JobDetailsService jobDetailsService;
+
+    private String getJobIndexPath;
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        jobDetailsService = Mockito.mock(JobDetailsService.class);
+        action = new RestGetJobIndexAction(jobDetailsService);
+        getJobIndexPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_index");
+    }
+
+    public void testGetNames() {
+        String name = action.getName();
+        assertEquals(action.GET_JOB_INDEX_ACTION, name);
+    }
+
+    public void testGetRoutes() {
+        List<RestHandler.Route> routes = action.routes();
+
+        assertEquals(getJobIndexPath, routes.get(0).getPath());
+    }
+
+    public void testPrepareRequest() throws IOException {
+
+        String content =
+            "{\"job_index\":\"sample-index-name\",\"job_runner_action\":\"sample-job-runner-action\",\"job_parameter_action\":\"sample-job-parameter-action\",\"extension_id\":\"sample-extension\"}";
+        Map<String, String> params = new HashMap<>();
+        FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.PUT)
+            .withPath(getJobIndexPath)
+            .withParams(params)
+            .withContent(new BytesArray(content), XContentType.JSON)
+            .build();
+
+        final FakeRestChannel channel = new FakeRestChannel(request, true, 0);
+        Mockito.doNothing()
+            .when(jobDetailsService)
+            .processJobDetailsForExtensionId(
+                "sample-index-name",
+                null,
+                "sample-job-parameter-action",
+                "sample-runner-name",
+                "sample-extension",
+                JobDetailsService.JobDetailsRequestType.JOB_INDEX,
+                ActionListener.wrap(response -> {}, exception -> {})
+            );
+        action.prepareRequest(request, Mockito.mock(NodeClient.class));
+
+        assertThat(channel.responses().get(), equalTo(0));
+        assertThat(channel.errors().get(), equalTo(0));
+    }
+}
