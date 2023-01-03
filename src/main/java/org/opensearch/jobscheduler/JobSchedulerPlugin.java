@@ -43,6 +43,7 @@ import org.opensearch.jobscheduler.transport.GetJobIndexAction;
 import org.opensearch.jobscheduler.transport.GetJobIndexTransportAction;
 import org.opensearch.jobscheduler.transport.GetJobTypeAction;
 import org.opensearch.jobscheduler.transport.GetJobTypeTransportAction;
+import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.plugins.Plugin;
@@ -81,6 +82,8 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private Set<String> indicesToListen;
     private Map<String, JobDetails> indexToJobDetails;
 
+    private JobDetailsService jobDetailsService;
+
     public JobSchedulerPlugin() {
         this.indicesToListen = new HashSet<>();
         this.indexToJobProviders = new HashMap<>();
@@ -102,6 +105,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
         this.lockService = new LockService(client, clusterService);
+        this.jobDetailsService = new JobDetailsService(client, clusterService);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
             environment.settings(),
@@ -217,8 +221,8 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<DiscoveryNodes> nodesInCluster
     ) {
-        RestGetJobIndexAction restGetJobIndexAction = new RestGetJobIndexAction(indexToJobDetails);
-        RestGetJobTypeAction restGetJobTypeAction = new RestGetJobTypeAction(indexToJobDetails);
+        RestGetJobIndexAction restGetJobIndexAction = new RestGetJobIndexAction(indexToJobDetails, jobDetailsService);
+        RestGetJobTypeAction restGetJobTypeAction = new RestGetJobTypeAction(indexToJobDetails, jobDetailsService);
         return ImmutableList.of(restGetJobIndexAction, restGetJobTypeAction);
     }
 

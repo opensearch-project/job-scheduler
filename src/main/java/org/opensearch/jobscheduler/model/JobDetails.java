@@ -108,6 +108,10 @@ public class JobDetails implements ToXContentObject {
         return new JobDetails(jobIndex, jobType, jobParserAction, jobRunnerAction);
     }
 
+    public JobDetails(final JobDetails copyJobDetails) {
+        this(copyJobDetails.jobIndex, copyJobDetails.jobType, copyJobDetails.jobParserAction, copyJobDetails.jobRunnerAction);
+    }
+
     public String getJobIndex() {
         return jobIndex;
     }

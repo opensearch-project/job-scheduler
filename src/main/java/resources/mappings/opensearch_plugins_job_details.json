@@ -1,0 +1,28 @@
+/*
+ * Copyright OpenSearch Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ */
+{
+  "dynamic": "false",
+  "properties": {
+    "job_index_name": {
+      "type": "keyword"
+    },
+    "job_type_name": {
+      "type": "keyword"
+    },
+    "job_parser_action": {
+      "type": "keyword"
+    },
+    "job_runner_action": {
+      "type": "keyword"
+    },
+    "extension_id": {
+      "type": "keyword"
+    }
+  }
+}

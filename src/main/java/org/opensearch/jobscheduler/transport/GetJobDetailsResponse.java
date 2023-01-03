@@ -24,6 +24,7 @@ public class GetJobDetailsResponse extends ActionResponse implements ToXContentO
 
     private final RestStatus restStatus;
     private final String response;
+
     private final static String RESPONSE = "response";
 
     public GetJobDetailsResponse(StreamInput in) throws IOException {
