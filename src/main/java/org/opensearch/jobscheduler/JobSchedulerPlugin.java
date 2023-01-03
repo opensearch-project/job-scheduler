@@ -1,21 +1,20 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler;
 
-import org.opensearch.action.ActionRequest;
-import org.opensearch.action.ActionResponse;
-import org.opensearch.client.node.NodeClient;
 import org.opensearch.cluster.node.DiscoveryNodes;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.IndexScopedSettings;
 import org.opensearch.common.settings.SettingsFilter;
-import org.opensearch.extensions.ExtensionsSettings;
-import org.opensearch.jobscheduler.model.JobDetails;
+
 import org.opensearch.jobscheduler.rest.RestGetJobIndexAction;
 import org.opensearch.jobscheduler.rest.RestGetJobTypeAction;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
@@ -38,25 +37,18 @@ import org.opensearch.common.xcontent.NamedXContentRegistry;
 import org.opensearch.env.Environment;
 import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
-import org.opensearch.jobscheduler.transport.GetJobIndexAction;
-import org.opensearch.jobscheduler.transport.GetJobIndexTransportAction;
-import org.opensearch.jobscheduler.transport.GetJobTypeAction;
-import org.opensearch.jobscheduler.transport.GetJobTypeTransportAction;
+import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.repositories.RepositoriesService;
-import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.RestController;
-import org.opensearch.rest.RestHandler;
-import org.opensearch.rest.RestRequest;
 import org.opensearch.script.ScriptService;
 import org.opensearch.threadpool.ExecutorBuilder;
 import org.opensearch.threadpool.FixedExecutorBuilder;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.watcher.ResourceWatcherService;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -64,7 +56,6 @@ import java.util.Set;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.function.Supplier;
 
@@ -82,25 +73,40 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private LockService lockService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
-    private HashMap<String, JobDetails> jobDetailsHashMap;
+
+    private JobDetailsService jobDetailsService;
 
     public JobSchedulerPlugin() {
         this.indicesToListen = new HashSet<>();
         this.indexToJobProviders = new HashMap<>();
-        this.jobDetailsHashMap=new HashMap<>();
     }
 
     @Override
-    public Collection<Object> createComponents(Client client, ClusterService clusterService, ThreadPool threadPool,
-                           ResourceWatcherService resourceWatcherService, ScriptService scriptService,
-                           NamedXContentRegistry xContentRegistry, Environment environment,
-                           NodeEnvironment nodeEnvironment, NamedWriteableRegistry namedWriteableRegistry,
-                           IndexNameExpressionResolver indexNameExpressionResolver,
-                           Supplier<RepositoriesService> repositoriesServiceSupplier) {
+    public Collection<Object> createComponents(
+        Client client,
+        ClusterService clusterService,
+        ThreadPool threadPool,
+        ResourceWatcherService resourceWatcherService,
+        ScriptService scriptService,
+        NamedXContentRegistry xContentRegistry,
+        Environment environment,
+        NodeEnvironment nodeEnvironment,
+        NamedWriteableRegistry namedWriteableRegistry,
+        IndexNameExpressionResolver indexNameExpressionResolver,
+        Supplier<RepositoriesService> repositoriesServiceSupplier
+    ) {
         this.lockService = new LockService(client, clusterService);
+        this.jobDetailsService = new JobDetailsService(client, clusterService);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
-        this.sweeper = initSweeper(environment.settings(), client, clusterService, threadPool, xContentRegistry,
-                                   this.scheduler, this.lockService);
+        this.sweeper = initSweeper(
+            environment.settings(),
+            client,
+            clusterService,
+            threadPool,
+            xContentRegistry,
+            this.scheduler,
+            this.lockService
+        );
         clusterService.addListener(this.sweeper);
         clusterService.addLifecycleListener(this.sweeper);
 
@@ -130,15 +136,22 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         final int processorCount = OpenSearchExecutors.allocatedProcessors(settings);
 
         List<ExecutorBuilder<?>> executorBuilders = new ArrayList<>();
-        executorBuilders.add(new FixedExecutorBuilder(settings, OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME,
-                processorCount, 200, "opendistro.jobscheduler.threadpool"));
+        executorBuilders.add(
+            new FixedExecutorBuilder(
+                settings,
+                OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME,
+                processorCount,
+                200,
+                "opendistro.jobscheduler.threadpool"
+            )
+        );
 
         return executorBuilders;
     }
 
     @Override
     public void onIndexModule(IndexModule indexModule) {
-        if(this.indicesToListen.contains(indexModule.getIndex().getName())) {
+        if (this.indicesToListen.contains(indexModule.getIndex().getName())) {
             indexModule.addIndexOperationListener(this.sweeper);
             log.info("JobSweeper started listening to operations on index {}", indexModule.getIndex().getName());
         }
@@ -152,7 +165,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
             String jobIndexName = extension.getJobIndex();
             ScheduledJobParser jobParser = extension.getJobParser();
             ScheduledJobRunner runner = extension.getJobRunner();
-            if(this.indexToJobProviders.containsKey(jobIndexName)) {
+            if (this.indexToJobProviders.containsKey(jobIndexName)) {
                 continue;
             }
 
@@ -168,41 +181,40 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
 
         // register schedule
         NamedXContentRegistry.Entry scheduleEntry = new NamedXContentRegistry.Entry(
-                Schedule.class,
-                new ParseField("schedule"),
-                ScheduleParser::parse);
+            Schedule.class,
+            new ParseField("schedule"),
+            ScheduleParser::parse
+        );
         registryEntries.add(scheduleEntry);
 
         return registryEntries;
     }
 
-    private JobSweeper initSweeper(Settings settings, Client client, ClusterService clusterService, ThreadPool threadPool,
-                                   NamedXContentRegistry registry, JobScheduler scheduler, LockService lockService) {
-        return new JobSweeper(settings, client, clusterService, threadPool, registry,
-                              this.indexToJobProviders, scheduler, lockService);
+    private JobSweeper initSweeper(
+        Settings settings,
+        Client client,
+        ClusterService clusterService,
+        ThreadPool threadPool,
+        NamedXContentRegistry registry,
+        JobScheduler scheduler,
+        LockService lockService
+    ) {
+        return new JobSweeper(settings, client, clusterService, threadPool, registry, this.indexToJobProviders, scheduler, lockService);
     }
 
     @Override
     public List getRestHandlers(
-            Settings settings,
-            RestController restController,
-            ClusterSettings clusterSettings,
-            IndexScopedSettings indexScopedSettings,
-            SettingsFilter settingsFilter,
-            IndexNameExpressionResolver indexNameExpressionResolver,
-            Supplier<DiscoveryNodes> nodesInCluster
+        Settings settings,
+        RestController restController,
+        ClusterSettings clusterSettings,
+        IndexScopedSettings indexScopedSettings,
+        SettingsFilter settingsFilter,
+        IndexNameExpressionResolver indexNameExpressionResolver,
+        Supplier<DiscoveryNodes> nodesInCluster
     ) {
-        RestGetJobIndexAction restGetJobIndexAction = new RestGetJobIndexAction(jobDetailsHashMap);
-        RestGetJobTypeAction restGetJobTypeAction = new RestGetJobTypeAction(jobDetailsHashMap);
-        return ImmutableList.of(restGetJobIndexAction,restGetJobTypeAction);
+        RestGetJobIndexAction restGetJobIndexAction = new RestGetJobIndexAction(jobDetailsService);
+        RestGetJobTypeAction restGetJobTypeAction = new RestGetJobTypeAction(jobDetailsService);
+        return ImmutableList.of(restGetJobIndexAction, restGetJobTypeAction);
     }
 
-   @Override
-   public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
-       return Arrays
-               .asList(
-                       new ActionHandler<>(GetJobIndexAction.INSTANCE, GetJobIndexTransportAction.class),
-                       new ActionHandler<>(GetJobTypeAction.INSTANCE, GetJobTypeTransportAction.class)
-               );
-   }
 }

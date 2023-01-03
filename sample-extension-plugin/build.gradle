@@ -154,7 +154,7 @@ String bwcDownloadUrl = "https://ci.opensearch.org/ci/dbc/distribution-build-ope
                             if (!f.exists()) {
                                 new URL(bwcDownloadUrl).withInputStream{ ins -> f.withOutputStream{ it << ins }}
                             }
-                            return f 
+                            return f
                         }
                     }
                 }
