@@ -39,7 +39,7 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
             null
         );
 
-        String expectedJobIndex = validateRequestAndGetJobIndex(entityAsMap(response));
+        String expectedJobIndex = validateResponseAndGetJobIndex(entityAsMap(response));
 
         for (int i = 0; i < 100; i++) {
             Response response1 = TestHelpers.makeRequest(
@@ -51,12 +51,12 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
                 null
             );
 
-            String jobIndex = validateRequestAndGetJobIndex(entityAsMap(response1));
+            String jobIndex = validateResponseAndGetJobIndex(entityAsMap(response1));
             Assert.assertEquals(expectedJobIndex, jobIndex);
         }
     }
 
-    private String validateRequestAndGetJobIndex(Map<String, Object> responseMap) {
+    private String validateResponseAndGetJobIndex(Map<String, Object> responseMap) {
         Assert.assertEquals("success", responseMap.get("response"));
         HashMap<String, String> jobDetails = (HashMap<String, String>) responseMap.get("jobDetails");
         return jobDetails.get("job_index");
