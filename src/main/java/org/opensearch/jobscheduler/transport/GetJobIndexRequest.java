@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.transport;
 
+import java.util.Objects;
 import org.opensearch.action.ActionRequest;
 import org.opensearch.action.ActionRequestValidationException;
 import org.opensearch.common.io.stream.StreamInput;
@@ -47,10 +48,10 @@ public class GetJobIndexRequest extends ActionRequest {
 
     public GetJobIndexRequest(String jobIndex, String jobParameterAction, String jobRunnerAction, String extensionId) {
         super();
-        this.jobIndex = jobIndex;
-        this.jobParameterAction = jobParameterAction;
-        this.jobRunnerAction = jobRunnerAction;
-        this.extensionId = extensionId;
+        this.jobIndex = Objects.requireNonNull(jobIndex);
+        this.jobParameterAction = Objects.requireNonNull(jobParameterAction);
+        this.jobRunnerAction = Objects.requireNonNull(jobRunnerAction);
+        this.extensionId = Objects.requireNonNull(extensionId);
     }
 
     @Override

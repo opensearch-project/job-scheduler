@@ -46,6 +46,9 @@ import org.opensearch.test.rest.OpenSearchRestTestCase;
 
 public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
 
+    private static String localhostName = "localhost";
+    private static int port = 9200;
+
     protected boolean isHttps() {
         boolean isHttps = Optional.ofNullable(System.getProperty("https")).map("true"::equalsIgnoreCase).orElse(false);
         if (isHttps) {
@@ -129,7 +132,7 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
                 .orElseThrow(() -> new RuntimeException("password is missing"));
             BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(
-                new AuthScope(new HttpHost("localhost", 9200)),
+                new AuthScope(new HttpHost(localhostName, port)),
                 new UsernamePasswordCredentials(userName, password.toCharArray())
             );
             try {

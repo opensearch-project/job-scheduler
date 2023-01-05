@@ -8,6 +8,8 @@
  */
 package org.opensearch.jobscheduler.rest;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.ActionListener;
@@ -28,8 +30,6 @@ import org.opensearch.rest.BytesRestResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
@@ -70,15 +70,14 @@ public class RestGetJobIndexAction extends BaseRestHandler {
 
         GetJobIndexRequest getJobIndexRequest = GetJobIndexRequest.parse(parser);
 
-        final String[] restResponse = new String[1];
-        final JobDetails[] updateJobDetailsResponse = new JobDetails[1];
+        final JobDetails[] jobDetailsResponseHolder = new JobDetails[1];
 
         String jobIndex = getJobIndexRequest.getJobIndex();
         String jobParameterAction = getJobIndexRequest.getJobParameterAction();
         String jobRunnerAction = getJobIndexRequest.getJobRunnerAction();
         String extensionId = getJobIndexRequest.getExtensionId();
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CompletableFuture<JobDetails[]> inProgressFuture = new CompletableFuture<>();
 
         jobDetailsService.processJobDetailsForExtensionId(
             jobIndex,
@@ -90,27 +89,20 @@ public class RestGetJobIndexAction extends BaseRestHandler {
             new ActionListener<>() {
                 @Override
                 public void onResponse(JobDetails jobDetails) {
-                    if (jobDetails != null) {
-                        restResponse[0] = "success";
-                        updateJobDetailsResponse[0] = jobDetails;
-                        latch.countDown();
-                    } else {
-                        restResponse[0] = "failed";
-                        latch.countDown();
-                    }
+                    jobDetailsResponseHolder[0] = jobDetails;
+                    inProgressFuture.complete(jobDetailsResponseHolder);
                 }
 
                 @Override
                 public void onFailure(Exception e) {
-                    restResponse[0] = "failed";
-                    latch.countDown();
+                    inProgressFuture.complete(null);
                     logger.info("could not process job index", e);
                 }
             }
         );
 
         try {
-            latch.await(JobDetailsService.TIME_OUT_FOR_LATCH, TimeUnit.SECONDS);
+            inProgressFuture.get(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
         } catch (Exception e) {
             logger.info("Could not process job index due to exception ", e);
         }
@@ -118,12 +110,13 @@ public class RestGetJobIndexAction extends BaseRestHandler {
         return channel -> {
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
+            String restResponse = jobDetailsResponseHolder[0] != null ? "success" : "failed";
             BytesRestResponse bytesRestResponse;
             try {
                 builder.startObject();
-                builder.field("response", restResponse[0]);
-                if (restResponse[0] == "success") {
-                    builder.field("jobDetails", updateJobDetailsResponse[0]);
+                builder.field("response", restResponse);
+                if (restResponse.equals("success")) {
+                    builder.field("jobDetails", jobDetailsResponseHolder[0]);
                 } else {
                     restStatus = RestStatus.INTERNAL_SERVER_ERROR;
                 }

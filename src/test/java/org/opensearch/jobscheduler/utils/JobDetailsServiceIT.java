@@ -8,8 +8,10 @@
  */
 package org.opensearch.jobscheduler.utils;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.action.ActionListener;
@@ -28,8 +30,8 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             .thenReturn(true);
     }
 
-    public void testSanity() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
+    public void testSanity() throws ExecutionException, InterruptedException, TimeoutException {
+        CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
         JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService);
 
         jobDetailsService.processJobDetailsForExtensionId(
@@ -47,20 +49,20 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
                 assertNull(jobDetails.getJobType());
                 jobDetailsService.createJobDetailsIndex(ActionListener.wrap(response -> {
                     assertTrue(response);
-                    latch.countDown();
+                    inProgressFuture.complete(response);
                 }, exception -> { fail(exception.getMessage()); }));
 
                 jobDetailsService.deleteJobDetailsForExtension("sample-extension", ActionListener.wrap(response -> {
                     assertTrue(response);
-                    latch.countDown();
+                    inProgressFuture.complete(response);
                 }, exception -> { fail(exception.getMessage()); }));
             }, exception -> { fail(exception.getMessage()); })
         );
-        latch.await(JobDetailsService.TIME_OUT_FOR_LATCH, TimeUnit.SECONDS);
+        inProgressFuture.get(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
     }
 
-    public void testSecondProcessofJobIndexPass() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
+    public void testSecondProcessofJobIndexPass() throws ExecutionException, InterruptedException, TimeoutException {
+        CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
         JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService);
 
         jobDetailsService.processJobDetailsForExtensionId(
@@ -88,12 +90,12 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
                         assertNull(jobDetails.getJobType());
                         jobDetailsService.createJobDetailsIndex(ActionListener.wrap(response -> {
                             assertTrue(response);
-                            latch.countDown();
+                            inProgressFuture.complete(response);
                         }, exception -> { fail(exception.getMessage()); }));
 
                         jobDetailsService.deleteJobDetailsForExtension("sample-extension", ActionListener.wrap(response -> {
                             assertTrue(response);
-                            latch.countDown();
+                            inProgressFuture.complete(response);
                         }, exception -> { fail(exception.getMessage()); }));
                     }, exception -> { fail(exception.getMessage()); })
                 );
@@ -103,11 +105,10 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             )
         );
 
-        latch.await(JobDetailsService.TIME_OUT_FOR_LATCH, TimeUnit.SECONDS);
+        inProgressFuture.get(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
     }
 
-    public void testDeleteJobDetailsWithOutExtensionIdCreation() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
+    public void testDeleteJobDetailsWithOutExtensionIdCreation() throws ExecutionException, InterruptedException, TimeoutException {
         JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService);
         jobDetailsService.deleteJobDetailsForExtension(
             "demo-extension",
@@ -116,11 +117,9 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
                 exception -> { fail(exception.getMessage()); }
             )
         );
-        latch.await(JobDetailsService.TIME_OUT_FOR_LATCH, TimeUnit.SECONDS);
     }
 
-    public void testDeleteNonExistingJobDetails() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
+    public void testDeleteNonExistingJobDetails() throws ExecutionException, InterruptedException, TimeoutException {
         JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService);
         jobDetailsService.createJobDetailsIndex(ActionListener.wrap(created -> {
             if (created) {
@@ -136,7 +135,6 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             }
 
         }, exception -> fail(exception.getMessage())));
-        latch.await(JobDetailsService.TIME_OUT_FOR_LATCH, TimeUnit.SECONDS);
     }
 
 }

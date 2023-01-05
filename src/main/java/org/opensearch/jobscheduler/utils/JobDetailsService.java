@@ -45,7 +45,7 @@ public class JobDetailsService {
     private static final String JOB_DETAILS_INDEX_NAME = ".opensearch-plugins-job-details";
     private static final String PLUGINS_JOB_DETAILS_MAPPING_FILE = "/mappings/opensearch_plugins_job_details.json";
 
-    public static Long TIME_OUT_FOR_LATCH = 5L;
+    public static Long TIME_OUT_FOR_REQUEST = 10L;
     private final Client client;
     private final ClusterService clusterService;
 
@@ -61,7 +61,7 @@ public class JobDetailsService {
     /**
      *
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details index if it was created
-     *      *                 or else null.
+     *                 or else null.
      */
     @VisibleForTesting
     void createJobDetailsIndex(ActionListener<Boolean> listener) {
@@ -106,21 +106,24 @@ public class JobDetailsService {
         boolean isJobIndexRequest;
         if (requestType.JOB_INDEX == requestType) {
             isJobIndexRequest = true;
-            if (jobIndexName == null) {
-                listener.onFailure(new IllegalArgumentException("Job Index Name should not be null"));
-            } else if (jobParameterActionName == null) {
-                listener.onFailure(new IllegalArgumentException("Job Parameter Action Name should not be null"));
-            } else if (jobRunnerActionName == null) {
-                listener.onFailure(new IllegalArgumentException("Job Runner Action Name should not be null"));
+            if (jobIndexName == null
+                || jobIndexName.isEmpty()
+                || jobParameterActionName == null
+                || jobParameterActionName.isEmpty()
+                || jobRunnerActionName == null
+                || jobRunnerActionName.isEmpty()) {
+                listener.onFailure(
+                    new IllegalArgumentException("JobIndexName, JobParameterActionName, JobRunnerActionName must not be null or empty")
+                );
             }
         } else {
             isJobIndexRequest = false;
-            if (jobTypeName == null) {
-                listener.onFailure(new IllegalArgumentException("Job Type Name should not be null"));
+            if (jobTypeName == null || jobTypeName.isEmpty()) {
+                listener.onFailure(new IllegalArgumentException("Job Type Name must not be null or empty"));
             }
         }
-        if (extensionId == null) {
-            listener.onFailure(new IllegalArgumentException("Extension Id should not be null"));
+        if (extensionId == null || extensionId.isEmpty()) {
+            listener.onFailure(new IllegalArgumentException("Extension Id must not be null or empty"));
         } else {
             createJobDetailsIndex(ActionListener.wrap(created -> {
                 if (created) {
@@ -172,7 +175,7 @@ public class JobDetailsService {
      * @param tempJobDetails new job details object that need to be inserted as document in the index
      * @param extensionId  unique id to create the entry for job details
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was created
-     *      *                 or else null.
+     *                 or else null.
      */
     private void createJobDetailsForExtensionId(final JobDetails tempJobDetails, String extensionId, ActionListener<JobDetails> listener) {
         try {
@@ -200,7 +203,7 @@ public class JobDetailsService {
      *
      * @param extensionId unique id to find the job details document in the index
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was found
-     *      *                 or else null.
+     *                 or else null.
      */
     private void findJobDetailsForExtensionId(final String extensionId, ActionListener<JobDetails> listener) {
         GetRequest getRequest = new GetRequest(JOB_DETAILS_INDEX_NAME).id(extensionId);
@@ -228,7 +231,7 @@ public class JobDetailsService {
      *
      * @param extensionId unique id to find and delete the job details document in the index
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was deleted
-     *      *                 or else null.
+     *                 or else null.
      */
     public void deleteJobDetailsForExtension(final String extensionId, ActionListener<Boolean> listener) {
         DeleteRequest deleteRequest = new DeleteRequest(JOB_DETAILS_INDEX_NAME).id(extensionId);
@@ -251,7 +254,7 @@ public class JobDetailsService {
      * @param updateJobDetails update job details object entry
      * @param extensionId unique id to find and update the corresponding document mapped to it
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was updated
-     *      *                 or else null.
+     *                 or else null.
      */
     private void updateJobDetailsForExtensionId(
         final JobDetails updateJobDetails,

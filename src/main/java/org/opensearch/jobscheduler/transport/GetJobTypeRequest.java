@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.transport;
 
+import java.util.Objects;
 import org.opensearch.action.ActionRequest;
 import org.opensearch.action.ActionRequestValidationException;
 import org.opensearch.common.io.stream.StreamInput;
@@ -31,8 +32,8 @@ public class GetJobTypeRequest extends ActionRequest {
 
     public GetJobTypeRequest(String jobType, String extensionId) {
         super();
-        this.jobType = jobType;
-        this.extensionId = extensionId;
+        this.jobType = Objects.requireNonNull(jobType);
+        this.extensionId = Objects.requireNonNull(extensionId);
     }
 
     public GetJobTypeRequest(StreamInput in) throws IOException {
