@@ -42,7 +42,7 @@ ext {
     noticeFile = rootProject.file('NOTICE')
 }
 
-licenseHeaders.enabled = false
+licenseHeaders.enabled = true
 testingConventions.enabled = false
 forbiddenApis.ignoreFailures = false
 
@@ -240,7 +240,8 @@ task integTestRemote(type: RestIntegTestTask) {
     systemProperty "security", System.getProperty("security")
     systemProperty "user", System.getProperty("user")
     systemProperty "password", System.getProperty("password")
-
+    systemProperty 'tests.rest.cluster', 'localhost:9200'
+    systemProperty 'tests.clustername', 'opensearch-job-scheduler-cluster'
     if (System.getProperty("tests.rest.cluster") != null) {
         filter {
             includeTestsMatching "org.opensearch.jobscheduler.*RestIT"

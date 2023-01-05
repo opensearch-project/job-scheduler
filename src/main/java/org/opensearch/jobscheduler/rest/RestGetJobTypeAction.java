@@ -106,7 +106,7 @@ public class RestGetJobTypeAction extends BaseRestHandler {
         );
 
         try {
-            latch.await(5, TimeUnit.SECONDS);
+            latch.await(JobDetailsService.TIME_OUT_FOR_LATCH, TimeUnit.SECONDS);
         } catch (Exception e) {
             logger.info("Could not get job type due to exception ", e);
         }

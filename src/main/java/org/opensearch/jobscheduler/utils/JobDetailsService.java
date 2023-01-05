@@ -45,6 +45,7 @@ public class JobDetailsService {
     private static final String JOB_DETAILS_INDEX_NAME = ".opensearch-plugins-job-details";
     private static final String PLUGINS_JOB_DETAILS_MAPPING_FILE = "/mappings/opensearch_plugins_job_details.json";
 
+    public static Long TIME_OUT_FOR_LATCH = 5L;
     private final Client client;
     private final ClusterService clusterService;
 

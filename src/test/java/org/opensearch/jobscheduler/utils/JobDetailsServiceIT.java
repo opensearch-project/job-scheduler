@@ -56,7 +56,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
                 }, exception -> { fail(exception.getMessage()); }));
             }, exception -> { fail(exception.getMessage()); })
         );
-        latch.await(5L, TimeUnit.SECONDS);
+        latch.await(JobDetailsService.TIME_OUT_FOR_LATCH, TimeUnit.SECONDS);
     }
 
     public void testSecondProcessofJobIndexPass() throws Exception {
@@ -103,7 +103,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             )
         );
 
-        latch.await(10L, TimeUnit.SECONDS);
+        latch.await(JobDetailsService.TIME_OUT_FOR_LATCH, TimeUnit.SECONDS);
     }
 
     public void testDeleteJobDetailsWithOutExtensionIdCreation() throws Exception {
@@ -116,7 +116,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
                 exception -> { fail(exception.getMessage()); }
             )
         );
-        latch.await(5L, TimeUnit.SECONDS);
+        latch.await(JobDetailsService.TIME_OUT_FOR_LATCH, TimeUnit.SECONDS);
     }
 
     public void testDeleteNonExistingJobDetails() throws Exception {
@@ -136,7 +136,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             }
 
         }, exception -> fail(exception.getMessage())));
-        latch.await(5L, TimeUnit.SECONDS);
+        latch.await(JobDetailsService.TIME_OUT_FOR_LATCH, TimeUnit.SECONDS);
     }
 
 }
