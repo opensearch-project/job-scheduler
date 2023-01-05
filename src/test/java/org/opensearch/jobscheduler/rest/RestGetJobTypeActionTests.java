@@ -79,7 +79,7 @@ public class RestGetJobTypeActionTests extends OpenSearchTestCase {
             );
         action.prepareRequest(request, Mockito.mock(NodeClient.class));
 
-        assertThat(channel.responses().get(), CoreMatchers.equalTo(0));
-        assertThat(channel.errors().get(), CoreMatchers.equalTo(0));
+        assertEquals(channel.responses().get(), CoreMatchers.equalTo(0));
+        assertEquals(channel.errors().get(), CoreMatchers.equalTo(0));
     }
 }

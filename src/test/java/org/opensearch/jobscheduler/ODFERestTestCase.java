@@ -67,31 +67,9 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
     @Override
     protected Settings restAdminSettings() {
         return Settings.builder()
-            // disable the warning exception for admin client since it's only used for cleanup.
             .put("strictDeprecationMode", false)
             .put("http.port", 9200)
-            // @anomaly-detection.create-detector Commented this code until we have support of Common Utils for extensibility
-            /*.put(OPENSEARCH_SECURITY_SSL_HTTP_ENABLED, isHttps())
-            .put(OPENSEARCH_SECURITY_SSL_HTTP_PEMCERT_FILEPATH, "sample.pem")
-            .put(OPENSEARCH_SECURITY_SSL_HTTP_KEYSTORE_FILEPATH, "test-kirk.jks")
-            .put(OPENSEARCH_SECURITY_SSL_HTTP_KEYSTORE_PASSWORD, "changeit")
-            .put(OPENSEARCH_SECURITY_SSL_HTTP_KEYSTORE_KEYPASSWORD, "changeit")*/
             .build();
-    }
-
-    // Utility fn for deleting indices. Should only be used when not allowed in a regular context
-    // (e.g., deleting system indices)
-    protected static void deleteIndexWithAdminClient(String name) throws IOException {
-        Request request = new Request("DELETE", "/" + name);
-        adminClient().performRequest(request);
-    }
-
-    // Utility fn for checking if an index exists. Should only be used when not allowed in a regular context
-    // (e.g., checking existence of system indices)
-    protected static boolean indexExistsWithAdminClient(String indexName) throws IOException {
-        Request request = new Request("HEAD", "/" + indexName);
-        Response response = adminClient().performRequest(request);
-        return RestStatus.OK.getStatus() == response.getStatusLine().getStatusCode();
     }
 
     @Override
@@ -99,18 +77,6 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
         boolean strictDeprecationMode = settings.getAsBoolean("strictDeprecationMode", true);
         RestClientBuilder builder = RestClient.builder(hosts);
         if (isHttps()) {
-            // @anomaly-detection.create-detector Commented this code until we have support of Common Utils for extensibility
-            /*String keystore = settings.get(OPENSEARCH_SECURITY_SSL_HTTP_KEYSTORE_FILEPATH);
-            if (Objects.nonNull(keystore)) {
-                URI uri = null;
-                try {
-                    uri = this.getClass().getClassLoader().getResource("security/sample.pem").toURI();
-                } catch (URISyntaxException e) {
-                    throw new RuntimeException(e);
-                }
-                Path configPath = PathUtils.get(uri).getParent().toAbsolutePath();
-                return new SecureRestClientBuilder(settings, configPath).build();
-            } else {*/
             configureHttpsClient(builder, settings);
             builder.setStrictDeprecationMode(strictDeprecationMode);
             return builder.build();

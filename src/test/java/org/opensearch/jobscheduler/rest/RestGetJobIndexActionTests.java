@@ -80,7 +80,7 @@ public class RestGetJobIndexActionTests extends OpenSearchTestCase {
             );
         action.prepareRequest(request, Mockito.mock(NodeClient.class));
 
-        assertThat(channel.responses().get(), equalTo(0));
-        assertThat(channel.errors().get(), equalTo(0));
+        assertEquals(channel.responses().get(), equalTo(0));
+        assertEquals(channel.errors().get(), equalTo(0));
     }
 }

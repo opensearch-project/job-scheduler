@@ -52,12 +52,12 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
             );
 
             String jobIndex = validateResponseAndGetJobIndex(entityAsMap(response1));
-            Assert.assertEquals(expectedJobIndex, jobIndex);
+            assertEquals(expectedJobIndex, jobIndex);
         }
     }
 
     private String validateResponseAndGetJobIndex(Map<String, Object> responseMap) {
-        Assert.assertEquals("success", responseMap.get("response"));
+        assertEquals("success", responseMap.get("response"));
         HashMap<String, String> jobDetails = (HashMap<String, String>) responseMap.get("jobDetails");
         return jobDetails.get("job_index");
     }
