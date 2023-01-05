@@ -11,7 +11,6 @@ package org.opensearch.jobscheduler.multinode;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Assert;
 import org.opensearch.client.Response;
 import org.opensearch.jobscheduler.ODFERestTestCase;
 import org.opensearch.jobscheduler.TestHelpers;

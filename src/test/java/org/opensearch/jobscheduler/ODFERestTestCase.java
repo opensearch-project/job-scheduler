@@ -42,7 +42,6 @@ import org.opensearch.common.xcontent.DeprecationHandler;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
-import org.opensearch.rest.RestStatus;
 import org.opensearch.test.rest.OpenSearchRestTestCase;
 
 public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
@@ -66,10 +65,7 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
 
     @Override
     protected Settings restAdminSettings() {
-        return Settings.builder()
-            .put("strictDeprecationMode", false)
-            .put("http.port", 9200)
-            .build();
+        return Settings.builder().put("strictDeprecationMode", false).put("http.port", 9200).build();
     }
 
     @Override
