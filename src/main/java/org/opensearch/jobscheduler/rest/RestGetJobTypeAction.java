@@ -91,8 +91,9 @@ public class RestGetJobTypeAction extends BaseRestHandler {
 
                 @Override
                 public void onFailure(Exception e) {
-                    inProgressFuture.complete(null);
                     logger.info("could not process job type", e);
+                    jobDetailsResponseHolder[0] = null;
+                    inProgressFuture.complete(jobDetailsResponseHolder);
                 }
             }
         );
