@@ -162,7 +162,7 @@ public class JobSchedulerBackwardsCompatibilityIT extends SampleExtensionIntegTe
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
         createWatcherJobJson(jobId, jobParameter);
 
-        long actualCount = waitAndCountRecords(index, 80000);
+        long actualCount = waitAndCountRecords(index, 100000);
         Assert.assertEquals(1, actualCount);
     }
 }
