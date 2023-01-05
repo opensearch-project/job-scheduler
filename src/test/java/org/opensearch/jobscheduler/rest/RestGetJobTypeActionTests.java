@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.action.ActionListener;
@@ -79,7 +78,7 @@ public class RestGetJobTypeActionTests extends OpenSearchTestCase {
             );
         action.prepareRequest(request, Mockito.mock(NodeClient.class));
 
-        assertEquals(channel.responses().get(), CoreMatchers.equalTo(0));
-        assertEquals(channel.errors().get(), CoreMatchers.equalTo(0));
+        assertEquals(channel.responses().get(), 0);
+        assertEquals(channel.errors().get(), 0);
     }
 }
