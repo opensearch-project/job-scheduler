@@ -104,7 +104,7 @@ public class RestGetJobIndexAction extends BaseRestHandler {
         try {
             inProgressFuture.get(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
         } catch (Exception e) {
-            logger.info("Could not process job index due to exception ", e);
+            logger.info("Time Limit Exceeded due to exception ", e);
         }
 
         return channel -> {

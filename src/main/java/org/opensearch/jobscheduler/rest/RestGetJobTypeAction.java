@@ -100,7 +100,7 @@ public class RestGetJobTypeAction extends BaseRestHandler {
         try {
             inProgressFuture.get(10L, TimeUnit.SECONDS);
         } catch (Exception e) {
-            logger.info("Could not get job type due to exception ", e);
+            logger.info("Time Limit Exceeded due to exception", e);
         }
 
         return channel -> {
