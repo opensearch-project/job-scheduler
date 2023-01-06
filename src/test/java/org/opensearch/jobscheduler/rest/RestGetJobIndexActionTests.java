@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.rest;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.opensearch.test.OpenSearchTestCase;
 import org.opensearch.test.rest.FakeRestChannel;
 import org.opensearch.test.rest.FakeRestRequest;
 
+@ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class RestGetJobIndexActionTests extends OpenSearchTestCase {
 
     private RestGetJobIndexAction action;
@@ -55,7 +57,6 @@ public class RestGetJobIndexActionTests extends OpenSearchTestCase {
     }
 
     public void testPrepareRequest() throws IOException {
-
         String content =
             "{\"job_index\":\"sample-index-name\",\"job_runner_action\":\"sample-job-runner-action\",\"job_parameter_action\":\"sample-job-parameter-action\",\"extension_id\":\"sample-extension\"}";
         Map<String, String> params = new HashMap<>();
@@ -77,6 +78,7 @@ public class RestGetJobIndexActionTests extends OpenSearchTestCase {
                 JobDetailsService.JobDetailsRequestType.JOB_INDEX,
                 ActionListener.wrap(response -> {}, exception -> {})
             );
+
         action.prepareRequest(request, Mockito.mock(NodeClient.class));
 
         assertEquals(channel.responses().get(), 0);

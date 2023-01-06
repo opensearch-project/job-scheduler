@@ -99,7 +99,8 @@ public class RestGetJobTypeAction extends BaseRestHandler {
         );
 
         try {
-            inProgressFuture.get(10L, TimeUnit.SECONDS);
+            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
+            inProgressFuture.get();
         } catch (Exception e) {
             logger.info("Time Limit Exceeded due to exception", e);
         }

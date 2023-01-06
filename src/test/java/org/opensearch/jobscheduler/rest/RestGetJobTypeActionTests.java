@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.rest;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.opensearch.test.OpenSearchTestCase;
 import org.opensearch.test.rest.FakeRestChannel;
 import org.opensearch.test.rest.FakeRestRequest;
 
+@ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class RestGetJobTypeActionTests extends OpenSearchTestCase {
 
     private RestGetJobTypeAction action;

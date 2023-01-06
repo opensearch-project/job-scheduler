@@ -97,12 +97,13 @@ public class RestGetJobIndexAction extends BaseRestHandler {
                 public void onFailure(Exception e) {
                     logger.info("could not process job index", e);
                     jobDetailsResponseHolder[0] = null;
-                    inProgressFuture.complete(jobDetailsResponseHolder);
+                    inProgressFuture.completeExceptionally(e);
                 }
             }
         );
 
         try {
+            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
             inProgressFuture.get(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
         } catch (Exception e) {
             logger.info("Time Limit Exceeded due to exception ", e);
