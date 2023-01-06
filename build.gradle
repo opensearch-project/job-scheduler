@@ -138,6 +138,8 @@ repositories {
 
 dependencies {
     implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    implementation group: 'com.google.guava', name: 'guava', version:'31.0.1-jre'
+    implementation group: 'com.google.guava', name: 'failureaccess', version:'1.0.1'
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
 }
 
@@ -238,7 +240,8 @@ task integTestRemote(type: RestIntegTestTask) {
     systemProperty "security", System.getProperty("security")
     systemProperty "user", System.getProperty("user")
     systemProperty "password", System.getProperty("password")
-
+    systemProperty 'tests.rest.cluster', 'localhost:9200'
+    systemProperty 'tests.clustername', 'opensearch-job-scheduler-cluster'
     if (System.getProperty("tests.rest.cluster") != null) {
         filter {
             includeTestsMatching "org.opensearch.jobscheduler.*RestIT"
