@@ -171,7 +171,7 @@ public class JobDetailsService {
     }
 
     /**
-     *
+     * Create Job details entry for extension id
      * @param tempJobDetails new job details object that need to be inserted as document in the index
      * @param extensionId  unique id to create the entry for job details
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was created
@@ -200,7 +200,7 @@ public class JobDetailsService {
     }
 
     /**
-     *
+     * Find extension corresponding to an extension id
      * @param extensionId unique id to find the job details document in the index
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was found
      *                 or else null.
@@ -228,7 +228,7 @@ public class JobDetailsService {
     }
 
     /**
-     *
+     * Delete job details to a corresponding extension id
      * @param extensionId unique id to find and delete the job details document in the index
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was deleted
      *                 or else null.
@@ -250,7 +250,7 @@ public class JobDetailsService {
     }
 
     /**
-     *
+     * Update Job details to a corresponding extension Id
      * @param updateJobDetails update job details object entry
      * @param extensionId unique id to find and update the corresponding document mapped to it
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was updated

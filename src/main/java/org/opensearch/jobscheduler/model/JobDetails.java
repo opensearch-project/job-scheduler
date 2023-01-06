@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.model;
 
+import org.opensearch.common.Nullable;
 import org.opensearch.common.xcontent.ToXContent;
 import org.opensearch.common.xcontent.ToXContentObject;
 import org.opensearch.common.xcontent.XContentBuilder;
@@ -112,6 +113,7 @@ public class JobDetails implements ToXContentObject {
         this(copyJobDetails.jobIndex, copyJobDetails.jobType, copyJobDetails.jobParameterAction, copyJobDetails.jobRunnerAction);
     }
 
+    @Nullable
     public String getJobIndex() {
         return jobIndex;
     }
@@ -120,6 +122,7 @@ public class JobDetails implements ToXContentObject {
         this.jobIndex = jobIndex;
     }
 
+    @Nullable
     public String getJobType() {
         return jobType;
     }
@@ -128,6 +131,7 @@ public class JobDetails implements ToXContentObject {
         this.jobType = jobType;
     }
 
+    @Nullable
     public String getJobParameterAction() {
         return jobParameterAction;
     }
@@ -136,6 +140,7 @@ public class JobDetails implements ToXContentObject {
         this.jobParameterAction = jobParameterAction;
     }
 
+    @Nullable
     public String getJobRunnerAction() {
         return jobRunnerAction;
     }

@@ -9,7 +9,9 @@
 package org.opensearch.jobscheduler.rest;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.ActionListener;
@@ -92,28 +94,32 @@ public class RestGetJobTypeAction extends BaseRestHandler {
                 @Override
                 public void onFailure(Exception e) {
                     logger.info("could not process job type", e);
-                    jobDetailsResponseHolder[0] = null;
                     inProgressFuture.complete(jobDetailsResponseHolder);
                 }
             }
         );
 
         try {
-            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
-            inProgressFuture.get();
+            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof TimeoutException) {
+                logger.info(" Request timed out with an exception ", e);
+            } else {
+                throw e;
+            }
         } catch (Exception e) {
-            logger.info("Time Limit Exceeded due to exception", e);
+            logger.info(" Could not process job type due to exception ", e);
         }
 
         return channel -> {
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
-            String restResponse = jobDetailsResponseHolder[0] != null ? "success" : "failed";
+            String restResponseString = jobDetailsResponseHolder[0] != null ? "success" : "failed";
             BytesRestResponse bytesRestResponse;
             try {
                 builder.startObject();
-                builder.field("response", restResponse);
-                if (restResponse.equals("success")) {
+                builder.field("response", restResponseString);
+                if (restResponseString.equals("success")) {
                     builder.field("jobDetails", jobDetailsResponseHolder[0]);
                 } else {
                     restStatus = RestStatus.INTERNAL_SERVER_ERROR;
