@@ -33,29 +33,83 @@ import org.opensearch.common.xcontent.NamedXContentRegistry;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.index.engine.DocumentMissingException;
+import org.opensearch.index.engine.Engine;
 import org.opensearch.index.engine.VersionConflictEngineException;
 import org.opensearch.index.seqno.SequenceNumbers;
+import org.opensearch.index.shard.IndexingOperationListener;
+import org.opensearch.index.shard.ShardId;
 import org.opensearch.jobscheduler.model.JobDetails;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
-public class JobDetailsService {
+public class JobDetailsService implements IndexingOperationListener {
 
     private static final Logger logger = LogManager.getLogger(JobDetailsService.class);
-    private static final String JOB_DETAILS_INDEX_NAME = ".opensearch-plugins-job-details";
+    public static final String JOB_DETAILS_INDEX_NAME = ".opensearch-plugins-job-details";
     private static final String PLUGINS_JOB_DETAILS_MAPPING_FILE = "/mappings/opensearch_plugins_job_details.json";
 
     public static Long TIME_OUT_FOR_REQUEST = 10L;
     private final Client client;
     private final ClusterService clusterService;
+    private Set<String> indicesToListen;
+    private Map<String, JobDetails> indexToJobDetails;
 
-    public JobDetailsService(final Client client, final ClusterService clusterService) {
+    public JobDetailsService(final Client client, final ClusterService clusterService, Set<String> indicesToListen) {
         this.client = client;
         this.clusterService = clusterService;
+        this.indicesToListen = indicesToListen;
+        this.indexToJobDetails = new HashMap<>();
     }
 
     public boolean jobDetailsIndexExist() {
         return clusterService.state().routingTable().hasIndex(JOB_DETAILS_INDEX_NAME);
+    }
+
+    private void updateIndicesToListen(String jobIndex) {
+        this.indicesToListen.add(jobIndex);
+    }
+
+    /**
+     * Registers or updates a jobDetails entry
+     *
+     * @param extensionId the unique Id for the job details
+     * @param jobDetails the jobDetails to register
+     */
+    private void updateIndexToJobDetails(String extensionId, JobDetails jobDetails) {
+        if (this.indexToJobDetails.containsKey(extensionId)) {
+            if (jobDetails.getJobType() != null) {
+                // Update JobDetails entry with job type
+                JobDetails existingJobDetails = this.indexToJobDetails.get(extensionId);
+                existingJobDetails.setJobType(jobDetails.getJobType());
+            }
+        } else {
+            // Register JobDetails entry
+            this.indexToJobDetails.put(extensionId, jobDetails);
+            updateIndicesToListen(jobDetails.getJobIndex());
+        }
+    }
+
+    @Override
+    public void postIndex(ShardId shardId, Engine.Index index, Engine.IndexResult result) {
+
+        // Determine if index operation was successful
+        if (result.getResultType().equals(Engine.Result.Type.FAILURE)) {
+            logger.info("Job Details Registration failed for extension {} on index {}", index.id(), shardId.getIndexName());
+            return;
+        }
+
+        // Generate parser using bytesRef from index
+        try {
+            XContentParser parser = XContentType.JSON.xContent()
+                .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, index.source().utf8ToString());
+            parser.nextToken();
+            updateIndexToJobDetails(index.id(), JobDetails.parse(parser));
+        } catch (IOException e) {
+            logger.error("IOException occurred creating job details for extension id " + index.id(), e);
+        }
     }
 
     /**

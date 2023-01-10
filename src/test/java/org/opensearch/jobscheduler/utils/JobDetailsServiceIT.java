@@ -8,6 +8,8 @@
  */
 package org.opensearch.jobscheduler.utils;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -21,10 +23,12 @@ import org.opensearch.test.OpenSearchIntegTestCase;
 public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     private ClusterService clusterService;
+    private Set<String> indicesToListen;
 
     @Before
     public void setup() {
         this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
+        this.indicesToListen = new HashSet<>();
         Mockito.when(this.clusterService.state().routingTable().hasIndex("opensearch-plugins-job-details"))
             .thenReturn(false)
             .thenReturn(true);
@@ -32,7 +36,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     public void testSanity() throws ExecutionException, InterruptedException, TimeoutException {
         CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
-        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService);
+        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
 
         jobDetailsService.processJobDetailsForExtensionId(
             "sample-job-index",
@@ -63,7 +67,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     public void testSecondProcessofJobIndexPass() throws ExecutionException, InterruptedException, TimeoutException {
         CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
-        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService);
+        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
 
         jobDetailsService.processJobDetailsForExtensionId(
             "sample-job-index",
@@ -109,7 +113,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
     }
 
     public void testDeleteJobDetailsWithOutExtensionIdCreation() throws ExecutionException, InterruptedException, TimeoutException {
-        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService);
+        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
         jobDetailsService.deleteJobDetailsForExtension(
             "demo-extension",
             ActionListener.wrap(
@@ -120,7 +124,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
     }
 
     public void testDeleteNonExistingJobDetails() throws ExecutionException, InterruptedException, TimeoutException {
-        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService);
+        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
         jobDetailsService.createJobDetailsIndex(ActionListener.wrap(created -> {
             if (created) {
                 jobDetailsService.deleteJobDetailsForExtension(

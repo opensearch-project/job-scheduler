@@ -96,7 +96,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
         this.lockService = new LockService(client, clusterService);
-        this.jobDetailsService = new JobDetailsService(client, clusterService);
+        this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
             environment.settings(),
@@ -105,7 +105,8 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
             threadPool,
             xContentRegistry,
             this.scheduler,
-            this.lockService
+            this.lockService,
+            this.jobDetailsService
         );
         clusterService.addListener(this.sweeper);
         clusterService.addLifecycleListener(this.sweeper);
@@ -151,6 +152,10 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
 
     @Override
     public void onIndexModule(IndexModule indexModule) {
+        if (indexModule.getIndex().getName().equals(JobDetailsService.JOB_DETAILS_INDEX_NAME)) {
+            indexModule.addIndexOperationListener(this.jobDetailsService);
+            log.info("JobDetailsSerivce started listening to operations on index {}", indexModule.getIndex().getName());
+        }
         if (this.indicesToListen.contains(indexModule.getIndex().getName())) {
             indexModule.addIndexOperationListener(this.sweeper);
             log.info("JobSweeper started listening to operations on index {}", indexModule.getIndex().getName());
@@ -197,9 +202,20 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         ThreadPool threadPool,
         NamedXContentRegistry registry,
         JobScheduler scheduler,
-        LockService lockService
+        LockService lockService,
+        JobDetailsService jobDetailsService
     ) {
-        return new JobSweeper(settings, client, clusterService, threadPool, registry, this.indexToJobProviders, scheduler, lockService);
+        return new JobSweeper(
+            settings,
+            client,
+            clusterService,
+            threadPool,
+            registry,
+            this.indexToJobProviders,
+            scheduler,
+            lockService,
+            jobDetailsService
+        );
     }
 
     @Override
