@@ -41,9 +41,9 @@ import org.opensearch.index.shard.ShardId;
 import org.opensearch.jobscheduler.model.JobDetails;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class JobDetailsService implements IndexingOperationListener {
 
@@ -55,17 +55,21 @@ public class JobDetailsService implements IndexingOperationListener {
     private final Client client;
     private final ClusterService clusterService;
     private Set<String> indicesToListen;
-    private Map<String, JobDetails> indexToJobDetails;
+    private final ConcurrentMap<String, JobDetails> indexToJobDetails;
 
     public JobDetailsService(final Client client, final ClusterService clusterService, Set<String> indicesToListen) {
         this.client = client;
         this.clusterService = clusterService;
         this.indicesToListen = indicesToListen;
-        this.indexToJobDetails = new HashMap<>();
+        this.indexToJobDetails = new ConcurrentHashMap<>();
     }
 
     public boolean jobDetailsIndexExist() {
         return clusterService.state().routingTable().hasIndex(JOB_DETAILS_INDEX_NAME);
+    }
+
+    public ConcurrentMap<String, JobDetails> getIndexToJobDetails() {
+        return this.indexToJobDetails;
     }
 
     private void updateIndicesToListen(String jobIndex) {
