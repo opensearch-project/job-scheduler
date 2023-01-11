@@ -18,6 +18,7 @@ import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.test.OpenSearchIntegTestCase;
 
 public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
@@ -139,6 +140,59 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             }
 
         }, exception -> fail(exception.getMessage())));
+    }
+
+    public void testUpdateIndexToJobDetails() throws ExecutionException, InterruptedException, TimeoutException {
+        String extensionId = "sample-extension";
+        CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
+        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
+
+        // Index Job Index name, actions, for extensionID
+        jobDetailsService.processJobDetailsForExtensionId(
+            "sample-job-index",
+            null,
+            "sample-job-parameter",
+            "sample-job-runner",
+            extensionId,
+            JobDetailsService.JobDetailsRequestType.JOB_INDEX,
+            ActionListener.wrap(jobDetailsWithoutJobType -> {
+                // Index Job Type
+                jobDetailsService.processJobDetailsForExtensionId(
+                    null,
+                    "sample-job-type",
+                    null,
+                    null,
+                    extensionId,
+                    JobDetailsService.JobDetailsRequestType.JOB_TYPE,
+                    ActionListener.wrap(jobDetails -> {
+                        // Ensure job details entry is valid
+                        assertEquals("sample-job-index", jobDetails.getJobIndex());
+                        assertEquals("sample-job-type", jobDetails.getJobType());
+                        assertEquals("sample-job-parameter", jobDetails.getJobParameterAction());
+                        assertEquals("sample-job-runner", jobDetails.getJobRunnerAction());
+
+                        // We'll have to invoke updateIndexToJobDetails as jobDetailsService is added as an indexOperationListener
+                        // onIndexModule
+                        jobDetailsService.updateIndexToJobDetails(extensionId, jobDetails);
+
+                        // Ensure indicesToListen is updated
+                        assertTrue(this.indicesToListen.contains(jobDetails.getJobIndex()));
+
+                        // Ensure indexToJobDetails is updated
+                        JobDetails entry = jobDetailsService.getIndexToJobDetails().get(extensionId);
+                        assertEquals(jobDetails.getJobIndex(), entry.getJobIndex());
+                        assertEquals(jobDetails.getJobType(), entry.getJobType());
+                        assertEquals(jobDetails.getJobParameterAction(), entry.getJobParameterAction());
+                        assertEquals(jobDetails.getJobRunnerAction(), entry.getJobRunnerAction());
+
+                        inProgressFuture.complete(true);
+
+                    }, exception -> { fail(exception.getMessage()); })
+                );
+            }, exception -> { fail(exception.getMessage()); })
+        );
+
+        inProgressFuture.get(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
     }
 
 }

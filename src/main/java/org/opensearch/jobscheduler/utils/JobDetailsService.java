@@ -82,7 +82,7 @@ public class JobDetailsService implements IndexingOperationListener {
      * @param extensionId the unique Id for the job details
      * @param jobDetails the jobDetails to register
      */
-    private void updateIndexToJobDetails(String extensionId, JobDetails jobDetails) {
+    void updateIndexToJobDetails(String extensionId, JobDetails jobDetails) {
         if (indexToJobDetails.containsKey(extensionId)) {
             if (jobDetails.getJobType() != null) {
                 // Update JobDetails entry with job type
