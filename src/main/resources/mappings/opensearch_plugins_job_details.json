@@ -13,7 +13,7 @@
     "job_runner_action": {
       "type": "keyword"
     },
-    "extension_id": {
+    "extension_unique_id": {
       "type": "keyword"
     }
   }

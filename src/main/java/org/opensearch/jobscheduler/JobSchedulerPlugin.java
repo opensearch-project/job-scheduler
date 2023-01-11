@@ -154,7 +154,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     public void onIndexModule(IndexModule indexModule) {
         if (indexModule.getIndex().getName().equals(JobDetailsService.JOB_DETAILS_INDEX_NAME)) {
             indexModule.addIndexOperationListener(this.jobDetailsService);
-            log.info("JobDetailsService started listening to operations on index {}", indexModule.getIndex().getName());
+            log.info("JobDetailsService started listening to operations on index {}", JobDetailsService.JOB_DETAILS_INDEX_NAME);
         }
         if (this.indicesToListen.contains(indexModule.getIndex().getName())) {
             indexModule.addIndexOperationListener(this.sweeper);

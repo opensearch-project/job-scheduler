@@ -24,29 +24,29 @@ public class GetJobTypeRequest extends ActionRequest {
 
     private static String jobType;
 
-    private static String extensionId;
+    private static String extensionUniqueId;
 
     public static final String JOB_TYPE = "job_type";
 
-    public static final String EXTENSION_ID = "extension_id";
+    public static final String EXTENSION_UNIQUE_ID = "extension_unique_id";
 
-    public GetJobTypeRequest(String jobType, String extensionId) {
+    public GetJobTypeRequest(String jobType, String extensionUniqueId) {
         super();
         this.jobType = Objects.requireNonNull(jobType);
-        this.extensionId = Objects.requireNonNull(extensionId);
+        this.extensionUniqueId = Objects.requireNonNull(extensionUniqueId);
     }
 
     public GetJobTypeRequest(StreamInput in) throws IOException {
         super(in);
         jobType = in.readString();
-        extensionId = in.readString();
+        extensionUniqueId = in.readString();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
         out.writeString(jobType);
-        out.writeString(extensionId);
+        out.writeString(extensionUniqueId);
     }
 
     public String getJobType() {
@@ -57,12 +57,12 @@ public class GetJobTypeRequest extends ActionRequest {
         this.jobType = jobType;
     }
 
-    public String getExtensionId() {
-        return extensionId;
+    public String getExtensionUniqueId() {
+        return extensionUniqueId;
     }
 
-    public void setExtensionId(String extensionId) {
-        this.extensionId = extensionId;
+    public void setExtensionUniqueId(String extensionUniqueId) {
+        this.extensionUniqueId = extensionUniqueId;
     }
 
     @Override
@@ -80,8 +80,8 @@ public class GetJobTypeRequest extends ActionRequest {
                 case JOB_TYPE:
                     jobType = parser.text();
                     break;
-                case EXTENSION_ID:
-                    extensionId = parser.text();
+                case EXTENSION_UNIQUE_ID:
+                    extensionUniqueId = parser.text();
                     break;
                 default:
                     parser.skipChildren();
@@ -89,6 +89,6 @@ public class GetJobTypeRequest extends ActionRequest {
             }
 
         }
-        return new GetJobTypeRequest(jobType, extensionId);
+        return new GetJobTypeRequest(jobType, extensionUniqueId);
     }
 }

@@ -29,11 +29,11 @@ public class GetJobIndexRequest extends ActionRequest {
 
     private static String jobRunnerAction;
 
-    private static String extensionId;
+    private static String extensionUniqueId;
 
     public static final String JOB_INDEX = "job_index";
 
-    public static final String EXTENSION_ID = "extension_id";
+    public static final String EXTENSION_UNIQUE_ID = "extension_unique_id";
     private static final String JOB_PARAMETER_ACTION = "job_parameter_action";
     public static final String JOB_RUNNER_ACTION = "job_runner_action";
 
@@ -42,16 +42,16 @@ public class GetJobIndexRequest extends ActionRequest {
         jobIndex = in.readString();
         jobParameterAction = in.readString();
         jobRunnerAction = in.readString();
-        extensionId = in.readString();
+        extensionUniqueId = in.readString();
 
     }
 
-    public GetJobIndexRequest(String jobIndex, String jobParameterAction, String jobRunnerAction, String extensionId) {
+    public GetJobIndexRequest(String jobIndex, String jobParameterAction, String jobRunnerAction, String extensionUniqueId) {
         super();
         this.jobIndex = Objects.requireNonNull(jobIndex);
         this.jobParameterAction = Objects.requireNonNull(jobParameterAction);
         this.jobRunnerAction = Objects.requireNonNull(jobRunnerAction);
-        this.extensionId = Objects.requireNonNull(extensionId);
+        this.extensionUniqueId = Objects.requireNonNull(extensionUniqueId);
     }
 
     @Override
@@ -60,7 +60,7 @@ public class GetJobIndexRequest extends ActionRequest {
         out.writeString(jobIndex);
         out.writeString(jobParameterAction);
         out.writeString(jobRunnerAction);
-        out.writeString(extensionId);
+        out.writeString(extensionUniqueId);
     }
 
     public String getJobIndex() {
@@ -87,12 +87,12 @@ public class GetJobIndexRequest extends ActionRequest {
         this.jobRunnerAction = jobRunnerAction;
     }
 
-    public String getExtensionId() {
-        return extensionId;
+    public String getExtensionUniqueId() {
+        return extensionUniqueId;
     }
 
-    public void setExtensionId(String extensionId) {
-        this.extensionId = extensionId;
+    public void setExtensionUniqueId(String extensionUniqueId) {
+        this.extensionUniqueId = extensionUniqueId;
     }
 
     @Override
@@ -117,8 +117,8 @@ public class GetJobIndexRequest extends ActionRequest {
                 case JOB_RUNNER_ACTION:
                     jobRunnerAction = parser.text();
                     break;
-                case EXTENSION_ID:
-                    extensionId = parser.text();
+                case EXTENSION_UNIQUE_ID:
+                    extensionUniqueId = parser.text();
                     break;
                 default:
                     parser.skipChildren();
@@ -126,6 +126,6 @@ public class GetJobIndexRequest extends ActionRequest {
             }
 
         }
-        return new GetJobIndexRequest(jobIndex, jobParameterAction, jobRunnerAction, extensionId);
+        return new GetJobIndexRequest(jobIndex, jobParameterAction, jobRunnerAction, extensionUniqueId);
     }
 }

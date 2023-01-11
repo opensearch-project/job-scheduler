@@ -58,7 +58,7 @@ public class RestGetJobTypeActionTests extends OpenSearchTestCase {
 
     public void testPrepareRequest() throws IOException {
 
-        String content = "{\"job_type\":\"sample-job-type\",\"extension_id\":\"sample-extension\"}";
+        String content = "{\"job_type\":\"sample-job-type\",\"extension_unique_id\":\"sample-extension\"}";
         Map<String, String> params = new HashMap<>();
         FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.PUT)
             .withPath(getJobTypePath)
@@ -69,7 +69,7 @@ public class RestGetJobTypeActionTests extends OpenSearchTestCase {
         final FakeRestChannel channel = new FakeRestChannel(request, true, 0);
         Mockito.doNothing()
             .when(jobDetailsService)
-            .processJobDetailsForExtensionId(
+            .processJobDetailsForExtensionUniqueId(
                 null,
                 "sample-job-type",
                 null,

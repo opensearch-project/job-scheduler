@@ -77,21 +77,19 @@ public class JobDetailsService implements IndexingOperationListener {
     }
 
     /**
-     * Registers or updates a jobDetails entry
+     * Adds a new JobDetails entry to the indexToJobDetails if jobType is null, or updates an existing JobDetails entry with the jobType
      *
-     * @param extensionId the unique Id for the job details
+     * @param extensionUniqueId the unique Id for the job details
      * @param jobDetails the jobDetails to register
      */
-    void updateIndexToJobDetails(String extensionId, JobDetails jobDetails) {
-        if (indexToJobDetails.containsKey(extensionId)) {
-            if (jobDetails.getJobType() != null) {
-                // Update JobDetails entry with job type
-                JobDetails existingJobDetails = indexToJobDetails.get(extensionId);
-                existingJobDetails.setJobType(jobDetails.getJobType());
-            }
+    void updateIndexToJobDetails(String extensionUniqueId, JobDetails jobDetails) {
+        if (jobDetails.getJobType() != null && indexToJobDetails.containsKey(extensionUniqueId)) {
+            // Update existing JobDetails entry with job type
+            JobDetails existingJobDetails = indexToJobDetails.get(extensionUniqueId);
+            existingJobDetails.setJobType(jobDetails.getJobType());
         } else {
-            // Register JobDetails entry
-            indexToJobDetails.put(extensionId, jobDetails);
+            // Register new JobDetails entry
+            indexToJobDetails.put(extensionUniqueId, jobDetails);
             updateIndicesToListen(jobDetails.getJobIndex());
         }
     }
@@ -148,16 +146,16 @@ public class JobDetailsService implements IndexingOperationListener {
      * @param jobTypeName a non-null job type name.
      * @param jobParameterActionName a non-null job parameter action name.
      * @param jobRunnerActionName a non-null job runner action name.
-     * @param extensionId the unique Id for the job details.
+     * @param extensionUniqueId the unique Id for the job details.
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was processed
      *                 or else null.
      */
-    public void processJobDetailsForExtensionId(
+    public void processJobDetailsForExtensionUniqueId(
         final String jobIndexName,
         final String jobTypeName,
         final String jobParameterActionName,
         final String jobRunnerActionName,
-        final String extensionId,
+        final String extensionUniqueId,
         final JobDetailsRequestType requestType,
         ActionListener<JobDetails> listener
     ) {
@@ -180,15 +178,15 @@ public class JobDetailsService implements IndexingOperationListener {
                 listener.onFailure(new IllegalArgumentException("Job Type Name must not be null or empty"));
             }
         }
-        if (extensionId == null || extensionId.isEmpty()) {
-            listener.onFailure(new IllegalArgumentException("Extension Id must not be null or empty"));
+        if (extensionUniqueId == null || extensionUniqueId.isEmpty()) {
+            listener.onFailure(new IllegalArgumentException("Extension Unqiue Id must not be null or empty"));
         } else {
             createJobDetailsIndex(ActionListener.wrap(created -> {
                 if (created) {
                     try {
-                        findJobDetailsForExtensionId(extensionId, ActionListener.wrap(existingJobDetails -> {
+                        findJobDetailsForExtensionUniqueId(extensionUniqueId, ActionListener.wrap(existingJobDetails -> {
                             if (existingJobDetails != null) {
-                                logger.debug("Updating job details for extension id: " + extensionId + existingJobDetails);
+                                logger.debug("Updating job details for extension unique id: " + extensionUniqueId + existingJobDetails);
                                 JobDetails updateJobDetails = new JobDetails(existingJobDetails);
                                 if (isJobIndexRequest) {
                                     updateJobDetails.setJobIndex(jobIndexName);
@@ -197,7 +195,7 @@ public class JobDetailsService implements IndexingOperationListener {
                                 } else {
                                     updateJobDetails.setJobType(jobTypeName);
                                 }
-                                updateJobDetailsForExtensionId(updateJobDetails, extensionId, listener);
+                                updateJobDetailsForExtensionUniqueId(updateJobDetails, extensionUniqueId, listener);
 
                             } else {
                                 JobDetails tempJobDetails = new JobDetails();
@@ -209,16 +207,16 @@ public class JobDetailsService implements IndexingOperationListener {
                                     tempJobDetails.setJobType(jobTypeName);
                                 }
                                 logger.debug(
-                                    "Job Details for extension Id "
-                                        + extensionId
+                                    "Job Details for extension unique Id "
+                                        + extensionUniqueId
                                         + " does not exist. Creating new Job Details"
                                         + tempJobDetails
                                 );
-                                createJobDetailsForExtensionId(tempJobDetails, extensionId, listener);
+                                createJobDetailsForExtensionUniqueId(tempJobDetails, extensionUniqueId, listener);
                             }
                         }, listener::onFailure));
                     } catch (VersionConflictEngineException e) {
-                        logger.debug("could not process job index for extensionId " + extensionId, e.getMessage());
+                        logger.debug("could not process job index for extensionUniqueId " + extensionUniqueId, e.getMessage());
                         listener.onResponse(null);
                     }
                 } else {
@@ -231,20 +229,27 @@ public class JobDetailsService implements IndexingOperationListener {
     /**
      * Create Job details entry for extension id
      * @param tempJobDetails new job details object that need to be inserted as document in the index
-     * @param extensionId  unique id to create the entry for job details
+     * @param extensionUniqueId  unique id to create the entry for job details
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was created
      *                 or else null.
      */
-    private void createJobDetailsForExtensionId(final JobDetails tempJobDetails, String extensionId, ActionListener<JobDetails> listener) {
+    private void createJobDetailsForExtensionUniqueId(
+        final JobDetails tempJobDetails,
+        String extensionUniqueId,
+        ActionListener<JobDetails> listener
+    ) {
         try {
-            final IndexRequest request = new IndexRequest(JOB_DETAILS_INDEX_NAME).id(extensionId)
+            final IndexRequest request = new IndexRequest(JOB_DETAILS_INDEX_NAME).id(extensionUniqueId)
                 .source(tempJobDetails.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
                 .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
                 .create(true);
             client.index(request, ActionListener.wrap(response -> listener.onResponse(new JobDetails(tempJobDetails)), exception -> {
                 if (exception instanceof VersionConflictEngineException) {
-                    logger.debug("Job Details for extension id " + extensionId + " is already created. {}", exception.getMessage());
+                    logger.debug(
+                        "Job Details for extension unique id " + extensionUniqueId + " is already created. {}",
+                        exception.getMessage()
+                    );
                 }
                 if (exception instanceof IOException) {
                     logger.error("IOException occurred creating job details", exception);
@@ -252,19 +257,19 @@ public class JobDetailsService implements IndexingOperationListener {
                 listener.onResponse(null);
             }));
         } catch (IOException e) {
-            logger.error("IOException occurred creating job details for extension id " + extensionId, e);
+            logger.error("IOException occurred creating job details for extension unique id " + extensionUniqueId, e);
             listener.onResponse(null);
         }
     }
 
     /**
      * Find extension corresponding to an extension id
-     * @param extensionId unique id to find the job details document in the index
+     * @param extensionUniqueId unique id to find the job details document in the index
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was found
      *                 or else null.
      */
-    private void findJobDetailsForExtensionId(final String extensionId, ActionListener<JobDetails> listener) {
-        GetRequest getRequest = new GetRequest(JOB_DETAILS_INDEX_NAME).id(extensionId);
+    private void findJobDetailsForExtensionUniqueId(final String extensionUniqueId, ActionListener<JobDetails> listener) {
+        GetRequest getRequest = new GetRequest(JOB_DETAILS_INDEX_NAME).id(extensionUniqueId);
         client.get(getRequest, ActionListener.wrap(response -> {
             if (!response.isExists()) {
                 listener.onResponse(null);
@@ -275,31 +280,34 @@ public class JobDetailsService implements IndexingOperationListener {
                     parser.nextToken();
                     listener.onResponse(JobDetails.parse(parser));
                 } catch (IOException e) {
-                    logger.error("IOException occurred finding JobDetails for extension id " + extensionId, e);
+                    logger.error("IOException occurred finding JobDetails for extension unique id " + extensionUniqueId, e);
                     listener.onResponse(null);
                 }
             }
         }, exception -> {
-            logger.error("Exception occurred finding job details for extension id " + extensionId, exception);
+            logger.error("Exception occurred finding job details for extension unique id " + extensionUniqueId, exception);
             listener.onFailure(exception);
         }));
     }
 
     /**
      * Delete job details to a corresponding extension id
-     * @param extensionId unique id to find and delete the job details document in the index
+     * @param extensionUniqueId unique id to find and delete the job details document in the index
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was deleted
      *                 or else null.
      */
-    public void deleteJobDetailsForExtension(final String extensionId, ActionListener<Boolean> listener) {
-        DeleteRequest deleteRequest = new DeleteRequest(JOB_DETAILS_INDEX_NAME).id(extensionId);
+    public void deleteJobDetailsForExtension(final String extensionUniqueId, ActionListener<Boolean> listener) {
+        DeleteRequest deleteRequest = new DeleteRequest(JOB_DETAILS_INDEX_NAME).id(extensionUniqueId);
         client.delete(deleteRequest, ActionListener.wrap(response -> {
             listener.onResponse(
                 response.getResult() == DocWriteResponse.Result.DELETED || response.getResult() == DocWriteResponse.Result.NOT_FOUND
             );
         }, exception -> {
             if (exception instanceof IndexNotFoundException || exception.getCause() instanceof IndexNotFoundException) {
-                logger.debug("Index is not found to delete job details for extension id. {} " + extensionId, exception.getMessage());
+                logger.debug(
+                    "Index is not found to delete job details for extension unique id. {} " + extensionUniqueId,
+                    exception.getMessage()
+                );
                 listener.onResponse(true);
             } else {
                 listener.onFailure(exception);
@@ -310,18 +318,18 @@ public class JobDetailsService implements IndexingOperationListener {
     /**
      * Update Job details to a corresponding extension Id
      * @param updateJobDetails update job details object entry
-     * @param extensionId unique id to find and update the corresponding document mapped to it
+     * @param extensionUniqueId unique id to find and update the corresponding document mapped to it
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was updated
      *                 or else null.
      */
-    private void updateJobDetailsForExtensionId(
+    private void updateJobDetailsForExtensionUniqueId(
         final JobDetails updateJobDetails,
-        final String extensionId,
+        final String extensionUniqueId,
         ActionListener<JobDetails> listener
     ) {
         try {
             UpdateRequest updateRequest = new UpdateRequest().index(JOB_DETAILS_INDEX_NAME)
-                .id(extensionId)
+                .id(extensionUniqueId)
                 .doc(updateJobDetails.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .fetchSource(true);
 
@@ -329,7 +337,7 @@ public class JobDetailsService implements IndexingOperationListener {
                 updateRequest,
                 ActionListener.wrap(response -> listener.onResponse(new JobDetails(updateJobDetails)), exception -> {
                     if (exception instanceof VersionConflictEngineException) {
-                        logger.debug("could not update job details for extensionId " + extensionId, exception.getMessage());
+                        logger.debug("could not update job details for extensionUniqueId " + extensionUniqueId, exception.getMessage());
                     }
                     if (exception instanceof DocumentMissingException) {
                         logger.debug("Document is deleted. This happens if the job details is already removed {}", exception.getMessage());
@@ -341,7 +349,7 @@ public class JobDetailsService implements IndexingOperationListener {
                 })
             );
         } catch (IOException e) {
-            logger.error("IOException occurred updating job details for extension id " + extensionId, e);
+            logger.error("IOException occurred updating job details for extension unqiue id " + extensionUniqueId, e);
             listener.onResponse(null);
         }
     }

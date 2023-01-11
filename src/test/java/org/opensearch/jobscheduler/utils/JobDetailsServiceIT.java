@@ -39,7 +39,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
         JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
 
-        jobDetailsService.processJobDetailsForExtensionId(
+        jobDetailsService.processJobDetailsForExtensionUniqueId(
             "sample-job-index",
             null,
             "sample-job-parameter",
@@ -70,7 +70,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
         JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
 
-        jobDetailsService.processJobDetailsForExtensionId(
+        jobDetailsService.processJobDetailsForExtensionUniqueId(
             "sample-job-index",
             null,
             "sample-job-parameter",
@@ -78,7 +78,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             "sample-extension",
             JobDetailsService.JobDetailsRequestType.JOB_INDEX,
             ActionListener.wrap(jobDetails -> {
-                jobDetailsService.processJobDetailsForExtensionId(
+                jobDetailsService.processJobDetailsForExtensionUniqueId(
                     "sample-job-index1",
                     null,
                     "sample-job-parameter",
@@ -143,56 +143,68 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
     }
 
     public void testUpdateIndexToJobDetails() throws ExecutionException, InterruptedException, TimeoutException {
-        String extensionId = "sample-extension";
+
         CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
         JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
 
-        // Index Job Index name, actions, for extensionID
-        jobDetailsService.processJobDetailsForExtensionId(
-            "sample-job-index",
+        String expectedExtensionUniqueId = "sample-extension";
+        String expectedJobIndex = "sample-job-index";
+        String expectedJobType = "sample-job-type";
+        String expectedJobParamAction = "sample-job-parameter";
+        String expectedJobRunnerAction = "sample-job-runner";
+
+        // Index Job Index name, actions, for extensionUniqueID
+        jobDetailsService.processJobDetailsForExtensionUniqueId(
+            expectedJobIndex,
             null,
-            "sample-job-parameter",
-            "sample-job-runner",
-            extensionId,
+            expectedJobParamAction,
+            expectedJobRunnerAction,
+            expectedExtensionUniqueId,
             JobDetailsService.JobDetailsRequestType.JOB_INDEX,
             ActionListener.wrap(jobDetailsWithoutJobType -> {
                 // Index Job Type
-                jobDetailsService.processJobDetailsForExtensionId(
+                jobDetailsService.processJobDetailsForExtensionUniqueId(
                     null,
-                    "sample-job-type",
+                    expectedJobType,
                     null,
                     null,
-                    extensionId,
+                    expectedExtensionUniqueId,
                     JobDetailsService.JobDetailsRequestType.JOB_TYPE,
                     ActionListener.wrap(jobDetails -> {
+
                         // Ensure job details entry is valid
-                        assertEquals("sample-job-index", jobDetails.getJobIndex());
-                        assertEquals("sample-job-type", jobDetails.getJobType());
-                        assertEquals("sample-job-parameter", jobDetails.getJobParameterAction());
-                        assertEquals("sample-job-runner", jobDetails.getJobRunnerAction());
+                        assertEquals(expectedJobIndex, jobDetails.getJobIndex());
+                        assertEquals(expectedJobType, jobDetails.getJobType());
+                        assertEquals(expectedJobParamAction, jobDetails.getJobParameterAction());
+                        assertEquals(expectedJobRunnerAction, jobDetails.getJobRunnerAction());
 
                         // We'll have to invoke updateIndexToJobDetails as jobDetailsService is added as an indexOperationListener
                         // onIndexModule
-                        jobDetailsService.updateIndexToJobDetails(extensionId, jobDetails);
+                        jobDetailsService.updateIndexToJobDetails(expectedExtensionUniqueId, jobDetails);
 
                         // Ensure indicesToListen is updated
                         assertTrue(this.indicesToListen.contains(jobDetails.getJobIndex()));
 
                         // Ensure indexToJobDetails is updated
-                        JobDetails entry = jobDetailsService.getIndexToJobDetails().get(extensionId);
-                        assertEquals(jobDetails.getJobIndex(), entry.getJobIndex());
-                        assertEquals(jobDetails.getJobType(), entry.getJobType());
-                        assertEquals(jobDetails.getJobParameterAction(), entry.getJobParameterAction());
-                        assertEquals(jobDetails.getJobRunnerAction(), entry.getJobRunnerAction());
+                        JobDetails entry = jobDetailsService.getIndexToJobDetails().get(expectedExtensionUniqueId);
+                        assertEquals(expectedJobIndex, entry.getJobIndex());
+                        assertEquals(expectedJobType, entry.getJobType());
+                        assertEquals(expectedJobParamAction, entry.getJobParameterAction());
+                        assertEquals(expectedJobRunnerAction, entry.getJobRunnerAction());
 
                         inProgressFuture.complete(true);
 
-                    }, exception -> { fail(exception.getMessage()); })
+                    }, exception -> { inProgressFuture.completeExceptionally(exception); })
                 );
-            }, exception -> { fail(exception.getMessage()); })
+            }, exception -> { inProgressFuture.completeExceptionally(exception); })
         );
 
-        inProgressFuture.get(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
+        try {
+            inProgressFuture.get(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+
     }
 
 }

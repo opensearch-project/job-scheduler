@@ -78,16 +78,16 @@ public class RestGetJobIndexAction extends BaseRestHandler {
         String jobIndex = getJobIndexRequest.getJobIndex();
         String jobParameterAction = getJobIndexRequest.getJobParameterAction();
         String jobRunnerAction = getJobIndexRequest.getJobRunnerAction();
-        String extensionId = getJobIndexRequest.getExtensionId();
+        String extensionUniqueId = getJobIndexRequest.getExtensionUniqueId();
 
         CompletableFuture<JobDetails[]> inProgressFuture = new CompletableFuture<>();
 
-        jobDetailsService.processJobDetailsForExtensionId(
+        jobDetailsService.processJobDetailsForExtensionUniqueId(
             jobIndex,
             null,
             jobParameterAction,
             jobRunnerAction,
-            extensionId,
+            extensionUniqueId,
             JobDetailsService.JobDetailsRequestType.JOB_INDEX,
             new ActionListener<>() {
                 @Override

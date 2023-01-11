@@ -73,16 +73,16 @@ public class RestGetJobTypeAction extends BaseRestHandler {
         final JobDetails[] jobDetailsResponseHolder = new JobDetails[1];
 
         String jobType = getJobTypeRequest.getJobType();
-        String extensionId = getJobTypeRequest.getExtensionId();
+        String extensionUniqueId = getJobTypeRequest.getExtensionUniqueId();
 
         CompletableFuture<JobDetails[]> inProgressFuture = new CompletableFuture<>();
 
-        jobDetailsService.processJobDetailsForExtensionId(
+        jobDetailsService.processJobDetailsForExtensionUniqueId(
             null,
             jobType,
             null,
             null,
-            extensionId,
+            extensionUniqueId,
             JobDetailsService.JobDetailsRequestType.JOB_TYPE,
             new ActionListener<>() {
                 @Override

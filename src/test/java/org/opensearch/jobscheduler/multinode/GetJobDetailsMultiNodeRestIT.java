@@ -33,7 +33,7 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
             TestHelpers.GET_JOB_INDEX_BASE_DETECTORS_URI,
             ImmutableMap.of(),
             TestHelpers.toHttpEntity(
-                "{\"job_index\":\"demo_job_index\",\"job_parameter_action\":\"demo_parameter\",\"job_runner_action\":\"demo_runner\",\"extension_id\":\"sample_extension\"}"
+                "{\"job_index\":\"demo_job_index\",\"job_parameter_action\":\"demo_parameter\",\"job_runner_action\":\"demo_runner\",\"extension_unique_id\":\"sample_extension\"}"
             ),
             null
         );
@@ -46,7 +46,7 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
                 "PUT",
                 TestHelpers.GET_JOB_TYPE_BASE_DETECTORS_URI,
                 ImmutableMap.of(),
-                TestHelpers.toHttpEntity("{\"job_type\":\"demo_job_type\",\"extension_id\":\"sample_extension\"}"),
+                TestHelpers.toHttpEntity("{\"job_type\":\"demo_job_type\",\"extension_unique_id\":\"sample_extension\"}"),
                 null
             );
 

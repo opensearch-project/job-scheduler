@@ -58,7 +58,7 @@ public class RestGetJobIndexActionTests extends OpenSearchTestCase {
 
     public void testPrepareRequest() throws IOException {
         String content =
-            "{\"job_index\":\"sample-index-name\",\"job_runner_action\":\"sample-job-runner-action\",\"job_parameter_action\":\"sample-job-parameter-action\",\"extension_id\":\"sample-extension\"}";
+            "{\"job_index\":\"sample-index-name\",\"job_runner_action\":\"sample-job-runner-action\",\"job_parameter_action\":\"sample-job-parameter-action\",\"extension_unique_id\":\"sample-extension\"}";
         Map<String, String> params = new HashMap<>();
         FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.PUT)
             .withPath(getJobIndexPath)
@@ -69,7 +69,7 @@ public class RestGetJobIndexActionTests extends OpenSearchTestCase {
         final FakeRestChannel channel = new FakeRestChannel(request, true, 0);
         Mockito.doNothing()
             .when(jobDetailsService)
-            .processJobDetailsForExtensionId(
+            .processJobDetailsForExtensionUniqueId(
                 "sample-index-name",
                 null,
                 "sample-job-parameter-action",
