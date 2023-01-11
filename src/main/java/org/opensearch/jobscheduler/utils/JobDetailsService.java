@@ -69,7 +69,7 @@ public class JobDetailsService implements IndexingOperationListener {
     }
 
     public static ConcurrentMap<String, JobDetails> getIndexToJobDetails() {
-        return indexToJobDetails;
+        return JobDetailsService.indexToJobDetails;
     }
 
     private void updateIndicesToListen(String jobIndex) {
