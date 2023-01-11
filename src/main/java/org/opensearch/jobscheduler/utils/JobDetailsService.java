@@ -55,21 +55,21 @@ public class JobDetailsService implements IndexingOperationListener {
     private final Client client;
     private final ClusterService clusterService;
     private Set<String> indicesToListen;
-    private final ConcurrentMap<String, JobDetails> indexToJobDetails;
+
+    private static final ConcurrentMap<String, JobDetails> indexToJobDetails = IndexToJobDetails.getInstance();
 
     public JobDetailsService(final Client client, final ClusterService clusterService, Set<String> indicesToListen) {
         this.client = client;
         this.clusterService = clusterService;
         this.indicesToListen = indicesToListen;
-        this.indexToJobDetails = new ConcurrentHashMap<>();
     }
 
     public boolean jobDetailsIndexExist() {
         return clusterService.state().routingTable().hasIndex(JOB_DETAILS_INDEX_NAME);
     }
 
-    public ConcurrentMap<String, JobDetails> getIndexToJobDetails() {
-        return this.indexToJobDetails;
+    public static ConcurrentMap<String, JobDetails> getIndexToJobDetails() {
+        return indexToJobDetails;
     }
 
     private void updateIndicesToListen(String jobIndex) {
@@ -83,15 +83,15 @@ public class JobDetailsService implements IndexingOperationListener {
      * @param jobDetails the jobDetails to register
      */
     private void updateIndexToJobDetails(String extensionId, JobDetails jobDetails) {
-        if (this.indexToJobDetails.containsKey(extensionId)) {
+        if (indexToJobDetails.containsKey(extensionId)) {
             if (jobDetails.getJobType() != null) {
                 // Update JobDetails entry with job type
-                JobDetails existingJobDetails = this.indexToJobDetails.get(extensionId);
+                JobDetails existingJobDetails = indexToJobDetails.get(extensionId);
                 existingJobDetails.setJobType(jobDetails.getJobType());
             }
         } else {
             // Register JobDetails entry
-            this.indexToJobDetails.put(extensionId, jobDetails);
+            indexToJobDetails.put(extensionId, jobDetails);
             updateIndicesToListen(jobDetails.getJobIndex());
         }
     }
@@ -363,5 +363,13 @@ public class JobDetailsService implements IndexingOperationListener {
     public enum JobDetailsRequestType {
         JOB_INDEX,
         JOB_TYPE
+    }
+
+    private static class IndexToJobDetails {
+        private static final ConcurrentMap<String, JobDetails> indexToJobDetails = new ConcurrentHashMap<>();
+
+        public static ConcurrentMap<String, JobDetails> getInstance() {
+            return IndexToJobDetails.indexToJobDetails;
+        }
     }
 }
