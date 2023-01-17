@@ -48,8 +48,8 @@ import java.util.concurrent.ConcurrentMap;
 public class JobDetailsService implements IndexingOperationListener {
 
     private static final Logger logger = LogManager.getLogger(JobDetailsService.class);
-    public static final String JOB_DETAILS_INDEX_NAME = ".opensearch-plugins-job-details";
-    private static final String PLUGINS_JOB_DETAILS_MAPPING_FILE = "/mappings/opensearch_plugins_job_details.json";
+    public static final String JOB_DETAILS_INDEX_NAME = ".opensearch-job-scheduler-job-details";
+    private static final String PLUGINS_JOB_DETAILS_MAPPING_FILE = "/mappings/opensearch_job_scheduler_job_details.json";
 
     public static Long TIME_OUT_FOR_REQUEST = 10L;
     private final Client client;

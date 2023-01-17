@@ -30,7 +30,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
     public void setup() {
         this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
         this.indicesToListen = new HashSet<>();
-        Mockito.when(this.clusterService.state().routingTable().hasIndex("opensearch-plugins-job-details"))
+        Mockito.when(this.clusterService.state().routingTable().hasIndex(JobDetailsService.JOB_DETAILS_INDEX_NAME))
             .thenReturn(false)
             .thenReturn(true);
     }
