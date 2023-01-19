@@ -88,7 +88,7 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
         Response response = TestHelpers.makeRequest(
             client(),
             "PUT",
-            TestHelpers.GET_JOB_DETAILS_BASE_DETECTORS_URI,
+            TestHelpers.GET_JOB_DETAILS_BASE_URI,
             ImmutableMap.of(),
             TestHelpers.toHttpEntity(intialRequestBody),
             null
@@ -101,7 +101,7 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
             Response updateResponse = TestHelpers.makeRequest(
                 client(),
                 "PUT",
-                TestHelpers.GET_JOB_DETAILS_BASE_DETECTORS_URI,
+                TestHelpers.GET_JOB_DETAILS_BASE_URI,
                 ImmutableMap.of(GetJobDetailsRequest.DOCUMENT_ID, expectedDocumentId),
                 TestHelpers.toHttpEntity(updatedRequestBody),
                 null
