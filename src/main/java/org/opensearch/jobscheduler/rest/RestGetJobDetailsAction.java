@@ -15,9 +15,8 @@ import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.xcontent.XContentBuilder;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-import org.opensearch.jobscheduler.model.JobDetails;
 
-import org.opensearch.jobscheduler.transport.GetJobIndexRequest;
+import org.opensearch.jobscheduler.transport.GetJobDetailsRequest;
 
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.rest.BaseRestHandler;
@@ -34,35 +33,47 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
+import com.google.common.collect.ImmutableList;
 import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
 import static org.opensearch.rest.RestRequest.Method.PUT;
 
 /**
- * This class consists of the REST handler to GET job index from extensions.
+ * This class consists of the REST handler to GET job details from extensions.
  */
-public class RestGetJobIndexAction extends BaseRestHandler {
+public class RestGetJobDetailsAction extends BaseRestHandler {
 
-    public static final String GET_JOB_INDEX_ACTION = "get_job_index_action";
+    public static final String GET_JOB_DETAILS_ACTION = "get_job_details_action";
 
-    private final Logger logger = LogManager.getLogger(RestGetJobIndexAction.class);
+    private final Logger logger = LogManager.getLogger(RestGetJobDetailsAction.class);
 
     public JobDetailsService jobDetailsService;
 
-    public RestGetJobIndexAction(final JobDetailsService jobDetailsService) {
+    public RestGetJobDetailsAction(final JobDetailsService jobDetailsService) {
         this.jobDetailsService = jobDetailsService;
     }
 
     @Override
     public String getName() {
-        return GET_JOB_INDEX_ACTION;
+        return GET_JOB_DETAILS_ACTION;
     }
 
     @Override
     public List<Route> routes() {
-        return unmodifiableList(
-            asList(new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_index")))
+        return ImmutableList.of(
+            // New Job Details Entry Request
+            new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_details")),
+            // Update Job Details Entry Request
+            new Route(
+                PUT,
+                String.format(
+                    Locale.ROOT,
+                    "%s/%s/{%s}",
+                    JobSchedulerPlugin.JS_BASE_URI,
+                    "_get/_job_details",
+                    GetJobDetailsRequest.DOCUMENT_ID
+                )
+            )
+
         );
     }
 
@@ -71,28 +82,31 @@ public class RestGetJobIndexAction extends BaseRestHandler {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
-        GetJobIndexRequest getJobIndexRequest = GetJobIndexRequest.parse(parser);
+        GetJobDetailsRequest getJobDetailsRequest = GetJobDetailsRequest.parse(parser);
 
-        final JobDetails[] jobDetailsResponseHolder = new JobDetails[1];
+        final String[] jobDetailsResponseHolder = new String[1];
 
-        String jobIndex = getJobIndexRequest.getJobIndex();
-        String jobParameterAction = getJobIndexRequest.getJobParameterAction();
-        String jobRunnerAction = getJobIndexRequest.getJobRunnerAction();
-        String extensionUniqueId = getJobIndexRequest.getExtensionUniqueId();
+        String documentId = restRequest.param(GetJobDetailsRequest.DOCUMENT_ID);
+        String jobIndex = getJobDetailsRequest.getJobIndex();
+        String jobType = getJobDetailsRequest.getJobType();
+        String jobParameterAction = getJobDetailsRequest.getJobParameterAction();
+        String jobRunnerAction = getJobDetailsRequest.getJobRunnerAction();
+        String extensionUniqueId = getJobDetailsRequest.getExtensionUniqueId();
 
-        CompletableFuture<JobDetails[]> inProgressFuture = new CompletableFuture<>();
+        CompletableFuture<String[]> inProgressFuture = new CompletableFuture<>();
 
-        jobDetailsService.processJobDetailsForExtensionUniqueId(
+        jobDetailsService.processJobDetails(
+            documentId,
             jobIndex,
-            null,
+            jobType,
             jobParameterAction,
             jobRunnerAction,
             extensionUniqueId,
-            JobDetailsService.JobDetailsRequestType.JOB_INDEX,
             new ActionListener<>() {
                 @Override
-                public void onResponse(JobDetails jobDetails) {
-                    jobDetailsResponseHolder[0] = jobDetails;
+                public void onResponse(String indexedDocumentId) {
+                    // Set document Id
+                    jobDetailsResponseHolder[0] = indexedDocumentId;
                     inProgressFuture.complete(jobDetailsResponseHolder);
                 }
 
@@ -125,7 +139,7 @@ public class RestGetJobIndexAction extends BaseRestHandler {
                 builder.startObject();
                 builder.field("response", restResponseString);
                 if (restResponseString.equals("success")) {
-                    builder.field("jobDetails", jobDetailsResponseHolder[0]);
+                    builder.field(GetJobDetailsRequest.DOCUMENT_ID, jobDetailsResponseHolder[0]);
                 } else {
                     restStatus = RestStatus.INTERNAL_SERVER_ERROR;
                 }

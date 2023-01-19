@@ -9,12 +9,12 @@
 package org.opensearch.jobscheduler.multinode;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.HashMap;
 import java.util.Map;
 import org.opensearch.client.Response;
 import org.opensearch.jobscheduler.ODFERestTestCase;
 import org.opensearch.jobscheduler.TestHelpers;
 import org.opensearch.test.OpenSearchIntegTestCase;
+import org.opensearch.jobscheduler.transport.GetJobDetailsRequest;
 
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
@@ -27,38 +27,94 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
      */
     public void testGetJobDetailsRestAPI() throws Exception {
 
+        String extensionUniqueId = "extension_unique_id";
+
+        // Initial index request content
+        String intialJobIndex = "intial_job_index";
+        String intialJobType = "intial_job_type";
+        String intialJobParameterAction = "intial_job_parameter_action";
+        String intialJobRunnerAction = "intial_job_runner_action";
+
+        String intialRequestBody = "{\""
+            + GetJobDetailsRequest.JOB_INDEX
+            + "\":\""
+            + intialJobIndex
+            + "\",\""
+            + GetJobDetailsRequest.JOB_TYPE
+            + "\":\""
+            + intialJobType
+            + "\",\""
+            + GetJobDetailsRequest.JOB_RUNNER_ACTION
+            + "\":\""
+            + intialJobRunnerAction
+            + "\",\""
+            + GetJobDetailsRequest.JOB_PARAMETER_ACTION
+            + "\":\""
+            + intialJobParameterAction
+            + "\",\""
+            + GetJobDetailsRequest.EXTENSION_UNIQUE_ID
+            + "\":\""
+            + extensionUniqueId
+            + "\"}";
+
+        // Updated request content
+        String updatedJobIndex = "updated_job_index";
+        String updatedJobType = "updated_job_type";
+        String updatedJobParameterAction = "updated_job_parameter_action";
+        String updatedJobRunnerAction = "updated_job_runner_action";
+
+        String updatedRequestBody = "{\""
+            + GetJobDetailsRequest.JOB_INDEX
+            + "\":\""
+            + intialJobIndex
+            + "\",\""
+            + GetJobDetailsRequest.JOB_TYPE
+            + "\":\""
+            + intialJobType
+            + "\",\""
+            + GetJobDetailsRequest.JOB_RUNNER_ACTION
+            + "\":\""
+            + intialJobRunnerAction
+            + "\",\""
+            + GetJobDetailsRequest.JOB_PARAMETER_ACTION
+            + "\":\""
+            + intialJobParameterAction
+            + "\",\""
+            + GetJobDetailsRequest.EXTENSION_UNIQUE_ID
+            + "\":\""
+            + extensionUniqueId
+            + "\"}";
+
         Response response = TestHelpers.makeRequest(
             client(),
             "PUT",
-            TestHelpers.GET_JOB_INDEX_BASE_DETECTORS_URI,
+            TestHelpers.GET_JOB_DETAILS_BASE_DETECTORS_URI,
             ImmutableMap.of(),
-            TestHelpers.toHttpEntity(
-                "{\"job_index\":\"demo_job_index\",\"job_parameter_action\":\"demo_parameter\",\"job_runner_action\":\"demo_runner\",\"extension_unique_id\":\"sample_extension\"}"
-            ),
+            TestHelpers.toHttpEntity(intialRequestBody),
             null
         );
 
-        String expectedJobIndex = validateResponseAndGetJobIndex(entityAsMap(response));
+        String expectedDocumentId = validateResponseAndGetDocumentId(entityAsMap(response));
 
+        // Submit 100 update requests
         for (int i = 0; i < 100; i++) {
-            Response response1 = TestHelpers.makeRequest(
+            Response updateResponse = TestHelpers.makeRequest(
                 client(),
                 "PUT",
-                TestHelpers.GET_JOB_TYPE_BASE_DETECTORS_URI,
-                ImmutableMap.of(),
-                TestHelpers.toHttpEntity("{\"job_type\":\"demo_job_type\",\"extension_unique_id\":\"sample_extension\"}"),
+                TestHelpers.GET_JOB_DETAILS_BASE_DETECTORS_URI,
+                ImmutableMap.of(GetJobDetailsRequest.DOCUMENT_ID, expectedDocumentId),
+                TestHelpers.toHttpEntity(updatedRequestBody),
                 null
             );
 
-            String jobIndex = validateResponseAndGetJobIndex(entityAsMap(response1));
-            assertEquals(expectedJobIndex, jobIndex);
+            String documentId = validateResponseAndGetDocumentId(entityAsMap(updateResponse));
+            assertEquals(expectedDocumentId, documentId);
         }
     }
 
-    private String validateResponseAndGetJobIndex(Map<String, Object> responseMap) {
+    private String validateResponseAndGetDocumentId(Map<String, Object> responseMap) {
         assertEquals("success", responseMap.get("response"));
-        HashMap<String, String> jobDetails = (HashMap<String, String>) responseMap.get("jobDetails");
-        return jobDetails.get("job_index");
+        return (String) responseMap.get(GetJobDetailsRequest.DOCUMENT_ID);
     }
 
 }
