@@ -44,18 +44,26 @@ public class JobDetails implements ToXContentObject {
      */
     private String jobRunnerAction;
 
+    /**
+     * extension unique ID
+     */
+    private String extensionUniqueId;
+
+    public static final String DOCUMENT_ID = "document_id";
     public static final String JOB_INDEX = "job_index";
     public static final String JOB_TYPE = "job_type";
     public static final String JOB_PARAMETER_ACTION = "job_parser_action";
     public static final String JOB_RUNNER_ACTION = "job_runner_action";
+    public static final String EXTENSION_UNIQUE_ID = "extension_unique_id";
 
     public JobDetails() {}
 
-    public JobDetails(String jobIndex, String jobType, String jobParameterAction, String jobRunnerAction) {
+    public JobDetails(String jobIndex, String jobType, String jobParameterAction, String jobRunnerAction, String extensionUniqueId) {
         this.jobIndex = jobIndex;
         this.jobType = jobType;
         this.jobParameterAction = jobParameterAction;
         this.jobRunnerAction = jobRunnerAction;
+        this.extensionUniqueId = extensionUniqueId;
     }
 
     @Override
@@ -73,6 +81,9 @@ public class JobDetails implements ToXContentObject {
         if (jobRunnerAction != null) {
             xContentBuilder.field(JOB_RUNNER_ACTION, jobRunnerAction);
         }
+        if (extensionUniqueId != null) {
+            xContentBuilder.field(EXTENSION_UNIQUE_ID, extensionUniqueId);
+        }
         return xContentBuilder.endObject();
     }
 
@@ -81,6 +92,7 @@ public class JobDetails implements ToXContentObject {
         String jobType = null;
         String jobParameterAction = null;
         String jobRunnerAction = null;
+        String extensionUniqueId = null;
 
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.currentToken(), parser);
 
@@ -100,17 +112,26 @@ public class JobDetails implements ToXContentObject {
                 case JOB_RUNNER_ACTION:
                     jobRunnerAction = parser.text();
                     break;
+                case EXTENSION_UNIQUE_ID:
+                    extensionUniqueId = parser.text();
+                    break;
                 default:
                     parser.skipChildren();
                     break;
             }
         }
 
-        return new JobDetails(jobIndex, jobType, jobParameterAction, jobRunnerAction);
+        return new JobDetails(jobIndex, jobType, jobParameterAction, jobRunnerAction, extensionUniqueId);
     }
 
     public JobDetails(final JobDetails copyJobDetails) {
-        this(copyJobDetails.jobIndex, copyJobDetails.jobType, copyJobDetails.jobParameterAction, copyJobDetails.jobRunnerAction);
+        this(
+            copyJobDetails.jobIndex,
+            copyJobDetails.jobType,
+            copyJobDetails.jobParameterAction,
+            copyJobDetails.jobRunnerAction,
+            copyJobDetails.extensionUniqueId
+        );
     }
 
     @Nullable
@@ -149,6 +170,15 @@ public class JobDetails implements ToXContentObject {
         this.jobRunnerAction = jobRunnerAction;
     }
 
+    @Nullable
+    public String getExtensionUniqueId() {
+        return extensionUniqueId;
+    }
+
+    public void setExtensionUniqueId(String extensionUniqueId) {
+        this.extensionUniqueId = extensionUniqueId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -157,12 +187,13 @@ public class JobDetails implements ToXContentObject {
         return Objects.equals(jobIndex, that.jobIndex)
             && Objects.equals(jobType, that.jobType)
             && Objects.equals(jobParameterAction, that.jobParameterAction)
-            && Objects.equals(jobRunnerAction, that.jobRunnerAction);
+            && Objects.equals(jobRunnerAction, that.jobRunnerAction)
+            && Objects.equals(extensionUniqueId, that.extensionUniqueId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(jobIndex, jobType, jobParameterAction, jobRunnerAction);
+        return Objects.hash(jobIndex, jobType, jobParameterAction, jobRunnerAction, extensionUniqueId);
     }
 
     @Override
@@ -179,6 +210,9 @@ public class JobDetails implements ToXContentObject {
             + '\''
             + ", jobRunnerAction='"
             + jobRunnerAction
+            + '\''
+            + ", extensionUniqueId='"
+            + extensionUniqueId
             + '\''
             + '}';
     }
