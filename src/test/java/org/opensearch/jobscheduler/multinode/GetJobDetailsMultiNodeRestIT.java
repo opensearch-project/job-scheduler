@@ -19,6 +19,11 @@ import org.opensearch.jobscheduler.transport.GetJobDetailsRequest;
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
 
+    private static final String initialRequestBody =
+        "{\"job_index\":\"intial_job_index\",\"job_type\":\"intial_job_type\",\"job_parameter_action\":\"intial_job_parameter_action\",\"job_runner_action\":\"intial_job_runner_action\",\"extension_unique_id\":\"extension_unique_id\"}";
+    private static final String updatedRequestBody =
+        "{\"job_index\":\"updated_job_index\",\"job_type\":\"updated_job_type\",\"job_parameter_action\":\"updated_job_parameter_action\",\"job_runner_action\":\"updated_job_runner_action\",\"extension_unique_id\":\"extension_unique_id\"}";
+
     /**
      * The below test performs a get index api on a multinode cluster. Internally, the cluster redirects the request to either of the node.
      * After getting successful response, the get job type api is triggered for 100 times. From the response of get job type, job index is retrieved and is being compared with get index api response.
@@ -27,70 +32,13 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
      */
     public void testGetJobDetailsRestAPI() throws Exception {
 
-        String extensionUniqueId = "extension_unique_id";
-
-        // Initial index request content
-        String intialJobIndex = "intial_job_index";
-        String intialJobType = "intial_job_type";
-        String intialJobParameterAction = "intial_job_parameter_action";
-        String intialJobRunnerAction = "intial_job_runner_action";
-
-        String intialRequestBody = "{\""
-            + GetJobDetailsRequest.JOB_INDEX
-            + "\":\""
-            + intialJobIndex
-            + "\",\""
-            + GetJobDetailsRequest.JOB_TYPE
-            + "\":\""
-            + intialJobType
-            + "\",\""
-            + GetJobDetailsRequest.JOB_RUNNER_ACTION
-            + "\":\""
-            + intialJobRunnerAction
-            + "\",\""
-            + GetJobDetailsRequest.JOB_PARAMETER_ACTION
-            + "\":\""
-            + intialJobParameterAction
-            + "\",\""
-            + GetJobDetailsRequest.EXTENSION_UNIQUE_ID
-            + "\":\""
-            + extensionUniqueId
-            + "\"}";
-
-        // Updated request content
-        String updatedJobIndex = "updated_job_index";
-        String updatedJobType = "updated_job_type";
-        String updatedJobParameterAction = "updated_job_parameter_action";
-        String updatedJobRunnerAction = "updated_job_runner_action";
-
-        String updatedRequestBody = "{\""
-            + GetJobDetailsRequest.JOB_INDEX
-            + "\":\""
-            + intialJobIndex
-            + "\",\""
-            + GetJobDetailsRequest.JOB_TYPE
-            + "\":\""
-            + intialJobType
-            + "\",\""
-            + GetJobDetailsRequest.JOB_RUNNER_ACTION
-            + "\":\""
-            + intialJobRunnerAction
-            + "\",\""
-            + GetJobDetailsRequest.JOB_PARAMETER_ACTION
-            + "\":\""
-            + intialJobParameterAction
-            + "\",\""
-            + GetJobDetailsRequest.EXTENSION_UNIQUE_ID
-            + "\":\""
-            + extensionUniqueId
-            + "\"}";
-
+        // Send intial request
         Response response = TestHelpers.makeRequest(
             client(),
             "PUT",
             TestHelpers.GET_JOB_DETAILS_BASE_URI,
             ImmutableMap.of(),
-            TestHelpers.toHttpEntity(intialRequestBody),
+            TestHelpers.toHttpEntity(initialRequestBody),
             null
         );
 
