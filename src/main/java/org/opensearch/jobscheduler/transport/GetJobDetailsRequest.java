@@ -19,48 +19,74 @@ import org.opensearch.common.xcontent.XContentParserUtils;
 import java.io.IOException;
 
 /**
- * Get Job Index Request Model class
+ * Get Job Details Request Model class
  */
-public class GetJobIndexRequest extends ActionRequest {
+public class GetJobDetailsRequest extends ActionRequest {
+
+    private static String documentId;
 
     private static String jobIndex;
+
+    private static String jobType;
 
     private static String jobParameterAction;
 
     private static String jobRunnerAction;
 
-    private static String extensionId;
+    private static String extensionUniqueId;
 
+    public static final String DOCUMENT_ID = "document_id";
     public static final String JOB_INDEX = "job_index";
-
-    public static final String EXTENSION_ID = "extension_id";
-    private static final String JOB_PARAMETER_ACTION = "job_parameter_action";
+    public static final String JOB_TYPE = "job_type";
+    public static final String EXTENSION_UNIQUE_ID = "extension_unique_id";
+    public static final String JOB_PARAMETER_ACTION = "job_parameter_action";
     public static final String JOB_RUNNER_ACTION = "job_runner_action";
 
-    public GetJobIndexRequest(StreamInput in) throws IOException {
+    public GetJobDetailsRequest(StreamInput in) throws IOException {
         super(in);
+        documentId = in.readOptionalString();
         jobIndex = in.readString();
+        jobType = in.readString();
         jobParameterAction = in.readString();
         jobRunnerAction = in.readString();
-        extensionId = in.readString();
+        extensionUniqueId = in.readString();
 
     }
 
-    public GetJobIndexRequest(String jobIndex, String jobParameterAction, String jobRunnerAction, String extensionId) {
+    public GetJobDetailsRequest(
+        String documentId,
+        String jobIndex,
+        String jobType,
+        String jobParameterAction,
+        String jobRunnerAction,
+        String extensionUniqueId
+    ) {
         super();
+        this.documentId = documentId;
         this.jobIndex = Objects.requireNonNull(jobIndex);
+        this.jobType = Objects.requireNonNull(jobType);
         this.jobParameterAction = Objects.requireNonNull(jobParameterAction);
         this.jobRunnerAction = Objects.requireNonNull(jobRunnerAction);
-        this.extensionId = Objects.requireNonNull(extensionId);
+        this.extensionUniqueId = Objects.requireNonNull(extensionUniqueId);
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
+        out.writeOptionalString(documentId);
         out.writeString(jobIndex);
+        out.writeString(jobType);
         out.writeString(jobParameterAction);
         out.writeString(jobRunnerAction);
-        out.writeString(extensionId);
+        out.writeString(extensionUniqueId);
+    }
+
+    public String getDocumentId() {
+        return documentId;
+    }
+
+    public void setDocumentId(String documentId) {
+        this.documentId = documentId;
     }
 
     public String getJobIndex() {
@@ -71,12 +97,20 @@ public class GetJobIndexRequest extends ActionRequest {
         this.jobIndex = jobIndex;
     }
 
-    public static String getJobParameterAction() {
+    public String getJobType() {
+        return jobType;
+    }
+
+    public void setJobType(String jobType) {
+        this.jobType = jobType;
+    }
+
+    public String getJobParameterAction() {
         return jobParameterAction;
     }
 
-    public static void setJobParameterAction(String jobParameterAction) {
-        GetJobIndexRequest.jobParameterAction = jobParameterAction;
+    public void setJobParameterAction(String jobParameterAction) {
+        this.jobParameterAction = jobParameterAction;
     }
 
     public String getJobRunnerAction() {
@@ -87,12 +121,12 @@ public class GetJobIndexRequest extends ActionRequest {
         this.jobRunnerAction = jobRunnerAction;
     }
 
-    public String getExtensionId() {
-        return extensionId;
+    public String getExtensionUniqueId() {
+        return extensionUniqueId;
     }
 
-    public void setExtensionId(String extensionId) {
-        this.extensionId = extensionId;
+    public void setExtensionUniqueId(String extensionUniqueId) {
+        this.extensionUniqueId = extensionUniqueId;
     }
 
     @Override
@@ -100,7 +134,7 @@ public class GetJobIndexRequest extends ActionRequest {
         return null;
     }
 
-    public static GetJobIndexRequest parse(XContentParser parser) throws IOException {
+    public static GetJobDetailsRequest parse(XContentParser parser) throws IOException {
 
         XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.currentToken(), parser);
         while (parser.nextToken() != XContentParser.Token.END_OBJECT) {
@@ -108,17 +142,22 @@ public class GetJobIndexRequest extends ActionRequest {
             parser.nextToken();
 
             switch (fieldName) {
+                case DOCUMENT_ID:
+                    documentId = parser.textOrNull();
+                    break;
                 case JOB_INDEX:
                     jobIndex = parser.text();
                     break;
+                case JOB_TYPE:
+                    jobType = parser.text();
                 case JOB_PARAMETER_ACTION:
                     jobParameterAction = parser.text();
                     break;
                 case JOB_RUNNER_ACTION:
                     jobRunnerAction = parser.text();
                     break;
-                case EXTENSION_ID:
-                    extensionId = parser.text();
+                case EXTENSION_UNIQUE_ID:
+                    extensionUniqueId = parser.text();
                     break;
                 default:
                     parser.skipChildren();
@@ -126,6 +165,6 @@ public class GetJobIndexRequest extends ActionRequest {
             }
 
         }
-        return new GetJobIndexRequest(jobIndex, jobParameterAction, jobRunnerAction, extensionId);
+        return new GetJobDetailsRequest(documentId, jobIndex, jobType, jobParameterAction, jobRunnerAction, extensionUniqueId);
     }
 }

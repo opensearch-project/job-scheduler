@@ -8,10 +8,6 @@
  */
 package org.opensearch.jobscheduler.rest;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.ActionListener;
@@ -19,8 +15,8 @@ import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.xcontent.XContentBuilder;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-import org.opensearch.jobscheduler.model.JobDetails;
-import org.opensearch.jobscheduler.transport.GetJobTypeRequest;
+
+import org.opensearch.jobscheduler.transport.GetJobDetailsRequest;
 
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.rest.BaseRestHandler;
@@ -32,35 +28,52 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import com.google.common.collect.ImmutableList;
 import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
 import static org.opensearch.rest.RestRequest.Method.PUT;
 
 /**
- * This class consists of the REST handler to GET job type from extensions.
+ * This class consists of the REST handler to GET job details from extensions.
  */
-public class RestGetJobTypeAction extends BaseRestHandler {
+public class RestGetJobDetailsAction extends BaseRestHandler {
 
-    public static final String GET_JOB_TYPE_ACTION = "get_job_type_action";
+    public static final String GET_JOB_DETAILS_ACTION = "get_job_details_action";
 
-    private final Logger logger = LogManager.getLogger(RestGetJobTypeAction.class);
+    private final Logger logger = LogManager.getLogger(RestGetJobDetailsAction.class);
 
     public JobDetailsService jobDetailsService;
 
-    @Override
-    public String getName() {
-        return GET_JOB_TYPE_ACTION;
-    }
-
-    public RestGetJobTypeAction(final JobDetailsService jobDetailsService) {
+    public RestGetJobDetailsAction(final JobDetailsService jobDetailsService) {
         this.jobDetailsService = jobDetailsService;
     }
 
     @Override
+    public String getName() {
+        return GET_JOB_DETAILS_ACTION;
+    }
+
+    @Override
     public List<Route> routes() {
-        return unmodifiableList(
-            asList(new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_type")))
+        return ImmutableList.of(
+            // New Job Details Entry Request
+            new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_details")),
+            // Update Job Details Entry Request
+            new Route(
+                PUT,
+                String.format(
+                    Locale.ROOT,
+                    "%s/%s/{%s}",
+                    JobSchedulerPlugin.JS_BASE_URI,
+                    "_get/_job_details",
+                    GetJobDetailsRequest.DOCUMENT_ID
+                )
+            )
+
         );
     }
 
@@ -68,33 +81,39 @@ public class RestGetJobTypeAction extends BaseRestHandler {
     protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
-        GetJobTypeRequest getJobTypeRequest = GetJobTypeRequest.parse(parser);
 
-        final JobDetails[] jobDetailsResponseHolder = new JobDetails[1];
+        GetJobDetailsRequest getJobDetailsRequest = GetJobDetailsRequest.parse(parser);
 
-        String jobType = getJobTypeRequest.getJobType();
-        String extensionId = getJobTypeRequest.getExtensionId();
+        final String[] jobDetailsResponseHolder = new String[1];
 
-        CompletableFuture<JobDetails[]> inProgressFuture = new CompletableFuture<>();
+        String documentId = restRequest.param(GetJobDetailsRequest.DOCUMENT_ID);
+        String jobIndex = getJobDetailsRequest.getJobIndex();
+        String jobType = getJobDetailsRequest.getJobType();
+        String jobParameterAction = getJobDetailsRequest.getJobParameterAction();
+        String jobRunnerAction = getJobDetailsRequest.getJobRunnerAction();
+        String extensionUniqueId = getJobDetailsRequest.getExtensionUniqueId();
 
-        jobDetailsService.processJobDetailsForExtensionId(
-            null,
+        CompletableFuture<String[]> inProgressFuture = new CompletableFuture<>();
+
+        jobDetailsService.processJobDetails(
+            documentId,
+            jobIndex,
             jobType,
-            null,
-            null,
-            extensionId,
-            JobDetailsService.JobDetailsRequestType.JOB_TYPE,
+            jobParameterAction,
+            jobRunnerAction,
+            extensionUniqueId,
             new ActionListener<>() {
                 @Override
-                public void onResponse(JobDetails jobDetails) {
-                    jobDetailsResponseHolder[0] = jobDetails;
+                public void onResponse(String indexedDocumentId) {
+                    // Set document Id
+                    jobDetailsResponseHolder[0] = indexedDocumentId;
                     inProgressFuture.complete(jobDetailsResponseHolder);
                 }
 
                 @Override
                 public void onFailure(Exception e) {
-                    logger.info("could not process job type", e);
-                    inProgressFuture.complete(jobDetailsResponseHolder);
+                    logger.info("could not process job index", e);
+                    inProgressFuture.completeExceptionally(e);
                 }
             }
         );
@@ -108,7 +127,7 @@ public class RestGetJobTypeAction extends BaseRestHandler {
                 throw e;
             }
         } catch (Exception e) {
-            logger.info(" Could not process job type due to exception ", e);
+            logger.info(" Could not process job index due to exception ", e);
         }
 
         return channel -> {
@@ -120,7 +139,7 @@ public class RestGetJobTypeAction extends BaseRestHandler {
                 builder.startObject();
                 builder.field("response", restResponseString);
                 if (restResponseString.equals("success")) {
-                    builder.field("jobDetails", jobDetailsResponseHolder[0]);
+                    builder.field(GetJobDetailsRequest.DOCUMENT_ID, jobDetailsResponseHolder[0]);
                 } else {
                     restStatus = RestStatus.INTERNAL_SERVER_ERROR;
                 }
