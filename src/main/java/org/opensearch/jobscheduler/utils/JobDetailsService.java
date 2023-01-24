@@ -44,9 +44,12 @@ import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
+import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
+import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.transport.JobParameterRequest;
+import org.opensearch.jobscheduler.transport.JobRunnerRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -114,7 +117,7 @@ public class JobDetailsService implements IndexingOperationListener {
                 final ExtensionJobParameter[] extensionJobParameterHolder = new ExtensionJobParameter[1];
                 CompletableFuture<ExtensionJobParameter[]> inProgressFuture = new CompletableFuture<>();
 
-                // prepare JobParameterRequest
+                // Prepare JobParameterRequest
                 JobParameterRequest request = new JobParameterRequest(extensionJobParameterAction, xContentParser, id, jobDocVersion);
 
                 // Invoke extension job parameter action and return ScheduledJobParameter
@@ -147,27 +150,38 @@ public class JobDetailsService implements IndexingOperationListener {
             }
         };
 
-        // TODO : Create proxy ScheduledJobRunner
-        // ScheduledJobRunner extensionJobRunner = new ScheduledJobRunner() {
-        // @Override
-        // public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
-        // // for job runner action : parameters are ScheduledJobParamater, and the JobExecutionContext
+        // Create proxy ScheduledJobRunner
+        ScheduledJobRunner extensionJobRunner = new ScheduledJobRunner() {
+            @Override
+            public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
 
-        // // Steps :
-        // // 1) Take Job Execution Context and extract the following :
-        // // Instant expectedExecutionTime,
-        // // JobDocVersion jobVersion,
-        // // String jobIndexName,
-        // // String jobId
-        // // 2) use client.execute to invoke param action with ScheduledJobParamater, execptedExecutionTime,jobDocVersion, jobIndexName,
-        // jobID
+                CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
 
-        // }
-        // };
+                try {
+                    // Prepare JobRunnerRequest
+                    JobRunnerRequest request = new JobRunnerRequest(extensionJobRunnerAction, jobParameter, context);
+                    // Invoke extension job runner action
+                    client.execute(ExtensionProxyAction.INSTANCE, request, ActionListener.wrap(response -> {
 
-        // TODO : Update indexToJobProviders
-        // this.indexToJobProviders.put(extensionJobTypeName, new ScheduledJobProvider(extensionJobTypeName, extensionJobIndexName,
-        // extensionJobParser, extensionJobRunner));
+                        // Extract response bytes into a streamInput and set the extensionJobParameter
+                        StreamInput in = StreamInput.wrap(response.getResponseBytes());
+                        inProgressFuture.complete(in.readBoolean());
+
+                    }, exception -> {
+                        logger.error("Failed to run job due to exception ", exception);
+                        inProgressFuture.completeExceptionally(exception);
+                    }));
+                } catch (IOException e) {
+                    logger.error("Failed to create JobRunnerRequest", e);
+                }
+            }
+        };
+
+        // Update indexToJobProviders
+        this.indexToJobProviders.put(
+            extensionJobTypeName,
+            new ScheduledJobProvider(extensionJobTypeName, extensionJobIndexName, extensionJobParser, extensionJobRunner)
+        );
     }
 
     /**

@@ -8,7 +8,9 @@
  */
 package org.opensearch.jobscheduler.utils;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -20,11 +22,13 @@ import org.opensearch.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.test.OpenSearchIntegTestCase;
+import org.opensearch.jobscheduler.ScheduledJobProvider;
 
 public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     private ClusterService clusterService;
     private Set<String> indicesToListen;
+    private Map<String, ScheduledJobProvider> indexToJobProviders;
 
     private String expectedJobIndex;
     private String expectedJobType;
@@ -43,6 +47,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             .thenReturn(true);
 
         this.indicesToListen = new HashSet<>();
+        this.indexToJobProviders = new HashMap<>();
 
         this.expectedJobIndex = "sample-job-index";
         this.expectedJobType = "sample-job-type";
@@ -56,7 +61,12 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     public void testGetJobDetailsSanity() throws ExecutionException, InterruptedException, TimeoutException {
         CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
-        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
+        JobDetailsService jobDetailsService = new JobDetailsService(
+            client(),
+            this.clusterService,
+            this.indicesToListen,
+            this.indexToJobProviders
+        );
 
         jobDetailsService.processJobDetails(
             null,
@@ -87,7 +97,12 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     public void testUpdateJobDetailsSanity() throws ExecutionException, InterruptedException, TimeoutException {
         CompletableFuture<String> inProgressFuture = new CompletableFuture<>();
-        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
+        JobDetailsService jobDetailsService = new JobDetailsService(
+            client(),
+            this.clusterService,
+            this.indicesToListen,
+            this.indexToJobProviders
+        );
 
         // Create initial index request
         jobDetailsService.processJobDetails(
@@ -124,7 +139,12 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
     }
 
     public void testDeleteJobDetailsWithOutDocumentIdCreation() throws ExecutionException, InterruptedException, TimeoutException {
-        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
+        JobDetailsService jobDetailsService = new JobDetailsService(
+            client(),
+            this.clusterService,
+            this.indicesToListen,
+            this.indexToJobProviders
+        );
         jobDetailsService.deleteJobDetails(
             expectedDocumentId,
             ActionListener.wrap(
@@ -135,7 +155,12 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
     }
 
     public void testDeleteNonExistingJobDetails() throws ExecutionException, InterruptedException, TimeoutException {
-        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
+        JobDetailsService jobDetailsService = new JobDetailsService(
+            client(),
+            this.clusterService,
+            this.indicesToListen,
+            this.indexToJobProviders
+        );
         jobDetailsService.createJobDetailsIndex(ActionListener.wrap(created -> {
             if (created) {
                 jobDetailsService.deleteJobDetails(
@@ -154,7 +179,12 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     public void testUpdateIndexToJobDetails() throws ExecutionException, InterruptedException, TimeoutException {
 
-        JobDetailsService jobDetailsService = new JobDetailsService(client(), this.clusterService, this.indicesToListen);
+        JobDetailsService jobDetailsService = new JobDetailsService(
+            client(),
+            this.clusterService,
+            this.indicesToListen,
+            this.indexToJobProviders
+        );
         JobDetails jobDetails = new JobDetails(
             expectedJobIndex,
             expectedJobType,

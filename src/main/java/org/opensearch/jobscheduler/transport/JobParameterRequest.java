@@ -19,7 +19,7 @@ import org.opensearch.extensions.action.ExtensionActionRequest;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 
 /**
- * Request toextensions to parse ScheduledJobParameter
+ * Request to extensions to parse ScheduledJobParameter
  */
 public class JobParameterRequest extends ExtensionActionRequest {
 
