@@ -18,7 +18,6 @@ import org.opensearch.extensions.action.ExtensionActionRequest;
 /**
  * Request to extensions to invoke a job action, converts request params to a byte array
  *
- * @opensearch.internal
  */
 public class ExtensionJobActionRequest<T extends Writeable> extends ExtensionActionRequest {
 
@@ -27,6 +26,7 @@ public class ExtensionJobActionRequest<T extends Writeable> extends ExtensionAct
      *
      * @param extensionActionName the extension action to invoke
      * @param actionParams the request object holding the action parameters
+     * @throws IOExeption if serialization fails
      */
     public ExtensionJobActionRequest(String extensionActionName, T actionParams) throws IOException {
         super(extensionActionName, convertParamsToBytes(actionParams));
@@ -35,8 +35,8 @@ public class ExtensionJobActionRequest<T extends Writeable> extends ExtensionAct
     /**
      * Takes in an object of type T that extends {@link Writeable} and converts the request to a byte array
      *
-     * @param jobParameter the ScheduledJobParameter to convert into a writeable ExtensionJobParameter
-     * @param jobExecutionContext the context used to facilitate a job run
+     * @param actionParams the action parameters to be serialized
+     * @throws IOException if serialization fails
      */
     public static <T extends Writeable> byte[] convertParamsToBytes(T actionParams) throws IOException {
         // Write all to output stream

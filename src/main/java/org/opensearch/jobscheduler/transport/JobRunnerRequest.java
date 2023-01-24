@@ -18,9 +18,8 @@ import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 
 /**
- * Request to extensions to invoke their {@link ScheduledJobRunner} implementation
+ * Request to extensions to invoke their ScheduledJobRunner implementation
  *
- * @opensearch.internal
  */
 public class JobRunnerRequest implements Writeable {
 
