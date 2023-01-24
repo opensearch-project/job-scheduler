@@ -9,40 +9,59 @@
 package org.opensearch.jobscheduler.transport;
 
 import java.io.IOException;
-
 import org.opensearch.common.bytes.BytesReference;
-import org.opensearch.common.io.stream.BytesStreamOutput;
+import org.opensearch.common.io.stream.StreamInput;
+import org.opensearch.common.io.stream.StreamOutput;
+import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.common.xcontent.XContentBuilder;
 import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.common.xcontent.XContentParser;
-import org.opensearch.extensions.action.ExtensionActionRequest;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 
 /**
  * Request to extensions to parse ScheduledJobParameter
  */
-public class JobParameterRequest extends ExtensionActionRequest {
+public class JobParameterRequest implements Writeable {
 
-    public JobParameterRequest(String extensionActionName, XContentParser jobParser, String id, JobDocVersion jobDocVersion)
-        throws IOException {
-        super(extensionActionName, convertParamsToBytes(jobParser, id, jobDocVersion));
-    }
+    private final BytesReference jobSource;
 
-    public static byte[] convertParamsToBytes(XContentParser jobParser, String id, JobDocVersion jobDocVersion) throws IOException {
+    private final String id;
 
-        // Extract jobSource bytesRef from parser object
+    private final JobDocVersion jobDocVersion;
+
+    public JobParameterRequest(XContentParser jobParser, String id, JobDocVersion jobDocVersion) throws IOException {
+
+        // Extract jobSource bytesRef from xContentParser
         XContentBuilder builder = XContentFactory.jsonBuilder();
         builder.copyCurrentStructure(jobParser);
-        BytesReference jobSource = BytesReference.bytes(builder);
 
-        // write all to output stream
-        BytesStreamOutput out = new BytesStreamOutput();
-        out.writeBytesReference(jobSource);
-        out.writeString(id);
-        jobDocVersion.writeTo(out);
-        out.flush();
+        this.jobSource = BytesReference.bytes(builder);
+        this.id = id;
+        this.jobDocVersion = jobDocVersion;
+    }
 
-        // convert bytes stream to byte array
-        return BytesReference.toBytes(out.bytes());
+    public JobParameterRequest(StreamInput in) throws IOException {
+        this.jobSource = in.readBytesReference();
+        this.id = in.readString();
+        this.jobDocVersion = new JobDocVersion(in);
+    }
+
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeBytesReference(this.jobSource);
+        out.writeString(this.id);
+        this.jobDocVersion.writeTo(out);
+    }
+
+    public BytesReference getJobSource() {
+        return this.jobSource;
+    }
+
+    public String getId() {
+        return this.id;
+    }
+
+    public JobDocVersion getJobDocVersion() {
+        return this.jobDocVersion;
     }
 }

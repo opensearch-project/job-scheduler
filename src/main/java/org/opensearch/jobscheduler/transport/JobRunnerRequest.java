@@ -10,55 +10,42 @@ package org.opensearch.jobscheduler.transport;
 
 import java.io.IOException;
 
-import org.opensearch.common.bytes.BytesReference;
-import org.opensearch.common.io.stream.BytesStreamOutput;
-import org.opensearch.extensions.action.ExtensionActionRequest;
+import org.opensearch.common.io.stream.StreamInput;
+import org.opensearch.common.io.stream.StreamOutput;
+import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
-import org.opensearch.jobscheduler.spi.schedule.Schedule;
-
-import java.time.Instant;
 
 /**
  * Request to extensions to invoke their ScheduledJobRunner implementation
  */
-public class JobRunnerRequest extends ExtensionActionRequest {
+public class JobRunnerRequest implements Writeable {
 
-    public JobRunnerRequest(String extensionActionName, ScheduledJobParameter jobParameter, JobExecutionContext jobExecutionContext)
-        throws IOException {
-        super(extensionActionName, convertParamsToBytes(jobParameter, jobExecutionContext));
+    private final ExtensionJobParameter jobParameter;
+    private final JobExecutionContext jobExecutionContext;
+
+    public JobRunnerRequest(ScheduledJobParameter jobParameter, JobExecutionContext jobExecutionContext) {
+        this.jobParameter = new ExtensionJobParameter(jobParameter);
+        this.jobExecutionContext = jobExecutionContext;
     }
 
-    public static byte[] convertParamsToBytes(ScheduledJobParameter jobParameter, JobExecutionContext jobExecutionContext)
-        throws IOException {
+    public JobRunnerRequest(StreamInput in) throws IOException {
+        this.jobParameter = new ExtensionJobParameter(in);
+        this.jobExecutionContext = new JobExecutionContext(in);
+    }
 
-        // Convert job Parameter into writeable ExtensionJobParameter
-        String jobName = jobParameter.getName();
-        Instant lastUpdateTime = jobParameter.getLastUpdateTime();
-        Instant enabledTime = jobParameter.getEnabledTime();
-        Schedule schedule = jobParameter.getSchedule();
-        boolean isEnabled = jobParameter.isEnabled();
-        Long lockDurationSeconds = jobParameter.getLockDurationSeconds();
-        Double jitter = jobParameter.getJitter();
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        this.jobParameter.writeTo(out);
+        this.jobExecutionContext.writeTo(out);
+    }
 
-        ExtensionJobParameter extensionJobParameter = new ExtensionJobParameter(
-            jobName,
-            schedule,
-            lastUpdateTime,
-            enabledTime,
-            isEnabled,
-            lockDurationSeconds,
-            jitter
-        );
+    public ExtensionJobParameter getJobParameter() {
+        return this.jobParameter;
+    }
 
-        // Write all params to an output stream
-        BytesStreamOutput out = new BytesStreamOutput();
-        extensionJobParameter.writeTo(out);
-        jobExecutionContext.writeTo(out);
-        out.flush();
-
-        // Convert bytes stream to byte array
-        return BytesReference.toBytes(out.bytes());
+    public JobExecutionContext getJobExecutionContext() {
+        return this.jobExecutionContext;
     }
 }

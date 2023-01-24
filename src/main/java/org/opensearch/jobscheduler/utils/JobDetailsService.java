@@ -48,6 +48,7 @@ import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
+import org.opensearch.jobscheduler.transport.ExtensionJobActionRequest;
 import org.opensearch.jobscheduler.transport.JobParameterRequest;
 import org.opensearch.jobscheduler.transport.JobRunnerRequest;
 
@@ -118,20 +119,24 @@ public class JobDetailsService implements IndexingOperationListener {
                 CompletableFuture<ExtensionJobParameter[]> inProgressFuture = new CompletableFuture<>();
 
                 // Prepare JobParameterRequest
-                JobParameterRequest request = new JobParameterRequest(extensionJobParameterAction, xContentParser, id, jobDocVersion);
+                JobParameterRequest jobParamRequest = new JobParameterRequest(xContentParser, id, jobDocVersion);
 
                 // Invoke extension job parameter action and return ScheduledJobParameter
-                client.execute(ExtensionProxyAction.INSTANCE, request, ActionListener.wrap(response -> {
+                client.execute(
+                    ExtensionProxyAction.INSTANCE,
+                    new ExtensionJobActionRequest<JobParameterRequest>(extensionJobRunnerAction, jobParamRequest),
+                    ActionListener.wrap(response -> {
 
-                    // Extract response bytes into a streamInput and set the extensionJobParameter
-                    StreamInput in = StreamInput.wrap(response.getResponseBytes());
-                    extensionJobParameterHolder[0] = new ExtensionJobParameter(in);
-                    inProgressFuture.complete(extensionJobParameterHolder);
+                        // Extract response bytes into a streamInput and set the extensionJobParameter
+                        StreamInput in = StreamInput.wrap(response.getResponseBytes());
+                        extensionJobParameterHolder[0] = new ExtensionJobParameter(in);
+                        inProgressFuture.complete(extensionJobParameterHolder);
 
-                }, exception -> {
-                    logger.error("Could not parse job parameter", exception);
-                    inProgressFuture.completeExceptionally(exception);
-                }));
+                    }, exception -> {
+                        logger.error("Could not parse job parameter", exception);
+                        inProgressFuture.completeExceptionally(exception);
+                    })
+                );
 
                 // Stall execution until request completes or times out
                 try {
@@ -159,18 +164,22 @@ public class JobDetailsService implements IndexingOperationListener {
 
                 try {
                     // Prepare JobRunnerRequest
-                    JobRunnerRequest request = new JobRunnerRequest(extensionJobRunnerAction, jobParameter, context);
+                    JobRunnerRequest jobRunnerRequest = new JobRunnerRequest(jobParameter, context);
                     // Invoke extension job runner action
-                    client.execute(ExtensionProxyAction.INSTANCE, request, ActionListener.wrap(response -> {
+                    client.execute(
+                        ExtensionProxyAction.INSTANCE,
+                        new ExtensionJobActionRequest<JobRunnerRequest>(extensionJobRunnerAction, jobRunnerRequest),
+                        ActionListener.wrap(response -> {
 
-                        // Extract response bytes into a streamInput and set the extensionJobParameter
-                        StreamInput in = StreamInput.wrap(response.getResponseBytes());
-                        inProgressFuture.complete(in.readBoolean());
+                            // Extract response bytes into a streamInput and set the extensionJobParameter
+                            StreamInput in = StreamInput.wrap(response.getResponseBytes());
+                            inProgressFuture.complete(in.readBoolean());
 
-                    }, exception -> {
-                        logger.error("Failed to run job due to exception ", exception);
-                        inProgressFuture.completeExceptionally(exception);
-                    }));
+                        }, exception -> {
+                            logger.error("Failed to run job due to exception ", exception);
+                            inProgressFuture.completeExceptionally(exception);
+                        })
+                    );
                 } catch (IOException e) {
                     logger.error("Failed to create JobRunnerRequest", e);
                 }

@@ -60,6 +60,19 @@ public class ExtensionJobParameter implements ScheduledJobParameter, Writeable {
         this.jitter = jitter;
     }
 
+    public ExtensionJobParameter(ScheduledJobParameter jobParameter) {
+        // Convert job Parameter into writeable ExtensionJobParameter
+        this(
+            jobParameter.getName(),
+            jobParameter.getSchedule(),
+            jobParameter.getLastUpdateTime(),
+            jobParameter.getEnabledTime(),
+            jobParameter.isEnabled(),
+            jobParameter.getLockDurationSeconds(),
+            jobParameter.getJitter()
+        );
+    }
+
     public ExtensionJobParameter(StreamInput in) throws IOException {
         this.extensionJobName = in.readString();
         if (in.readEnum(ExtensionJobParameter.ScheduleType.class) == ScheduleType.CRON) {
