@@ -29,7 +29,9 @@ import org.opensearch.common.xcontent.ToXContent;
 import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.extensions.action.ExtensionProxyAction;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
+import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.index.engine.DocumentMissingException;
@@ -38,12 +40,23 @@ import org.opensearch.index.engine.VersionConflictEngineException;
 import org.opensearch.index.seqno.SequenceNumbers;
 import org.opensearch.index.shard.IndexingOperationListener;
 import org.opensearch.index.shard.ShardId;
+import org.opensearch.jobscheduler.ScheduledJobProvider;
+import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 import org.opensearch.jobscheduler.model.JobDetails;
+import org.opensearch.jobscheduler.spi.JobDocVersion;
+import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
+import org.opensearch.jobscheduler.spi.ScheduledJobParser;
+import org.opensearch.jobscheduler.transport.JobParameterRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.Map;
 
 public class JobDetailsService implements IndexingOperationListener {
 
@@ -55,29 +68,110 @@ public class JobDetailsService implements IndexingOperationListener {
     private final Client client;
     private final ClusterService clusterService;
     private Set<String> indicesToListen;
-
+    private Map<String, ScheduledJobProvider> indexToJobProviders;
     private static final ConcurrentMap<String, JobDetails> indexToJobDetails = IndexToJobDetails.getInstance();
 
-    public JobDetailsService(final Client client, final ClusterService clusterService, Set<String> indicesToListen) {
+    public JobDetailsService(
+        final Client client,
+        final ClusterService clusterService,
+        Set<String> indicesToListen,
+        Map<String, ScheduledJobProvider> indexToJobProviders
+    ) {
         this.client = client;
         this.clusterService = clusterService;
         this.indicesToListen = indicesToListen;
-    }
-
-    public boolean jobDetailsIndexExist() {
-        return clusterService.state().routingTable().hasIndex(JOB_DETAILS_INDEX_NAME);
+        this.indexToJobProviders = indexToJobProviders;
     }
 
     public static ConcurrentMap<String, JobDetails> getIndexToJobDetails() {
         return JobDetailsService.indexToJobDetails;
     }
 
-    private void updateIndicesToListen(String jobIndex) {
-        this.indicesToListen.add(jobIndex);
+    public boolean jobDetailsIndexExist() {
+        return clusterService.state().routingTable().hasIndex(JOB_DETAILS_INDEX_NAME);
+    }
+
+    private void updateIndicesToListen(String jobIndexName) {
+        this.indicesToListen.add(jobIndexName);
+    }
+
+    private void updateIndexToJobProviders(JobDetails jobDetails) {
+
+        // Extract jobIndex and jobType
+        String extensionJobIndexName = jobDetails.getJobIndex();
+        String extensionJobTypeName = jobDetails.getJobType();
+
+        // Extract proxy actions
+        String extensionJobParameterAction = jobDetails.getJobParameterAction();
+        String extensionJobRunnerAction = jobDetails.getJobRunnerAction();
+
+        // Create proxy ScheduledJobParser
+        ScheduledJobParser extensionJobParser = new ScheduledJobParser() {
+
+            @Override
+            public ScheduledJobParameter parse(XContentParser xContentParser, String id, JobDocVersion jobDocVersion) throws IOException {
+
+                final ExtensionJobParameter[] extensionJobParameterHolder = new ExtensionJobParameter[1];
+                CompletableFuture<ExtensionJobParameter[]> inProgressFuture = new CompletableFuture<>();
+
+                // prepare JobParameterRequest
+                JobParameterRequest request = new JobParameterRequest(extensionJobParameterAction, xContentParser, id, jobDocVersion);
+
+                // Invoke extension job parameter action and return ScheduledJobParameter
+                client.execute(ExtensionProxyAction.INSTANCE, request, ActionListener.wrap(response -> {
+
+                    // Extract response bytes into a streamInput and set the extensionJobParameter
+                    StreamInput in = StreamInput.wrap(response.getResponseBytes());
+                    extensionJobParameterHolder[0] = new ExtensionJobParameter(in);
+                    inProgressFuture.complete(extensionJobParameterHolder);
+
+                }, exception -> {
+                    logger.error("Could not parse job parameter", exception);
+                    inProgressFuture.completeExceptionally(exception);
+                }));
+
+                // Stall execution until request completes or times out
+                try {
+                    inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+                } catch (CompletionException e) {
+                    if (e.getCause() instanceof TimeoutException) {
+                        logger.info("Request timed out with an exception ", e);
+                    } else {
+                        throw e;
+                    }
+                } catch (Exception e) {
+                    logger.info("Could not parse ScheduledJobParameter due to exception ", e);
+                }
+
+                return extensionJobParameterHolder[0];
+            }
+        };
+
+        // TODO : Create proxy ScheduledJobRunner
+        // ScheduledJobRunner extensionJobRunner = new ScheduledJobRunner() {
+        // @Override
+        // public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
+        // // for job runner action : parameters are ScheduledJobParamater, and the JobExecutionContext
+
+        // // Steps :
+        // // 1) Take Job Execution Context and extract the following :
+        // // Instant expectedExecutionTime,
+        // // JobDocVersion jobVersion,
+        // // String jobIndexName,
+        // // String jobId
+        // // 2) use client.execute to invoke param action with ScheduledJobParamater, execptedExecutionTime,jobDocVersion, jobIndexName,
+        // jobID
+
+        // }
+        // };
+
+        // TODO : Update indexToJobProviders
+        // this.indexToJobProviders.put(extensionJobTypeName, new ScheduledJobProvider(extensionJobTypeName, extensionJobIndexName,
+        // extensionJobParser, extensionJobRunner));
     }
 
     /**
-     * Adds a new entry into the indexToJobDetails using the document Id as the key
+     * Adds a new entry into the indexToJobDetails using the document Id as the key, registers the index name to indicesToListen, and registers the ScheduledJobProvider
      *
      * @param documentId the unique Id for the job details
      * @param jobDetails the jobDetails to register
@@ -86,6 +180,7 @@ public class JobDetailsService implements IndexingOperationListener {
         // Register new JobDetails entry
         indexToJobDetails.put(documentId, jobDetails);
         updateIndicesToListen(jobDetails.getJobIndex());
+        updateIndexToJobProviders(jobDetails);
     }
 
     @Override
