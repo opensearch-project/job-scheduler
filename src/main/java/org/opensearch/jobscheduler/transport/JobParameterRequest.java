@@ -19,7 +19,7 @@ import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 
 /**
- * Request to extensions to parse a {@link ScheduledJobParameter}
+ * Request to extensions to parse a ScheduledJobParameter
  */
 public class JobParameterRequest implements Writeable {
 
@@ -41,9 +41,10 @@ public class JobParameterRequest implements Writeable {
     /**
      * Instantiates a new Job Parameter Request
      *
-     * @param xContentParser the parser obect to extract the jobSource {@link BytesReference} from
+     * @param jobParser the parser obect to extract the jobSource {@link BytesReference} from
      * @param id the job id
      * @param jobDocVersion the job document version
+     * @throws IOException IOException when message de-serialization fails.
      */
     public JobParameterRequest(XContentParser jobParser, String id, JobDocVersion jobDocVersion) throws IOException {
 
