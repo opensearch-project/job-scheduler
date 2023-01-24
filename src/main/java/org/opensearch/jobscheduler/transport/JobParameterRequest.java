@@ -19,16 +19,32 @@ import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 
 /**
- * Request to extensions to parse ScheduledJobParameter
+ * Request to extensions to parse a {@link ScheduledJobParameter}
  */
 public class JobParameterRequest implements Writeable {
 
+    /**
+     * jobSource is the index entry bytes reference from the registered job index
+     */
     private final BytesReference jobSource;
 
+    /**
+     * id is the job Id
+     */
     private final String id;
 
+    /**
+     * jobDocVersion is the metadata regarding this particular registered job
+     */
     private final JobDocVersion jobDocVersion;
 
+    /**
+     * Instantiates a new Job Parameter Request
+     *
+     * @param xContentParser the parser obect to extract the jobSource {@link BytesReference} from
+     * @param id the job id
+     * @param jobDocVersion the job document version
+     */
     public JobParameterRequest(XContentParser jobParser, String id, JobDocVersion jobDocVersion) throws IOException {
 
         // Extract jobSource bytesRef from xContentParser
@@ -40,10 +56,26 @@ public class JobParameterRequest implements Writeable {
         this.jobDocVersion = jobDocVersion;
     }
 
+    /**
+     * Instantiates a new Job Parameter Request from {@link StreamInput}
+     *
+     * @param in in bytes stream input used to de-serialize the message.
+     * @throws IOException IOException when message de-serialization fails.
+     */
     public JobParameterRequest(StreamInput in) throws IOException {
         this.jobSource = in.readBytesReference();
         this.id = in.readString();
         this.jobDocVersion = new JobDocVersion(in);
+    }
+
+    /**
+     * Instantiates a new Job Parameter Request by wrapping the given byte array within a {@link StreamInput}
+     *
+     * @param requestParams in bytes array used to de-serialize the message.
+     * @throws IOException when message de-serialization fails.
+     */
+    public JobParameterRequest(byte[] requestParams) throws IOException {
+        this(StreamInput.wrap(requestParams));
     }
 
     @Override

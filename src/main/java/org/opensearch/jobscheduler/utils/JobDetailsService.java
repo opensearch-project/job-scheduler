@@ -99,6 +99,11 @@ public class JobDetailsService implements IndexingOperationListener {
         this.indicesToListen.add(jobIndexName);
     }
 
+    /**
+     * Creates a proxy {@link ScheduledJobProvier} that facilitates callbacks between extensions and JobScheduler
+     *
+     * @param jobDetails the extension job information
+     */
     private void updateIndexToJobProviders(JobDetails jobDetails) {
 
         // Extract jobIndex and jobType

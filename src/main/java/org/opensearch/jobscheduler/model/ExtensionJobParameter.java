@@ -21,6 +21,11 @@ import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 
+/**
+ * A {@link Writeable} {@link ScheduledJobParameter} used to transport job parameters between OpenSearch and Extensions
+ *
+ * @opensearch.internal
+ */
 public class ExtensionJobParameter implements ScheduledJobParameter, Writeable {
 
     enum ScheduleType {
