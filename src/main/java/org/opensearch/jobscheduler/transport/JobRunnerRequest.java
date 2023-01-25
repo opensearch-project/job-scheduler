@@ -24,6 +24,11 @@ import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 public class JobRunnerRequest implements Writeable {
 
     /**
+     * accessToken is the placeholder for the user Identity/access token to be used to perform validation prior to invoking the extension action
+     */
+    private final String accessToken;
+
+    /**
      * jobParameter is job index entry intended to be used to validate prior to job execution
      */
     private final ExtensionJobParameter jobParameter;
@@ -39,7 +44,8 @@ public class JobRunnerRequest implements Writeable {
      * @param jobParameter the ScheduledJobParameter to convert into a writeable ExtensionJobParameter
      * @param jobExecutionContext the context used to facilitate a job run
      */
-    public JobRunnerRequest(ScheduledJobParameter jobParameter, JobExecutionContext jobExecutionContext) {
+    public JobRunnerRequest(String accessToken, ScheduledJobParameter jobParameter, JobExecutionContext jobExecutionContext) {
+        this.accessToken = accessToken;
         this.jobParameter = new ExtensionJobParameter(jobParameter);
         this.jobExecutionContext = jobExecutionContext;
     }
@@ -51,6 +57,7 @@ public class JobRunnerRequest implements Writeable {
      * @throws IOException IOException when message de-serialization fails.
      */
     public JobRunnerRequest(StreamInput in) throws IOException {
+        this.accessToken = in.readString();
         this.jobParameter = new ExtensionJobParameter(in);
         this.jobExecutionContext = new JobExecutionContext(in);
     }
@@ -67,8 +74,13 @@ public class JobRunnerRequest implements Writeable {
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
+        out.writeString(this.accessToken);
         this.jobParameter.writeTo(out);
         this.jobExecutionContext.writeTo(out);
+    }
+
+    public String getAccessToken() {
+        return this.accessToken;
     }
 
     public ExtensionJobParameter getJobParameter() {

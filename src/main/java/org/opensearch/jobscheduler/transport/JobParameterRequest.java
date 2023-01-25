@@ -24,6 +24,11 @@ import org.opensearch.jobscheduler.spi.JobDocVersion;
 public class JobParameterRequest implements Writeable {
 
     /**
+     * accessToken is the placeholder for the user Identity/access token to be used to perform validation prior to invoking the extension action
+     */
+    private final String accessToken;
+
+    /**
      * jobSource is the index entry bytes reference from the registered job index
      */
     private final BytesReference jobSource;
@@ -41,18 +46,19 @@ public class JobParameterRequest implements Writeable {
     /**
      * Instantiates a new Job Parameter Request
      *
+     * @param accessToken the user identiy/access token that will be validated prior to triggering an extension action
      * @param jobParser the parser obect to extract the jobSource {@link BytesReference} from
      * @param id the job id
      * @param jobDocVersion the job document version
      * @throws IOException IOException when message de-serialization fails.
      */
-    public JobParameterRequest(XContentParser jobParser, String id, JobDocVersion jobDocVersion) throws IOException {
+    public JobParameterRequest(String accessToken, XContentParser jobParser, String id, JobDocVersion jobDocVersion) throws IOException {
 
         // Extract jobSource bytesRef from xContentParser
         XContentBuilder builder = XContentFactory.jsonBuilder();
         builder.copyCurrentStructure(jobParser);
-
         this.jobSource = BytesReference.bytes(builder);
+        this.accessToken = accessToken;
         this.id = id;
         this.jobDocVersion = jobDocVersion;
     }
@@ -64,6 +70,7 @@ public class JobParameterRequest implements Writeable {
      * @throws IOException IOException when message de-serialization fails.
      */
     public JobParameterRequest(StreamInput in) throws IOException {
+        this.accessToken = in.readString();
         this.jobSource = in.readBytesReference();
         this.id = in.readString();
         this.jobDocVersion = new JobDocVersion(in);
@@ -81,9 +88,14 @@ public class JobParameterRequest implements Writeable {
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
+        out.writeString(this.accessToken);
         out.writeBytesReference(this.jobSource);
         out.writeString(this.id);
         this.jobDocVersion.writeTo(out);
+    }
+
+    public String getAccessToken() {
+        return this.accessToken;
     }
 
     public BytesReference getJobSource() {

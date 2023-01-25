@@ -123,8 +123,9 @@ public class JobDetailsService implements IndexingOperationListener {
                 final ExtensionJobParameter[] extensionJobParameterHolder = new ExtensionJobParameter[1];
                 CompletableFuture<ExtensionJobParameter[]> inProgressFuture = new CompletableFuture<>();
 
+                // TODO : Replace the placeholder with the provided access token from the inital job detials request
                 // Prepare JobParameterRequest
-                JobParameterRequest jobParamRequest = new JobParameterRequest(xContentParser, id, jobDocVersion);
+                JobParameterRequest jobParamRequest = new JobParameterRequest("placeholder", xContentParser, id, jobDocVersion);
 
                 // Invoke extension job parameter action and return ScheduledJobParameter
                 client.execute(
@@ -168,8 +169,9 @@ public class JobDetailsService implements IndexingOperationListener {
                 CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
 
                 try {
+                    // TODO : Replace the placeholder with the provided access token from the inital job detials request
                     // Prepare JobRunnerRequest
-                    JobRunnerRequest jobRunnerRequest = new JobRunnerRequest(jobParameter, context);
+                    JobRunnerRequest jobRunnerRequest = new JobRunnerRequest("placeholder", jobParameter, context);
                     // Invoke extension job runner action
                     client.execute(
                         ExtensionProxyAction.INSTANCE,
