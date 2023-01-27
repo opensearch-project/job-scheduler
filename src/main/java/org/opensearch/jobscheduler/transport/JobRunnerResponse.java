@@ -28,7 +28,7 @@ public class JobRunnerResponse implements Writeable {
     /**
      * Instantiates a new Job Runner Response
      *
-     * @param jobParameter the job parameter parsed from the extension
+     * @param jobRunnerStatus the run status of the extension job runner
      */
     public JobRunnerResponse(boolean jobRunnerStatus) {
         this.jobRunnerStatus = jobRunnerStatus;
