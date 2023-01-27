@@ -7,4 +7,4 @@ set -o pipefail
 rm -rf build/*
 
 mkdir -p build/plugins
-unzip -qq "opensearch-job-scheduler-2.5.0.0.zip" -d build/plugins/opendistro-job-scheduler
+unzip -qq "opensearch-job-scheduler-2.6.0.0.zip" -d build/plugins/opendistro-job-scheduler
