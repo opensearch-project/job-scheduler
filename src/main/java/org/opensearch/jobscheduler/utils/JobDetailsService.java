@@ -101,25 +101,53 @@ public class JobDetailsService implements IndexingOperationListener {
     }
 
     /**
-     * Creates a proxy {@link ScheduledJobProvier} that facilitates callbacks between extensions and JobScheduler
+     * Creates a proxy ScheduledJobProvider that facilitates callbacks between extensions and JobScheduler
      *
      * @param jobDetails the extension job information
      */
     private void updateIndexToJobProviders(JobDetails jobDetails) {
 
-        // Extract jobIndex and jobType
-        String extensionJobIndexName = jobDetails.getJobIndex();
-        String extensionJobTypeName = jobDetails.getJobType();
+        String extensionJobIndex = jobDetails.getJobIndex();
+        String extensionJobType = jobDetails.getJobType();
+        String extensionUniqueId = jobDetails.getExtensionUniqueId();
 
-        // Extract proxy actions
-        String extensionJobParameterAction = jobDetails.getJobParameterAction();
-        String extensionJobRunnerAction = jobDetails.getJobRunnerAction();
+        // Create proxy callback objects
+        ScheduledJobParser extensionJobParser = createProxyScheduledJobParser(extensionUniqueId, jobDetails.getJobParameterAction());
+        ScheduledJobRunner extensionJobRunner = createProxyScheduledJobRunner(extensionUniqueId, jobDetails.getJobRunnerAction());
 
-        // Create proxy ScheduledJobParser
-        ScheduledJobParser extensionJobParser = new ScheduledJobParser() {
+        // Update indexToJobProviders
+        this.indexToJobProviders.put(
+            extensionJobIndex,
+            new ScheduledJobProvider(extensionJobType, extensionJobIndex, extensionJobParser, extensionJobRunner)
+        );
+    }
+
+    /**
+     * Adds a new entry into the indexToJobDetails using the document Id as the key, registers the index name to indicesToListen, and registers the ScheduledJobProvider
+     *
+     * @param documentId the unique Id for the job details
+     * @param jobDetails the jobDetails to register
+     */
+    void updateIndexToJobDetails(String documentId, JobDetails jobDetails) {
+        // Register new JobDetails entry
+        indexToJobDetails.put(documentId, jobDetails);
+        updateIndicesToListen(jobDetails.getJobIndex());
+        updateIndexToJobProviders(jobDetails);
+    }
+
+    /**
+     * Creates a proxy ScheduledJobParser that triggers an extension's jobParameter action
+     *
+     * @param extensionUniqueId the extension to trigger the job parameter action
+     * @param extensionJobParameterAction the job parameter action name
+     */
+    private ScheduledJobParser createProxyScheduledJobParser(String extensionUniqueId, String extensionJobParameterAction) {
+        return new ScheduledJobParser() {
 
             @Override
             public ScheduledJobParameter parse(XContentParser xContentParser, String id, JobDocVersion jobDocVersion) throws IOException {
+
+                logger.info("Sending ScheduledJobParameter parse request to extension : " + extensionUniqueId);
 
                 final ExtensionJobParameter[] extensionJobParameterHolder = new ExtensionJobParameter[1];
                 CompletableFuture<ExtensionJobParameter[]> inProgressFuture = new CompletableFuture<>();
@@ -131,7 +159,7 @@ public class JobDetailsService implements IndexingOperationListener {
                 // Invoke extension job parameter action and return ScheduledJobParameter
                 client.execute(
                     ExtensionProxyAction.INSTANCE,
-                    new ExtensionJobActionRequest<JobParameterRequest>(extensionJobRunnerAction, jobParamRequest),
+                    new ExtensionJobActionRequest<JobParameterRequest>(extensionJobParameterAction, jobParamRequest),
                     ActionListener.wrap(response -> {
 
                         // Extract response bytes and generate the parsed job parameter
@@ -162,10 +190,20 @@ public class JobDetailsService implements IndexingOperationListener {
             }
         };
 
-        // Create proxy ScheduledJobRunner
-        ScheduledJobRunner extensionJobRunner = new ScheduledJobRunner() {
+    }
+
+    /**
+     * Creates a proxy ScheduledJobRunner that triggers an extension's jobRunner action
+     *
+     * @param extensionUniqueId the extension to trigger the job runner action
+     * @param extensionJobRunnerAction the job parameter action name
+     */
+    private ScheduledJobRunner createProxyScheduledJobRunner(String extensionUniqueId, String extensionJobRunnerAction) {
+        return new ScheduledJobRunner() {
             @Override
             public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
+
+                logger.info("Sending ScheduledJobRunner runJob request to extension : " + extensionUniqueId);
 
                 final Boolean[] extensionJobRunnerStatus = new Boolean[1];
                 CompletableFuture<Boolean[]> inProgressFuture = new CompletableFuture<>();
@@ -206,31 +244,10 @@ public class JobDetailsService implements IndexingOperationListener {
                     logger.info("Could not run extension job due to exception ", e);
                 }
 
-                // log extension job status
-                logger.info(
-                    "Job Runner Status for extension unique ID " + jobDetails.getExtensionUniqueId() + " : " + extensionJobRunnerStatus[0]
-                );
+                // log extension job runner status
+                logger.info("Job Runner Status for extension " + extensionUniqueId + " : " + extensionJobRunnerStatus[0]);
             }
         };
-
-        // Update indexToJobProviders
-        this.indexToJobProviders.put(
-            extensionJobTypeName,
-            new ScheduledJobProvider(extensionJobTypeName, extensionJobIndexName, extensionJobParser, extensionJobRunner)
-        );
-    }
-
-    /**
-     * Adds a new entry into the indexToJobDetails using the document Id as the key, registers the index name to indicesToListen, and registers the ScheduledJobProvider
-     *
-     * @param documentId the unique Id for the job details
-     * @param jobDetails the jobDetails to register
-     */
-    void updateIndexToJobDetails(String documentId, JobDetails jobDetails) {
-        // Register new JobDetails entry
-        indexToJobDetails.put(documentId, jobDetails);
-        updateIndicesToListen(jobDetails.getJobIndex());
-        updateIndexToJobProviders(jobDetails);
     }
 
     @Override
