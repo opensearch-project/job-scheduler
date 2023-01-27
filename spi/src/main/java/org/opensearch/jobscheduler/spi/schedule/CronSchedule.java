@@ -18,6 +18,7 @@ import org.opensearch.common.collect.Tuple;
 import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.io.stream.StreamOutput;
 import org.opensearch.common.xcontent.XContentBuilder;
+import org.opensearch.common.xcontent.XContentType;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -180,7 +181,7 @@ public class CronSchedule implements Schedule {
 
     @Override
     public String toString() {
-        return Strings.toString(this, false, true);
+        return Strings.toString(XContentType.JSON, this, false, true);
     }
 
     @Override
