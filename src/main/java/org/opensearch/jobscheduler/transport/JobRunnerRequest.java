@@ -53,7 +53,7 @@ public class JobRunnerRequest implements Writeable {
     /**
      * Instantiates a new Job Runner Request from {@link StreamInput}
      *
-     * @param in in bytes stream input used to de-serialize the message.
+     * @param in is the byte stream input used to de-serialize the message.
      * @throws IOException IOException when message de-serialization fails.
      */
     public JobRunnerRequest(StreamInput in) throws IOException {

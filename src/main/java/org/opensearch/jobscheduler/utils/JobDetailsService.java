@@ -31,7 +31,6 @@ import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.extensions.action.ExtensionProxyAction;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
-import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.index.engine.DocumentMissingException;
@@ -50,7 +49,9 @@ import org.opensearch.jobscheduler.spi.ScheduledJobParser;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.transport.ExtensionJobActionRequest;
 import org.opensearch.jobscheduler.transport.JobParameterRequest;
+import org.opensearch.jobscheduler.transport.JobParameterResponse;
 import org.opensearch.jobscheduler.transport.JobRunnerRequest;
+import org.opensearch.jobscheduler.transport.JobRunnerResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -133,9 +134,9 @@ public class JobDetailsService implements IndexingOperationListener {
                     new ExtensionJobActionRequest<JobParameterRequest>(extensionJobRunnerAction, jobParamRequest),
                     ActionListener.wrap(response -> {
 
-                        // Extract response bytes into a streamInput and set the extensionJobParameter
-                        StreamInput in = StreamInput.wrap(response.getResponseBytes());
-                        extensionJobParameterHolder[0] = new ExtensionJobParameter(in);
+                        // Extract response bytes and generate the parsed job parameter
+                        JobParameterResponse jobParameterResponse = new JobParameterResponse(response.getResponseBytes());
+                        extensionJobParameterHolder[0] = jobParameterResponse.getJobParameter();
                         inProgressFuture.complete(extensionJobParameterHolder);
 
                     }, exception -> {
@@ -179,16 +180,26 @@ public class JobDetailsService implements IndexingOperationListener {
                         ActionListener.wrap(response -> {
 
                             // Extract response bytes into a streamInput and set the extensionJobParameter
-                            StreamInput in = StreamInput.wrap(response.getResponseBytes());
-                            inProgressFuture.complete(in.readBoolean());
+                            JobRunnerResponse jobRunnerResponse = new JobRunnerResponse(response.getResponseBytes());
+                            inProgressFuture.complete(jobRunnerResponse.getJobRunnerStatus());
 
                         }, exception -> {
                             logger.error("Failed to run job due to exception ", exception);
                             inProgressFuture.completeExceptionally(exception);
                         })
                     );
+                    // Stall execution until request completes or times out
+                    inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
                 } catch (IOException e) {
                     logger.error("Failed to create JobRunnerRequest", e);
+                } catch (CompletionException e) {
+                    if (e.getCause() instanceof TimeoutException) {
+                        logger.info("Request timed out with an exception ", e);
+                    } else {
+                        throw e;
+                    }
+                } catch (Exception e) {
+                    logger.info("Could not parse ScheduledJobParameter due to exception ", e);
                 }
             }
         };
