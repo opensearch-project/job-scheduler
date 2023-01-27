@@ -153,6 +153,7 @@ public class JobDetailsService implements IndexingOperationListener {
                 CompletableFuture<ExtensionJobParameter[]> inProgressFuture = new CompletableFuture<>();
 
                 // TODO : Replace the placeholder with the provided access token from the inital job detials request
+                
                 // Prepare JobParameterRequest
                 JobParameterRequest jobParamRequest = new JobParameterRequest("placeholder", xContentParser, id, jobDocVersion);
 
@@ -168,8 +169,10 @@ public class JobDetailsService implements IndexingOperationListener {
                         inProgressFuture.complete(extensionJobParameterHolder);
 
                     }, exception -> {
+
                         logger.error("Could not parse job parameter", exception);
                         inProgressFuture.completeExceptionally(exception);
+
                     })
                 );
 
@@ -196,7 +199,7 @@ public class JobDetailsService implements IndexingOperationListener {
      * Creates a proxy ScheduledJobRunner that triggers an extension's jobRunner action
      *
      * @param extensionUniqueId the extension to trigger the job runner action
-     * @param extensionJobRunnerAction the job parameter action name
+     * @param extensionJobRunnerAction the job runner action name
      */
     private ScheduledJobRunner createProxyScheduledJobRunner(String extensionUniqueId, String extensionJobRunnerAction) {
         return new ScheduledJobRunner() {
@@ -210,8 +213,10 @@ public class JobDetailsService implements IndexingOperationListener {
 
                 try {
                     // TODO : Replace the placeholder with the provided access token from the inital job detials request
+
                     // Prepare JobRunnerRequest
                     JobRunnerRequest jobRunnerRequest = new JobRunnerRequest("placeholder", jobParameter, context);
+
                     // Invoke extension job runner action
                     client.execute(
                         ExtensionProxyAction.INSTANCE,
@@ -224,8 +229,10 @@ public class JobDetailsService implements IndexingOperationListener {
                             inProgressFuture.complete(extensionJobRunnerStatus);
 
                         }, exception -> {
+
                             logger.error("Failed to run job due to exception ", exception);
                             inProgressFuture.completeExceptionally(exception);
+
                         })
                     );
 
