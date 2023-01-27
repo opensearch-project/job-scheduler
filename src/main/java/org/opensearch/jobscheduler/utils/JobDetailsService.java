@@ -153,7 +153,7 @@ public class JobDetailsService implements IndexingOperationListener {
                 CompletableFuture<ExtensionJobParameter[]> inProgressFuture = new CompletableFuture<>();
 
                 // TODO : Replace the placeholder with the provided access token from the inital job detials request
-                
+
                 // Prepare JobParameterRequest
                 JobParameterRequest jobParamRequest = new JobParameterRequest("placeholder", xContentParser, id, jobDocVersion);
 
