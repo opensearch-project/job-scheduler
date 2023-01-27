@@ -167,7 +167,8 @@ public class JobDetailsService implements IndexingOperationListener {
             @Override
             public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
 
-                CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
+                final Boolean[] extensionJobRunnerStatus = new Boolean[1];
+                CompletableFuture<Boolean[]> inProgressFuture = new CompletableFuture<>();
 
                 try {
                     // TODO : Replace the placeholder with the provided access token from the inital job detials request
@@ -181,15 +182,18 @@ public class JobDetailsService implements IndexingOperationListener {
 
                             // Extract response bytes into a streamInput and set the extensionJobParameter
                             JobRunnerResponse jobRunnerResponse = new JobRunnerResponse(response.getResponseBytes());
-                            inProgressFuture.complete(jobRunnerResponse.getJobRunnerStatus());
+                            extensionJobRunnerStatus[0] = jobRunnerResponse.getJobRunnerStatus();
+                            inProgressFuture.complete(extensionJobRunnerStatus);
 
                         }, exception -> {
                             logger.error("Failed to run job due to exception ", exception);
                             inProgressFuture.completeExceptionally(exception);
                         })
                     );
+
                     // Stall execution until request completes or times out
                     inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+
                 } catch (IOException e) {
                     logger.error("Failed to create JobRunnerRequest", e);
                 } catch (CompletionException e) {
@@ -199,8 +203,13 @@ public class JobDetailsService implements IndexingOperationListener {
                         throw e;
                     }
                 } catch (Exception e) {
-                    logger.info("Could not parse ScheduledJobParameter due to exception ", e);
+                    logger.info("Could not run extension job due to exception ", e);
                 }
+
+                // log extension job status
+                logger.info(
+                    "Job Runner Status for extension unique ID " + jobDetails.getExtensionUniqueId() + " : " + extensionJobRunnerStatus[0]
+                );
             }
         };
 
