@@ -9,11 +9,9 @@
 package org.opensearch.jobscheduler.transport;
 
 import java.io.IOException;
-
-import org.opensearch.common.bytes.BytesReference;
-import org.opensearch.common.io.stream.BytesStreamOutput;
 import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.extensions.action.ExtensionActionResponse;
+import org.opensearch.jobscheduler.utils.JobDetailsService;
 
 /**
  * Response from extension job action, converts response params to a byte array
@@ -28,24 +26,7 @@ public class ExtensionJobActionResponse<T extends Writeable> extends ExtensionAc
      * @throws IOException if serialization fails
      */
     public ExtensionJobActionResponse(T actionResponse) throws IOException {
-        super(convertResponseToBytes(actionResponse));
+        super(JobDetailsService.convertParamsToBytes(actionResponse));
     }
 
-    /**
-     * Takes in an object of type T that extends {@link Writeable} and converts the response to a byte array
-     *
-     * @param <T> a class that extends writeable
-     * @param actionResponse the action parameters to be serialized
-     * @throws IOException if serialization fails
-     * @return the byte array of the parameters
-     */
-    public static <T extends Writeable> byte[] convertResponseToBytes(T actionResponse) throws IOException {
-        // Write all to output stream
-        BytesStreamOutput out = new BytesStreamOutput();
-        actionResponse.writeTo(out);
-        out.flush();
-
-        // convert bytes stream to byte array
-        return BytesReference.toBytes(out.bytes());
-    }
 }

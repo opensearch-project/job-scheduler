@@ -31,6 +31,9 @@ import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.extensions.action.ExtensionProxyAction;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
+import org.opensearch.common.bytes.BytesReference;
+import org.opensearch.common.io.stream.BytesStreamOutput;
+import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.index.engine.DocumentMissingException;
@@ -181,12 +184,10 @@ public class JobDetailsService implements IndexingOperationListener {
                     inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
                 } catch (CompletionException e) {
                     if (e.getCause() instanceof TimeoutException) {
-                        logger.info("Request timed out with an exception ", e);
-                    } else {
-                        throw e;
+                        logger.error("Request timed out with an exception ", e);
                     }
                 } catch (Exception e) {
-                    logger.info("Could not parse ScheduledJobParameter due to exception ", e);
+                    logger.error("Could not parse ScheduledJobParameter due to exception ", e);
                 }
 
                 return extensionJobParameterHolder[0];
@@ -243,12 +244,10 @@ public class JobDetailsService implements IndexingOperationListener {
                     logger.error("Failed to create JobRunnerRequest", e);
                 } catch (CompletionException e) {
                     if (e.getCause() instanceof TimeoutException) {
-                        logger.info("Request timed out with an exception ", e);
-                    } else {
-                        throw e;
+                        logger.error("Request timed out with an exception ", e);
                     }
                 } catch (Exception e) {
-                    logger.info("Could not run extension job due to exception ", e);
+                    logger.error("Could not run extension job due to exception ", e);
                 }
 
                 // log extension job runner status
@@ -492,6 +491,24 @@ public class JobDetailsService implements IndexingOperationListener {
             logger.error("IOException occurred updating job details for documentId " + documentId, e);
             listener.onResponse(null);
         }
+    }
+
+    /**
+     * Takes in an object of type T that extends {@link Writeable} and converts the writeable fields to a byte array
+     *
+     * @param <T> a class that extends writeable
+     * @param actionParams the action parameters to be serialized
+     * @throws IOException if serialization fails
+     * @return the byte array of the parameters
+     */
+    public static <T extends Writeable> byte[] convertParamsToBytes(T actionParams) throws IOException {
+        // Write all to output stream
+        BytesStreamOutput out = new BytesStreamOutput();
+        actionParams.writeTo(out);
+        out.flush();
+
+        // convert bytes stream to byte array
+        return BytesReference.toBytes(out.bytes());
     }
 
     private String jobDetailsMapping() {

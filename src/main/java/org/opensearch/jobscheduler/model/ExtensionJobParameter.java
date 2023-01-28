@@ -11,6 +11,7 @@ package org.opensearch.jobscheduler.model;
 import java.io.IOException;
 import java.time.Instant;
 
+import org.opensearch.common.Nullable;
 import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.io.stream.StreamOutput;
 import org.opensearch.common.io.stream.Writeable;
@@ -32,31 +33,37 @@ public class ExtensionJobParameter implements ScheduledJobParameter, Writeable {
         INTERVAL
     }
 
-    private String extensionJobName;
+    public static final String NAME_FIELD = "name";
+    public static final String SCHEDULE_FIELD = "schedule";
+    public static final String LAST_UPDATE_TIME_FIELD = "last_update_time";
+    public static final String ENABLED_TIME_FIELD = "enabled_time";
+    public static final String IS_ENABLED_FIELD = "enabled";
+    public static final String LOCK_DURATION_SECONDS_FIELD = "lock_duration_seconds";
+    public static final String JITTER_FIELD = "jitter";
 
-    private Schedule extensionJobSchedule;
-
+    private String jobName;
+    private Schedule schedule;
     private Instant lastUpdateTime;
-
     private Instant enabledTime;
-
     private boolean isEnabled;
 
+    @Nullable
     private Long lockDurationSeconds;
 
+    @Nullable
     private Double jitter;
 
     public ExtensionJobParameter(
-        String extensionJobName,
-        Schedule extensionJobSchedule,
+        String jobName,
+        Schedule schedule,
         Instant lastUpdateTime,
         Instant enabledTime,
         boolean isEnabled,
         Long lockDurationSeconds,
         Double jitter
     ) {
-        this.extensionJobName = extensionJobName;
-        this.extensionJobSchedule = extensionJobSchedule;
+        this.jobName = jobName;
+        this.schedule = schedule;
         this.lastUpdateTime = lastUpdateTime;
         this.enabledTime = enabledTime;
         this.isEnabled = isEnabled;
@@ -78,44 +85,56 @@ public class ExtensionJobParameter implements ScheduledJobParameter, Writeable {
     }
 
     public ExtensionJobParameter(StreamInput in) throws IOException {
-        this.extensionJobName = in.readString();
+        this.jobName = in.readString();
         if (in.readEnum(ExtensionJobParameter.ScheduleType.class) == ScheduleType.CRON) {
-            this.extensionJobSchedule = new CronSchedule(in);
+            this.schedule = new CronSchedule(in);
         } else {
-            this.extensionJobSchedule = new IntervalSchedule(in);
+            this.schedule = new IntervalSchedule(in);
         }
         this.lastUpdateTime = in.readInstant();
         this.enabledTime = in.readInstant();
         this.isEnabled = in.readBoolean();
-        this.lockDurationSeconds = in.readLong();
-        this.jitter = in.readDouble();
+        this.lockDurationSeconds = in.readOptionalLong();
+        this.jitter = in.readOptionalDouble();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
-        out.writeString(this.extensionJobName);
-        if (this.extensionJobSchedule instanceof CronSchedule) {
+        out.writeString(this.jobName);
+        if (this.schedule instanceof CronSchedule) {
             out.writeEnum(ScheduleType.CRON);
         } else {
             out.writeEnum(ScheduleType.INTERVAL);
         }
-        this.extensionJobSchedule.writeTo(out);
+        this.schedule.writeTo(out);
         out.writeInstant(this.lastUpdateTime);
         out.writeInstant(this.enabledTime);
         out.writeBoolean(this.isEnabled);
-        out.writeLong(this.lockDurationSeconds);
-        out.writeDouble(this.jitter);
+        out.writeOptionalLong(this.lockDurationSeconds);
+        out.writeOptionalDouble(this.jitter);
     }
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        // no op
-        return null;
+        builder.startObject();
+        builder.field(NAME_FIELD, this.jobName)
+            .field(SCHEDULE_FIELD, this.schedule)
+            .field(LAST_UPDATE_TIME_FIELD, lastUpdateTime.toEpochMilli())
+            .field(ENABLED_TIME_FIELD, enabledTime.toEpochMilli())
+            .field(IS_ENABLED_FIELD, isEnabled);
+        if (this.lockDurationSeconds != null) {
+            builder.field(LOCK_DURATION_SECONDS_FIELD, this.lockDurationSeconds);
+        }
+        if (this.jitter != null) {
+            builder.field(JITTER_FIELD, this.jitter);
+        }
+        builder.endObject();
+        return builder;
     }
 
     @Override
     public String getName() {
-        return this.extensionJobName;
+        return this.jobName;
     }
 
     @Override
@@ -130,7 +149,7 @@ public class ExtensionJobParameter implements ScheduledJobParameter, Writeable {
 
     @Override
     public Schedule getSchedule() {
-        return this.extensionJobSchedule;
+        return this.schedule;
     }
 
     @Override
