@@ -339,7 +339,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             out.flush();
             try (BytesStreamInput in = new BytesStreamInput(BytesReference.toBytes(out.bytes()))) {
 
-                actionResponse = new ExtensionActionRequest(in);
+                actionResponse = new ExtensionActionResponse(in);
 
                 // Test deserialization of action response params
                 JobRunnerResponse deserializedResponse = new JobRunnerResponse(actionResponse.getResponseBytes());
@@ -361,7 +361,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             out.flush();
             try (BytesStreamInput in = new BytesStreamInput(BytesReference.toBytes(out.bytes()))) {
 
-                actionResponse = new ExtensionActionRequest(in);
+                actionResponse = new ExtensionActionResponse(in);
 
                 // Test deserialization of action response params
                 JobParameterResponse deserializedResponse = new JobParameterResponse(actionResponse.getResponseBytes());
