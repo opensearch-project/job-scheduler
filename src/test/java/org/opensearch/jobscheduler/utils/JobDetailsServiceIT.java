@@ -270,20 +270,29 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         JobRunnerRequest jobRunnerRequest = new JobRunnerRequest("placeholder", this.extensionJobParameter, jobExecutionContext);
         ExtensionActionRequest actionRequest = new ExtensionJobActionRequest<JobRunnerRequest>("actionName", jobRunnerRequest);
 
-        // Test deserialization of action request params
-        JobRunnerRequest deserializedRequest = new JobRunnerRequest(actionRequest.getRequestBytes());
+        // Test ExtensionActionRequest deserialization
+        try (BytesStreamOutput out = new BytesStreamOutput()) {
+            actionRequest.writeTo(out);
+            out.flush();
+            try (BytesStreamInput in = new BytesStreamInput(BytesReference.toBytes(out.bytes()))) {
 
-        // Test deserialization of extension job parameter
-        ExtensionJobParameter deserializedJobParameter = deserializedRequest.getJobParameter();
-        compareExtensionJobParameters(this.extensionJobParameter, deserializedJobParameter);
+                actionRequest = new ExtensionActionRequest(in);
 
-        // Test deserialization of job execution context
-        JobExecutionContext deserializedJobExecutionContext = deserializedRequest.getJobExecutionContext();
-        assertEquals(jobExecutionContext.getJobId(), deserializedJobExecutionContext.getJobId());
-        assertEquals(jobExecutionContext.getJobIndexName(), deserializedJobExecutionContext.getJobIndexName());
-        assertEquals(jobExecutionContext.getExpectedExecutionTime(), deserializedJobExecutionContext.getExpectedExecutionTime());
-        assertEquals(0, jobExecutionContext.getJobVersion().compareTo(deserializedJobExecutionContext.getJobVersion()));
+                // Test deserialization of action request params
+                JobRunnerRequest deserializedRequest = new JobRunnerRequest(actionRequest.getRequestBytes());
 
+                // Test deserialization of extension job parameter
+                ExtensionJobParameter deserializedJobParameter = deserializedRequest.getJobParameter();
+                compareExtensionJobParameters(this.extensionJobParameter, deserializedJobParameter);
+
+                // Test deserialization of job execution context
+                JobExecutionContext deserializedJobExecutionContext = deserializedRequest.getJobExecutionContext();
+                assertEquals(jobExecutionContext.getJobId(), deserializedJobExecutionContext.getJobId());
+                assertEquals(jobExecutionContext.getJobIndexName(), deserializedJobExecutionContext.getJobIndexName());
+                assertEquals(jobExecutionContext.getExpectedExecutionTime(), deserializedJobExecutionContext.getExpectedExecutionTime());
+                assertEquals(0, jobExecutionContext.getJobVersion().compareTo(deserializedJobExecutionContext.getJobVersion()));
+            }
+        }
     }
 
     public void testJobParameterExtensionJobActionRequest() throws IOException {
@@ -297,13 +306,22 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         JobParameterRequest jobParamRequest = new JobParameterRequest("placeholder", parser, "id", jobDocVersion);
         ExtensionActionRequest actionRequest = new ExtensionJobActionRequest<JobParameterRequest>("actionName", jobParamRequest);
 
-        // Test deserialization of action request params
-        JobParameterRequest deserializedRequest = new JobParameterRequest(actionRequest.getRequestBytes());
-        assertEquals(jobParamRequest.getId(), deserializedRequest.getId());
-        assertEquals(jobParamRequest.getJobSource(), deserializedRequest.getJobSource());
+        // Test ExtensionActionRequest deserialization
+        try (BytesStreamOutput out = new BytesStreamOutput()) {
+            actionRequest.writeTo(out);
+            out.flush();
+            try (BytesStreamInput in = new BytesStreamInput(BytesReference.toBytes(out.bytes()))) {
+                actionRequest = new ExtensionActionRequest(in);
 
-        // Test deserialization of job doc version
-        assertEquals(0, jobParamRequest.getJobDocVersion().compareTo(deserializedRequest.getJobDocVersion()));
+                // Test deserialization of action request params
+                JobParameterRequest deserializedRequest = new JobParameterRequest(actionRequest.getRequestBytes());
+                assertEquals(jobParamRequest.getId(), deserializedRequest.getId());
+                assertEquals(jobParamRequest.getJobSource(), deserializedRequest.getJobSource());
+
+                // Test deserialization of job doc version
+                assertEquals(0, jobParamRequest.getJobDocVersion().compareTo(deserializedRequest.getJobDocVersion()));
+            }
+        }
     }
 
     public void testJobRunnerExtensionJobActionResponse() throws IOException {
@@ -312,9 +330,20 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         JobRunnerResponse jobRunnerResponse = new JobRunnerResponse(true);
         ExtensionActionResponse actionResponse = new ExtensionJobActionResponse<JobRunnerResponse>(jobRunnerResponse);
 
-        // Test deserialization of action response params
-        JobRunnerResponse deserializedResponse = new JobRunnerResponse(actionResponse.getResponseBytes());
-        assertEquals(jobRunnerResponse.getJobRunnerStatus(), deserializedResponse.getJobRunnerStatus());
+        // Test ExtensionActionRequest deserialization
+        try (BytesStreamOutput out = new BytesStreamOutput()) {
+            actionRequest.writeTo(out);
+            out.flush();
+            try (BytesStreamInput in = new BytesStreamInput(BytesReference.toBytes(out.bytes()))) {
+
+                actionResponse = new ExtensionActionRequest(in);
+
+                // Test deserialization of action response params
+                JobRunnerResponse deserializedResponse = new JobRunnerResponse(actionResponse.getResponseBytes());
+                assertEquals(jobRunnerResponse.getJobRunnerStatus(), deserializedResponse.getJobRunnerStatus());
+            }
+        }
+
     }
 
     public void testJobParameterExtensionJobActionResponse() throws IOException {
@@ -323,9 +352,19 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         JobParameterResponse jobParameterResponse = new JobParameterResponse(this.extensionJobParameter);
         ExtensionActionResponse actionResponse = new ExtensionJobActionResponse<JobParameterResponse>(jobParameterResponse);
 
-        // Test deserialization of action response params
-        JobParameterResponse deserializedResponse = new JobParameterResponse(actionResponse.getResponseBytes());
-        compareExtensionJobParameters(this.extensionJobParameter, deserializedResponse.getJobParameter());
+        // Test ExtensionActionRequest deserialization
+        try (BytesStreamOutput out = new BytesStreamOutput()) {
+            actionRequest.writeTo(out);
+            out.flush();
+            try (BytesStreamInput in = new BytesStreamInput(BytesReference.toBytes(out.bytes()))) {
+
+                actionResponse = new ExtensionActionRequest(in);
+
+                // Test deserialization of action response params
+                JobParameterResponse deserializedResponse = new JobParameterResponse(actionResponse.getResponseBytes());
+                compareExtensionJobParameters(this.extensionJobParameter, deserializedResponse.getJobParameter());
+            }
+        }
     }
 
 }
