@@ -23,6 +23,9 @@ import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.common.bytes.BytesReference;
+import org.opensearch.common.io.stream.BytesStreamInput;
+import org.opensearch.common.io.stream.BytesStreamOutput;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
 import org.opensearch.common.xcontent.XContentParser;
@@ -332,7 +335,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
         // Test ExtensionActionRequest deserialization
         try (BytesStreamOutput out = new BytesStreamOutput()) {
-            actionRequest.writeTo(out);
+            actionResponse.writeTo(out);
             out.flush();
             try (BytesStreamInput in = new BytesStreamInput(BytesReference.toBytes(out.bytes()))) {
 
@@ -354,7 +357,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
         // Test ExtensionActionRequest deserialization
         try (BytesStreamOutput out = new BytesStreamOutput()) {
-            actionRequest.writeTo(out);
+            actionResponse.writeTo(out);
             out.flush();
             try (BytesStreamInput in = new BytesStreamInput(BytesReference.toBytes(out.bytes()))) {
 
