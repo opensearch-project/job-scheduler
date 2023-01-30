@@ -95,6 +95,10 @@ public class JobDetailsService implements IndexingOperationListener {
         return JobDetailsService.indexToJobDetails;
     }
 
+    public Map<String, ScheduledJobProvider> getIndexToJobProviders() {
+        return this.indexToJobProviders;
+    }
+
     public boolean jobDetailsIndexExist() {
         return clusterService.state().routingTable().hasIndex(JOB_DETAILS_INDEX_NAME);
     }
@@ -108,7 +112,7 @@ public class JobDetailsService implements IndexingOperationListener {
      *
      * @param jobDetails the extension job information
      */
-    private void updateIndexToJobProviders(JobDetails jobDetails) {
+    void updateIndexToJobProviders(JobDetails jobDetails) {
 
         String extensionJobIndex = jobDetails.getJobIndex();
         String extensionJobType = jobDetails.getJobType();

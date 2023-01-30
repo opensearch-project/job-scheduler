@@ -245,6 +245,32 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     }
 
+    public void testUpdateIndexToJobProviders() {
+        JobDetailsService jobDetailsService = new JobDetailsService(
+            client(),
+            this.clusterService,
+            this.indicesToListen,
+            this.indexToJobProviders
+        );
+        JobDetails jobDetails = new JobDetails(
+            expectedJobIndex,
+            expectedJobType,
+            expectedJobParamAction,
+            expectedJobRunnerAction,
+            expectedExtensionUniqueId
+        );
+
+        // Create job provider for given job details entry
+        jobDetailsService.updateIndexToJobProviders(jobDetails);
+
+        // Ensure that the indexToJobProviders is updated
+        ScheduledJobProvider provider = jobDetailsService.getIndexToJobProviders().get(jobDetails.getJobIndex());
+        assertEquals(expectedJobIndex, provider.getJobIndexName());
+        assertEquals(expectedJobType, provider.getJobType());
+        assertNotNull(provider.getJobParser());
+        assertNotNull(provider.getJobRunner());
+    }
+
     private void compareExtensionJobParameters(
         ExtensionJobParameter extensionJobParameter,
         ExtensionJobParameter deserializedJobParameter
@@ -333,7 +359,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         JobRunnerResponse jobRunnerResponse = new JobRunnerResponse(true);
         ExtensionActionResponse actionResponse = new ExtensionJobActionResponse<JobRunnerResponse>(jobRunnerResponse);
 
-        // Test ExtensionActionRequest deserialization
+        // Test ExtensionActionResponse deserialization
         try (BytesStreamOutput out = new BytesStreamOutput()) {
             actionResponse.writeTo(out);
             out.flush();
@@ -355,7 +381,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         JobParameterResponse jobParameterResponse = new JobParameterResponse(this.extensionJobParameter);
         ExtensionActionResponse actionResponse = new ExtensionJobActionResponse<JobParameterResponse>(jobParameterResponse);
 
-        // Test ExtensionActionRequest deserialization
+        // Test ExtensionActionReseponse deserialization
         try (BytesStreamOutput out = new BytesStreamOutput()) {
             actionResponse.writeTo(out);
             out.flush();
