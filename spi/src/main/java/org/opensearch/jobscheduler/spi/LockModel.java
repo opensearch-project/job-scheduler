@@ -8,12 +8,14 @@
  */
 package org.opensearch.jobscheduler.spi;
 
-import org.opensearch.common.Strings;
+import org.opensearch.ExceptionsHelper;
+import org.opensearch.OpenSearchException;
+import org.opensearch.common.bytes.BytesReference;
 import org.opensearch.common.xcontent.ToXContentObject;
 import org.opensearch.common.xcontent.XContentBuilder;
+import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentParserUtils;
-import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.index.seqno.SequenceNumbers;
 
 import java.io.IOException;
@@ -174,7 +176,23 @@ public final class LockModel implements ToXContentObject {
 
     @Override
     public String toString() {
-        return Strings.toString(XContentType.JSON, this, false, true);
+        try {
+            XContentBuilder builder = XContentFactory.jsonBuilder();
+            builder.humanReadable(true);
+            this.toXContent(builder, EMPTY_PARAMS);
+            return BytesReference.bytes(builder).utf8ToString();
+        } catch (IOException e) {
+            try {
+                XContentBuilder builder = XContentFactory.jsonBuilder();
+                builder.startObject();
+                builder.field("error", "error building toString out of XContent: " + e.getMessage());
+                builder.field("stack_trace", ExceptionsHelper.stackTrace(e));
+                builder.endObject();
+                return BytesReference.bytes(builder).utf8ToString();
+            } catch (IOException e2) {
+                throw new OpenSearchException("cannot generate error message for deserialization", e);
+            }
+        }
     }
 
     public String getLockId() {
