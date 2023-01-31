@@ -28,7 +28,10 @@ import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
  */
 public class ExtensionJobParameter implements ScheduledJobParameter, Writeable {
 
-    enum ScheduleType {
+    /**
+    * Enum for Schedule types used to indicate which Schedule constructor to use to read from/write to the stream. Job schedules can be set via cron expression or interval.
+    */
+    public enum ScheduleType {
         CRON,
         INTERVAL
     }
@@ -155,6 +158,16 @@ public class ExtensionJobParameter implements ScheduledJobParameter, Writeable {
     @Override
     public boolean isEnabled() {
         return this.isEnabled;
+    }
+
+    @Override
+    public Long getLockDurationSeconds() {
+        return this.lockDurationSeconds;
+    }
+
+    @Override
+    public Double getJitter() {
+        return this.jitter;
     }
 
 }
