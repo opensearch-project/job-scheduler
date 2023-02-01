@@ -13,9 +13,9 @@ import org.opensearch.OpenSearchException;
 import org.opensearch.common.bytes.BytesReference;
 import org.opensearch.common.xcontent.ToXContentObject;
 import org.opensearch.common.xcontent.XContentBuilder;
-import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentParserUtils;
+import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.index.seqno.SequenceNumbers;
 
 import java.io.IOException;
@@ -177,13 +177,13 @@ public final class LockModel implements ToXContentObject {
     @Override
     public String toString() {
         try {
-            XContentBuilder builder = XContentFactory.jsonBuilder();
+            XContentBuilder builder = JsonXContent.contentBuilder();
             builder.humanReadable(true);
             this.toXContent(builder, EMPTY_PARAMS);
             return BytesReference.bytes(builder).utf8ToString();
         } catch (IOException e) {
             try {
-                XContentBuilder builder = XContentFactory.jsonBuilder();
+                XContentBuilder builder = JsonXContent.contentBuilder();
                 builder.startObject();
                 builder.field("error", "error building toString out of XContent: " + e.getMessage());
                 builder.field("stack_trace", ExceptionsHelper.stackTrace(e));
