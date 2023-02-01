@@ -110,9 +110,10 @@ public class JobDetailsService implements IndexingOperationListener {
     /**
      * Creates a proxy ScheduledJobProvider that facilitates callbacks between extensions and JobScheduler
      *
+     * @param documentId the document Id of the extension job index entry
      * @param jobDetails the extension job information
      */
-    void updateIndexToJobProviders(JobDetails jobDetails) {
+    void updateIndexToJobProviders(String documentId, JobDetails jobDetails) {
 
         String extensionJobIndex = jobDetails.getJobIndex();
         String extensionJobType = jobDetails.getJobType();
@@ -120,7 +121,11 @@ public class JobDetailsService implements IndexingOperationListener {
 
         // Create proxy callback objects
         ScheduledJobParser extensionJobParser = createProxyScheduledJobParser(extensionUniqueId, jobDetails.getJobParameterAction());
-        ScheduledJobRunner extensionJobRunner = createProxyScheduledJobRunner(extensionUniqueId, jobDetails.getJobRunnerAction());
+        ScheduledJobRunner extensionJobRunner = createProxyScheduledJobRunner(
+            documentId,
+            extensionUniqueId,
+            jobDetails.getJobRunnerAction()
+        );
 
         // Update indexToJobProviders
         this.indexToJobProviders.put(
@@ -139,7 +144,7 @@ public class JobDetailsService implements IndexingOperationListener {
         // Register new JobDetails entry
         indexToJobDetails.put(documentId, jobDetails);
         updateIndicesToListen(jobDetails.getJobIndex());
-        updateIndexToJobProviders(jobDetails);
+        updateIndexToJobProviders(documentId, jobDetails);
     }
 
     /**
@@ -203,10 +208,11 @@ public class JobDetailsService implements IndexingOperationListener {
     /**
      * Creates a proxy ScheduledJobRunner that triggers an extension's jobRunner action
      *
+     * @param documentId the document Id of the extension job index entry
      * @param extensionUniqueId the extension to trigger the job runner action
      * @param extensionJobRunnerAction the job runner action name
      */
-    private ScheduledJobRunner createProxyScheduledJobRunner(String extensionUniqueId, String extensionJobRunnerAction) {
+    private ScheduledJobRunner createProxyScheduledJobRunner(String documentId, String extensionUniqueId, String extensionJobRunnerAction) {
         return new ScheduledJobRunner() {
             @Override
             public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
@@ -220,7 +226,7 @@ public class JobDetailsService implements IndexingOperationListener {
                     // TODO : Replace the placeholder with the provided access token from the inital job detials request
 
                     // Prepare JobRunnerRequest
-                    JobRunnerRequest jobRunnerRequest = new JobRunnerRequest("placeholder", jobParameter, context);
+                    JobRunnerRequest jobRunnerRequest = new JobRunnerRequest("placeholder", documentId, context);
 
                     // Invoke extension job runner action
                     client.execute(

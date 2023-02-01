@@ -13,9 +13,7 @@ import java.io.IOException;
 import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.io.stream.StreamOutput;
 import org.opensearch.common.io.stream.Writeable;
-import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
-import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 
 /**
  * Request to extensions to invoke their ScheduledJobRunner implementation
@@ -29,9 +27,9 @@ public class JobRunnerRequest implements Writeable {
     private final String accessToken;
 
     /**
-     * jobParameter is job index entry intended to be used to validate prior to job execution
+     * jobParameterDocumentId is job index entry id
      */
-    private final ExtensionJobParameter jobParameter;
+    private final String jobParameterDocumentId;
 
     /**
      * jobExecutionContext holds the metadata to configure a job execution
@@ -41,12 +39,13 @@ public class JobRunnerRequest implements Writeable {
     /**
      * Instantiates a new Job Runner Request
      *
-     * @param jobParameter the ScheduledJobParameter to convert into a writeable ExtensionJobParameter
+     * @param accessToken the access token of this request
+     * @param jobParameterDocumentId the document id of the job parameter
      * @param jobExecutionContext the context used to facilitate a job run
      */
-    public JobRunnerRequest(String accessToken, ScheduledJobParameter jobParameter, JobExecutionContext jobExecutionContext) {
+    public JobRunnerRequest(String accessToken, String jobParameterDocumentId, JobExecutionContext jobExecutionContext) {
         this.accessToken = accessToken;
-        this.jobParameter = new ExtensionJobParameter(jobParameter);
+        this.jobParameterDocumentId = jobParameterDocumentId;
         this.jobExecutionContext = jobExecutionContext;
     }
 
@@ -58,7 +57,7 @@ public class JobRunnerRequest implements Writeable {
      */
     public JobRunnerRequest(StreamInput in) throws IOException {
         this.accessToken = in.readString();
-        this.jobParameter = new ExtensionJobParameter(in);
+        this.jobParameterDocumentId = in.readString();
         this.jobExecutionContext = new JobExecutionContext(in);
     }
 
@@ -75,7 +74,7 @@ public class JobRunnerRequest implements Writeable {
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         out.writeString(this.accessToken);
-        this.jobParameter.writeTo(out);
+        out.writeString(this.jobParameterDocumentId);
         this.jobExecutionContext.writeTo(out);
     }
 
@@ -83,8 +82,8 @@ public class JobRunnerRequest implements Writeable {
         return this.accessToken;
     }
 
-    public ExtensionJobParameter getJobParameter() {
-        return this.jobParameter;
+    public String getJobParameterDocumentId() {
+        return this.jobParameterDocumentId;
     }
 
     public JobExecutionContext getJobExecutionContext() {

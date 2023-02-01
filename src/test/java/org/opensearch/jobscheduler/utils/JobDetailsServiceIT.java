@@ -261,7 +261,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         );
 
         // Create job provider for given job details entry
-        jobDetailsService.updateIndexToJobProviders(jobDetails);
+        jobDetailsService.updateIndexToJobProviders("documentId", jobDetails);
 
         // Ensure that the indexToJobProviders is updated
         ScheduledJobProvider provider = jobDetailsService.getIndexToJobProviders().get(jobDetails.getJobIndex());
@@ -294,9 +294,10 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             "indexName",
             "id"
         );
+        String documentId = "documentId";
 
         // Create JobRunner Request
-        JobRunnerRequest jobRunnerRequest = new JobRunnerRequest("placeholder", this.extensionJobParameter, jobExecutionContext);
+        JobRunnerRequest jobRunnerRequest = new JobRunnerRequest("placeholder", documentId, jobExecutionContext);
         ExtensionActionRequest actionRequest = new ExtensionJobActionRequest<JobRunnerRequest>("actionName", jobRunnerRequest);
 
         // Test ExtensionActionRequest deserialization
@@ -310,9 +311,9 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
                 // Test deserialization of action request params
                 JobRunnerRequest deserializedRequest = new JobRunnerRequest(actionRequest.getRequestBytes());
 
-                // Test deserialization of extension job parameter
-                ExtensionJobParameter deserializedJobParameter = deserializedRequest.getJobParameter();
-                compareExtensionJobParameters(this.extensionJobParameter, deserializedJobParameter);
+                // Test deserialization of extension job parameter document Id
+                String deserializedDocumentId = deserializedRequest.getJobParameterDocumentId();
+                assertEquals(documentId, deserializedDocumentId);
 
                 // Test deserialization of job execution context
                 JobExecutionContext deserializedJobExecutionContext = deserializedRequest.getJobExecutionContext();

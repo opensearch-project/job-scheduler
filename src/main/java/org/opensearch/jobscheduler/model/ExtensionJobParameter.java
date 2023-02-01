@@ -75,16 +75,19 @@ public class ExtensionJobParameter implements ScheduledJobParameter, Writeable {
     }
 
     public ExtensionJobParameter(ScheduledJobParameter jobParameter) {
+
         // Convert job Parameter into writeable ExtensionJobParameter
-        this(
-            jobParameter.getName(),
-            jobParameter.getSchedule(),
-            jobParameter.getLastUpdateTime(),
-            jobParameter.getEnabledTime(),
-            jobParameter.isEnabled(),
-            jobParameter.getLockDurationSeconds(),
-            jobParameter.getJitter()
-        );
+        this.jobName = jobParameter.getName();
+        this.schedule = jobParameter.getSchedule();
+        this.lastUpdateTime = jobParameter.getLastUpdateTime();
+        this.enabledTime = jobParameter.getEnabledTime();
+        this.isEnabled = jobParameter.isEnabled();
+        this.lockDurationSeconds = jobParameter.getLockDurationSeconds();
+        if (jobParameter.getJitter() != null) {
+            this.jitter = jobParameter.getJitter();
+        } else {
+            this.jitter = 0.0;
+        }
     }
 
     public ExtensionJobParameter(StreamInput in) throws IOException {
