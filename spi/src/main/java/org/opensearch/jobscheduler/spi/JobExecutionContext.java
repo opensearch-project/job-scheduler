@@ -8,11 +8,15 @@
  */
 package org.opensearch.jobscheduler.spi;
 
+import org.opensearch.common.io.stream.StreamInput;
+import org.opensearch.common.io.stream.StreamOutput;
+import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 
+import java.io.IOException;
 import java.time.Instant;
 
-public class JobExecutionContext {
+public class JobExecutionContext implements Writeable {
     private final Instant expectedExecutionTime;
     private final JobDocVersion jobVersion;
     private final LockService lockService;
@@ -31,6 +35,22 @@ public class JobExecutionContext {
         this.lockService = lockService;
         this.jobIndexName = jobIndexName;
         this.jobId = jobId;
+    }
+
+    public JobExecutionContext(StreamInput in) throws IOException {
+        this.expectedExecutionTime = in.readInstant();
+        this.jobVersion = new JobDocVersion(in);
+        this.lockService = null;
+        this.jobIndexName = in.readString();
+        this.jobId = in.readString();
+    }
+
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeInstant(this.expectedExecutionTime);
+        this.jobVersion.writeTo(out);
+        out.writeString(this.jobIndexName);
+        out.writeString(this.jobId);
     }
 
     public Instant getExpectedExecutionTime() {
@@ -52,4 +72,5 @@ public class JobExecutionContext {
     public String getJobId() {
         return this.jobId;
     }
+
 }

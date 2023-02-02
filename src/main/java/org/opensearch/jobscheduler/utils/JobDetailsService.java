@@ -29,7 +29,11 @@ import org.opensearch.common.xcontent.ToXContent;
 import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.extensions.action.ExtensionProxyAction;
 import org.opensearch.common.xcontent.NamedXContentRegistry;
+import org.opensearch.common.bytes.BytesReference;
+import org.opensearch.common.io.stream.BytesStreamOutput;
+import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.index.engine.DocumentMissingException;
@@ -38,12 +42,29 @@ import org.opensearch.index.engine.VersionConflictEngineException;
 import org.opensearch.index.seqno.SequenceNumbers;
 import org.opensearch.index.shard.IndexingOperationListener;
 import org.opensearch.index.shard.ShardId;
+import org.opensearch.jobscheduler.ScheduledJobProvider;
+import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 import org.opensearch.jobscheduler.model.JobDetails;
+import org.opensearch.jobscheduler.spi.JobDocVersion;
+import org.opensearch.jobscheduler.spi.JobExecutionContext;
+import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
+import org.opensearch.jobscheduler.spi.ScheduledJobParser;
+import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
+import org.opensearch.jobscheduler.transport.ExtensionJobActionRequest;
+import org.opensearch.jobscheduler.transport.JobParameterRequest;
+import org.opensearch.jobscheduler.transport.JobParameterResponse;
+import org.opensearch.jobscheduler.transport.JobRunnerRequest;
+import org.opensearch.jobscheduler.transport.JobRunnerResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.Map;
 
 public class JobDetailsService implements IndexingOperationListener {
 
@@ -55,29 +76,66 @@ public class JobDetailsService implements IndexingOperationListener {
     private final Client client;
     private final ClusterService clusterService;
     private Set<String> indicesToListen;
-
+    private Map<String, ScheduledJobProvider> indexToJobProviders;
     private static final ConcurrentMap<String, JobDetails> indexToJobDetails = IndexToJobDetails.getInstance();
 
-    public JobDetailsService(final Client client, final ClusterService clusterService, Set<String> indicesToListen) {
+    public JobDetailsService(
+        final Client client,
+        final ClusterService clusterService,
+        Set<String> indicesToListen,
+        Map<String, ScheduledJobProvider> indexToJobProviders
+    ) {
         this.client = client;
         this.clusterService = clusterService;
         this.indicesToListen = indicesToListen;
-    }
-
-    public boolean jobDetailsIndexExist() {
-        return clusterService.state().routingTable().hasIndex(JOB_DETAILS_INDEX_NAME);
+        this.indexToJobProviders = indexToJobProviders;
     }
 
     public static ConcurrentMap<String, JobDetails> getIndexToJobDetails() {
         return JobDetailsService.indexToJobDetails;
     }
 
-    private void updateIndicesToListen(String jobIndex) {
-        this.indicesToListen.add(jobIndex);
+    public Map<String, ScheduledJobProvider> getIndexToJobProviders() {
+        return this.indexToJobProviders;
+    }
+
+    public boolean jobDetailsIndexExist() {
+        return clusterService.state().routingTable().hasIndex(JOB_DETAILS_INDEX_NAME);
+    }
+
+    private void updateIndicesToListen(String jobIndexName) {
+        this.indicesToListen.add(jobIndexName);
     }
 
     /**
-     * Adds a new entry into the indexToJobDetails using the document Id as the key
+     * Creates a proxy ScheduledJobProvider that facilitates callbacks between extensions and JobScheduler
+     *
+     * @param documentId the document Id of the extension job index entry
+     * @param jobDetails the extension job information
+     */
+    void updateIndexToJobProviders(String documentId, JobDetails jobDetails) {
+
+        String extensionJobIndex = jobDetails.getJobIndex();
+        String extensionJobType = jobDetails.getJobType();
+        String extensionUniqueId = jobDetails.getExtensionUniqueId();
+
+        // Create proxy callback objects
+        ScheduledJobParser extensionJobParser = createProxyScheduledJobParser(extensionUniqueId, jobDetails.getJobParameterAction());
+        ScheduledJobRunner extensionJobRunner = createProxyScheduledJobRunner(
+            documentId,
+            extensionUniqueId,
+            jobDetails.getJobRunnerAction()
+        );
+
+        // Update indexToJobProviders
+        this.indexToJobProviders.put(
+            extensionJobIndex,
+            new ScheduledJobProvider(extensionJobType, extensionJobIndex, extensionJobParser, extensionJobRunner)
+        );
+    }
+
+    /**
+     * Adds a new entry into the indexToJobDetails using the document Id as the key, registers the index name to indicesToListen, and registers the ScheduledJobProvider
      *
      * @param documentId the unique Id for the job details
      * @param jobDetails the jobDetails to register
@@ -86,6 +144,126 @@ public class JobDetailsService implements IndexingOperationListener {
         // Register new JobDetails entry
         indexToJobDetails.put(documentId, jobDetails);
         updateIndicesToListen(jobDetails.getJobIndex());
+        updateIndexToJobProviders(documentId, jobDetails);
+    }
+
+    /**
+     * Creates a proxy ScheduledJobParser that triggers an extension's jobParameter action
+     *
+     * @param extensionUniqueId the extension to trigger the job parameter action
+     * @param extensionJobParameterAction the job parameter action name
+     */
+    private ScheduledJobParser createProxyScheduledJobParser(String extensionUniqueId, String extensionJobParameterAction) {
+        return new ScheduledJobParser() {
+
+            @Override
+            public ScheduledJobParameter parse(XContentParser xContentParser, String id, JobDocVersion jobDocVersion) throws IOException {
+
+                logger.info("Sending ScheduledJobParameter parse request to extension : " + extensionUniqueId);
+
+                final ExtensionJobParameter[] extensionJobParameterHolder = new ExtensionJobParameter[1];
+                CompletableFuture<ExtensionJobParameter[]> inProgressFuture = new CompletableFuture<>();
+
+                // TODO : Replace the placeholder with the provided access token from the inital job detials request
+
+                // Prepare JobParameterRequest
+                JobParameterRequest jobParamRequest = new JobParameterRequest("placeholder", xContentParser, id, jobDocVersion);
+
+                // Invoke extension job parameter action and return ScheduledJobParameter
+                client.execute(
+                    ExtensionProxyAction.INSTANCE,
+                    new ExtensionJobActionRequest<JobParameterRequest>(extensionJobParameterAction, jobParamRequest),
+                    ActionListener.wrap(response -> {
+
+                        // Extract response bytes and generate the parsed job parameter
+                        JobParameterResponse jobParameterResponse = new JobParameterResponse(response.getResponseBytes());
+                        extensionJobParameterHolder[0] = jobParameterResponse.getJobParameter();
+                        inProgressFuture.complete(extensionJobParameterHolder);
+
+                    }, exception -> {
+
+                        logger.error("Could not parse job parameter", exception);
+                        inProgressFuture.completeExceptionally(exception);
+
+                    })
+                );
+
+                // Stall execution until request completes or times out
+                try {
+                    inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+                } catch (CompletionException e) {
+                    if (e.getCause() instanceof TimeoutException) {
+                        logger.error("Request timed out with an exception ", e);
+                    }
+                } catch (Exception e) {
+                    logger.error("Could not parse ScheduledJobParameter due to exception ", e);
+                }
+
+                return extensionJobParameterHolder[0];
+            }
+        };
+
+    }
+
+    /**
+     * Creates a proxy ScheduledJobRunner that triggers an extension's jobRunner action
+     *
+     * @param documentId the document Id of the extension job index entry
+     * @param extensionUniqueId the extension to trigger the job runner action
+     * @param extensionJobRunnerAction the job runner action name
+     */
+    private ScheduledJobRunner createProxyScheduledJobRunner(String documentId, String extensionUniqueId, String extensionJobRunnerAction) {
+        return new ScheduledJobRunner() {
+            @Override
+            public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
+
+                logger.info("Sending ScheduledJobRunner runJob request to extension : " + extensionUniqueId);
+
+                final Boolean[] extensionJobRunnerStatus = new Boolean[1];
+                CompletableFuture<Boolean[]> inProgressFuture = new CompletableFuture<>();
+
+                try {
+                    // TODO : Replace the placeholder with the provided access token from the inital job detials request
+
+                    // Prepare JobRunnerRequest
+                    JobRunnerRequest jobRunnerRequest = new JobRunnerRequest("placeholder", documentId, context);
+
+                    // Invoke extension job runner action
+                    client.execute(
+                        ExtensionProxyAction.INSTANCE,
+                        new ExtensionJobActionRequest<JobRunnerRequest>(extensionJobRunnerAction, jobRunnerRequest),
+                        ActionListener.wrap(response -> {
+
+                            // Extract response bytes into a streamInput and set the extensionJobParameter
+                            JobRunnerResponse jobRunnerResponse = new JobRunnerResponse(response.getResponseBytes());
+                            extensionJobRunnerStatus[0] = jobRunnerResponse.getJobRunnerStatus();
+                            inProgressFuture.complete(extensionJobRunnerStatus);
+
+                        }, exception -> {
+
+                            logger.error("Failed to run job due to exception ", exception);
+                            inProgressFuture.completeExceptionally(exception);
+
+                        })
+                    );
+
+                    // Stall execution until request completes or times out
+                    inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+
+                } catch (IOException e) {
+                    logger.error("Failed to create JobRunnerRequest", e);
+                } catch (CompletionException e) {
+                    if (e.getCause() instanceof TimeoutException) {
+                        logger.error("Request timed out with an exception ", e);
+                    }
+                } catch (Exception e) {
+                    logger.error("Could not run extension job due to exception ", e);
+                }
+
+                // log extension job runner status
+                logger.info("Job Runner Status for extension " + extensionUniqueId + " : " + extensionJobRunnerStatus[0]);
+            }
+        };
     }
 
     @Override
@@ -323,6 +501,24 @@ public class JobDetailsService implements IndexingOperationListener {
             logger.error("IOException occurred updating job details for documentId " + documentId, e);
             listener.onResponse(null);
         }
+    }
+
+    /**
+     * Takes in an object of type T that extends {@link Writeable} and converts the writeable fields to a byte array
+     *
+     * @param <T> a class that extends writeable
+     * @param actionParams the action parameters to be serialized
+     * @throws IOException if serialization fails
+     * @return the byte array of the parameters
+     */
+    public static <T extends Writeable> byte[] convertParamsToBytes(T actionParams) throws IOException {
+        // Write all to output stream
+        BytesStreamOutput out = new BytesStreamOutput();
+        actionParams.writeTo(out);
+        out.flush();
+
+        // convert bytes stream to byte array
+        return BytesReference.toBytes(out.bytes());
     }
 
     private String jobDetailsMapping() {
