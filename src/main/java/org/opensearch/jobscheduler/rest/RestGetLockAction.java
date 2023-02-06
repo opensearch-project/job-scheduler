@@ -45,6 +45,7 @@ public class RestGetLockAction extends BaseRestHandler {
     private static final String GET_LOCK_ACTION = "get_lock_action";
     public static final String SEQUENCE_NUMBER = "seq_no";
     public static final String PRIMARY_TERM = "primary_term";
+    public static final String LOCK_ID = "lock_id";
     public static final String LOCK_MODEL = "lock_model";
 
     private final Logger logger = LogManager.getLogger(RestGetLockAction.class);
@@ -70,16 +71,15 @@ public class RestGetLockAction extends BaseRestHandler {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
+        // Deserialize acquire lock request
         AcquireLockRequest acquireLockRequest = AcquireLockRequest.parse(parser);
-
-        final LockModel[] lockModelResponseHolder = new LockModel[1];
-
         String jobId = acquireLockRequest.getJobId();
         String jobIndexName = acquireLockRequest.getJobIndexName();
         long lockDurationSeconds = acquireLockRequest.getLockDurationSeconds();
 
+        // Process acquire lock request
+        final LockModel[] lockModelResponseHolder = new LockModel[1];
         CompletableFuture<LockModel[]> inProgressFuture = new CompletableFuture<>();
-
         lockService.acquireLockWithId(jobIndexName, lockDurationSeconds, jobIndexName, new ActionListener<>() {
             @Override
             public void onResponse(LockModel lockModel) {
@@ -108,6 +108,7 @@ public class RestGetLockAction extends BaseRestHandler {
         }
 
         return channel -> {
+            // Prepare response
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
             String restResponseString = lockModelResponseHolder[0] != null ? "success" : "failed";
@@ -116,9 +117,16 @@ public class RestGetLockAction extends BaseRestHandler {
                 builder.startObject();
                 builder.field("response", restResponseString);
                 if (restResponseString.equals("success")) {
-                    builder.field(LOCK_MODEL, lockModelResponseHolder[0].toString());
-                    builder.field(SEQUENCE_NUMBER, lockModelResponseHolder[0].getSeqNo());
-                    builder.field(PRIMARY_TERM, lockModelResponseHolder[0].getPrimaryTerm());
+
+                    // Prepare response fields
+                    LockModel lock = lockModelResponseHolder[0];
+                    long seqNo = lock.getSeqNo();
+                    long primaryTerm = lock.getPrimaryTerm();
+
+                    builder.field(LOCK_ID, LockModel.generateLockId(jobIndexName, jobId));
+                    builder.field(LOCK_MODEL, lock);
+                    builder.field(SEQUENCE_NUMBER, seqNo);
+                    builder.field(PRIMARY_TERM, primaryTerm);
                 } else {
                     restStatus = RestStatus.INTERNAL_SERVER_ERROR;
                 }
