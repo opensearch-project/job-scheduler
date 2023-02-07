@@ -50,7 +50,7 @@ public class RestGetLockAction extends BaseRestHandler {
 
     private final Logger logger = LogManager.getLogger(RestGetLockAction.class);
 
-    public LockService lockService;
+    private LockService lockService;
 
     public RestGetLockAction(final LockService lockService) {
         this.lockService = lockService;
