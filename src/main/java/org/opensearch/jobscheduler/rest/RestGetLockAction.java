@@ -83,7 +83,8 @@ public class RestGetLockAction extends BaseRestHandler {
         lockService.acquireLockWithId(jobIndexName, lockDurationSeconds, jobIndexName, new ActionListener<>() {
             @Override
             public void onResponse(LockModel lockModel) {
-                // set lockModelResponse
+
+                // set lockModel Response
                 lockModelResponseHolder[0] = lockModel;
                 inProgressFuture.complete(lockModelResponseHolder);
             }
