@@ -42,7 +42,7 @@ import static org.opensearch.rest.RestRequest.Method.GET;
  */
 public class RestGetLockAction extends BaseRestHandler {
 
-    private static final String GET_LOCK_ACTION = "get_lock_action";
+    public static final String GET_LOCK_ACTION = "get_lock_action";
     public static final String SEQUENCE_NUMBER = "seq_no";
     public static final String PRIMARY_TERM = "primary_term";
     public static final String LOCK_ID = "lock_id";
@@ -50,7 +50,7 @@ public class RestGetLockAction extends BaseRestHandler {
 
     private final Logger logger = LogManager.getLogger(RestGetLockAction.class);
 
-    private LockService lockService;
+    public LockService lockService;
 
     public RestGetLockAction(final LockService lockService) {
         this.lockService = lockService;
