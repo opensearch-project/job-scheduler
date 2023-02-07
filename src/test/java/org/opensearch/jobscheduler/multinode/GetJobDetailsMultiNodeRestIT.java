@@ -14,7 +14,7 @@ import org.opensearch.client.Response;
 import org.opensearch.jobscheduler.ODFERestTestCase;
 import org.opensearch.jobscheduler.TestHelpers;
 import org.opensearch.test.OpenSearchIntegTestCase;
-import org.opensearch.jobscheduler.transport.GetJobDetailsRequest;
+import org.opensearch.jobscheduler.rest.request.GetJobDetailsRequest;
 
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
