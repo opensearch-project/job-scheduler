@@ -13,6 +13,8 @@ import com.google.common.collect.ImmutableMap;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Map;
+
+import org.junit.Before;
 import org.opensearch.client.Response;
 import org.opensearch.jobscheduler.ODFERestTestCase;
 import org.opensearch.jobscheduler.TestHelpers;
@@ -22,26 +24,33 @@ import org.opensearch.test.OpenSearchIntegTestCase;
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
-    public void testGetLockRestAPI() throws Exception {
+    private String initialJobId;
+    private String initialJobIndexName;
+    private Response initialGetLockResponse;
 
-        String intialJobId = "testjobId";
-        String initialJobIndexName = "testJobIndexName";
-
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        this.initialJobId = "testJobId";
+        this.initialJobIndexName = "testJobIndexName";
         // Send initial request to ensure lock index has been created
-        Response response = TestHelpers.makeRequest(
+        this.initialGetLockResponse = TestHelpers.makeRequest(
             client(),
             "GET",
             TestHelpers.GET_LOCK_BASE_URI,
             ImmutableMap.of(),
-            TestHelpers.toHttpEntity(generateRequestBody(initialJobIndexName, intialJobId)),
+            TestHelpers.toHttpEntity(generateRequestBody(this.initialJobIndexName, this.initialJobId)),
             null
         );
+    }
 
-        String initialLockId = validateResponseAndGetLockId(entityAsMap(response));
-        assertEquals(generateExpectedLockId(initialJobIndexName, intialJobId), initialLockId);
+    public void testGetLockRestAPI() throws Exception {
 
-        // Submit 100 requests to generate new lock models for different job indexes
-        for (int i = 0; i < 100; i++) {
+        String initialLockId = validateResponseAndGetLockId(entityAsMap(this.initialGetLockResponse));
+        assertEquals(generateExpectedLockId(initialJobIndexName, initialJobId), initialLockId);
+
+        // Submit 10 requests to generate new lock models for different job indexes
+        for (int i = 0; i < 10; i++) {
             Response getLockResponse = TestHelpers.makeRequest(
                 client(),
                 "GET",

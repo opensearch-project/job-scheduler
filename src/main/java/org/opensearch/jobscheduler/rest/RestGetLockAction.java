@@ -47,6 +47,7 @@ public class RestGetLockAction extends BaseRestHandler {
     public static final String PRIMARY_TERM = "primary_term";
     public static final String LOCK_ID = "lock_id";
     public static final String LOCK_MODEL = "lock_model";
+    public static LockModel lockModelResponseHolder;
 
     private final Logger logger = LogManager.getLogger(RestGetLockAction.class);
 
@@ -63,7 +64,7 @@ public class RestGetLockAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return ImmutableList.of(new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_lock")));
+        return ImmutableList.of(new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_lock")));
     }
 
     @Override
@@ -78,14 +79,13 @@ public class RestGetLockAction extends BaseRestHandler {
         long lockDurationSeconds = acquireLockRequest.getLockDurationSeconds();
 
         // Process acquire lock request
-        final LockModel[] lockModelResponseHolder = new LockModel[1];
-        CompletableFuture<LockModel[]> inProgressFuture = new CompletableFuture<>();
+        CompletableFuture<LockModel> inProgressFuture = new CompletableFuture<>();
         lockService.acquireLockWithId(jobIndexName, lockDurationSeconds, jobIndexName, new ActionListener<>() {
             @Override
             public void onResponse(LockModel lockModel) {
 
                 // set lockModel Response
-                lockModelResponseHolder[0] = lockModel;
+                lockModelResponseHolder = lockModel;
                 inProgressFuture.complete(lockModelResponseHolder);
             }
 
@@ -100,19 +100,19 @@ public class RestGetLockAction extends BaseRestHandler {
             inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
         } catch (CompletionException e) {
             if (e.getCause() instanceof TimeoutException) {
-                logger.info(" Request timed out with an exception ", e);
+                logger.error(" Request timed out with an exception ", e);
             } else {
                 throw e;
             }
         } catch (Exception e) {
-            logger.info(" Could not process acquire lock request due to exception ", e);
+            logger.error(" Could not process acquire lock request due to exception ", e);
         }
 
         return channel -> {
             // Prepare response
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
-            String restResponseString = lockModelResponseHolder[0] != null ? "success" : "failed";
+            String restResponseString = lockModelResponseHolder != null ? "success" : "failed";
             BytesRestResponse bytesRestResponse;
             try {
                 builder.startObject();
@@ -120,7 +120,7 @@ public class RestGetLockAction extends BaseRestHandler {
                 if (restResponseString.equals("success")) {
 
                     // Prepare response fields
-                    LockModel lock = lockModelResponseHolder[0];
+                    LockModel lock = lockModelResponseHolder;
                     long seqNo = lock.getSeqNo();
                     long primaryTerm = lock.getPrimaryTerm();
 

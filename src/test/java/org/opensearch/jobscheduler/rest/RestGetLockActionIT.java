@@ -59,7 +59,13 @@ public class RestGetLockActionIT extends OpenSearchTestCase {
         this.testJobId = "testJobId";
         this.testJobIndexName = "testJobIndexName";
         this.testLockDurationSeconds = 1L;
-        this.requestBody = "{\"job_id\":\"test\",\"job_index_name\":\"test\",\"lock_duration_seconds\":\"1\"}";
+        this.requestBody = "{\"job_id\":\""
+            + this.testJobId
+            + "\",\"job_index_name\":\""
+            + this.testJobIndexName
+            + "\",\"lock_duration_seconds\":\""
+            + this.testLockDurationSeconds
+            + "\"}";
     }
 
     public void testGetNames() {
