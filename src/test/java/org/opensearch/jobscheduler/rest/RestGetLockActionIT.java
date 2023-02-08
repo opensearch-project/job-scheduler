@@ -55,7 +55,7 @@ public class RestGetLockActionIT extends OpenSearchTestCase {
         Mockito.when(this.clusterService.state().routingTable().hasIndex(".opendistro-job-scheduler-lock")).thenReturn(true);
         this.lockService = new LockService(Mockito.mock(NodeClient.class), clusterService);
         this.getLockAction = new RestGetLockAction(this.lockService);
-        this.getLockPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_lock");
+        this.getLockPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_lock");
         this.testJobId = "testJobId";
         this.testJobIndexName = "testJobIndexName";
         this.testLockDurationSeconds = 1L;
