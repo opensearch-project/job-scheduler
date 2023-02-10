@@ -34,6 +34,7 @@ import static org.opensearch.test.OpenSearchTestCase.randomBoolean;
 public class TestHelpers {
 
     public static final String GET_JOB_DETAILS_BASE_URI = "/_plugins/_job_scheduler/_get/_job_details";
+    public static final String GET_LOCK_BASE_URI = "/_plugins/_job_scheduler/_lock";
     public static final String RELEASE_LOCK_BASE_URI = "/_plugins/_job_scheduler/_release_lock/{lock_id}";
 
     public static String xContentBuilderToString(XContentBuilder builder) {

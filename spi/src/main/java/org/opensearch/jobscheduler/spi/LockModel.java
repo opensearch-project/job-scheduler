@@ -32,6 +32,13 @@ public final class LockModel implements ToXContentObject {
     public static final String LOCK_DURATION = "lock_duration_seconds";
     public static final String RELEASED = "released";
 
+    // Rest Fields
+    public static final String GET_LOCK_ACTION = "get_lock_action";
+    public static final String SEQUENCE_NUMBER = "seq_no";
+    public static final String PRIMARY_TERM = "primary_term";
+    public static final String LOCK_ID = "lock_id";
+    public static final String LOCK_MODEL = "lock_model";
+
     private final String lockId;
     private final String jobIndexName;
     private final String jobId;
