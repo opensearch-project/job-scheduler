@@ -17,30 +17,55 @@ import org.opensearch.common.io.stream.StreamOutput;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentParserUtils;
 
+/**
+ * Request from extensions to acquire a lock for scheduled job execution
+ */
 public class AcquireLockRequest extends ActionRequest {
 
+    /**
+     * the id of the job
+     */
     private final String jobId;
 
+    /**
+     * the name of the job index
+     */
     private final String jobIndexName;
 
+    /**
+     * the duration for which this lock will be acquired
+     */
     private final long lockDurationSeconds;
 
     public static final String JOB_ID = "job_id";
     public static final String JOB_INDEX_NAME = "job_index_name";
     public static final String LOCK_DURATION_SECONDS = "lock_duration_seconds";
 
-    public AcquireLockRequest(StreamInput in) throws IOException {
-        super(in);
-        this.jobId = in.readString();
-        this.jobIndexName = in.readString();
-        this.lockDurationSeconds = in.readLong();
-    }
-
+    /**
+     * Instantiates a new AcquireLockRequest
+     *
+     * @param jobId the id of the job in which the lock will be given to
+     * @param jobIndexName the name of the job index
+     * @param lockDurationSeconds the duration for which this lock will be acquired
+     */
     public AcquireLockRequest(String jobId, String jobIndexName, long lockDurationSeconds) {
         super();
         this.jobId = Objects.requireNonNull(jobId);
         this.jobIndexName = Objects.requireNonNull(jobIndexName);
         this.lockDurationSeconds = Objects.requireNonNull(lockDurationSeconds);
+    }
+
+    /**
+     * Instantiates a new AcquireLockRequest from {@link StreamInput}
+     *
+     * @param in is the byte stream input used to de-serialize the message.
+     * @throws IOException IOException when message de-serialization fails.
+     */
+    public AcquireLockRequest(StreamInput in) throws IOException {
+        super(in);
+        this.jobId = in.readString();
+        this.jobIndexName = in.readString();
+        this.lockDurationSeconds = in.readLong();
     }
 
     @Override

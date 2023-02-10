@@ -37,16 +37,18 @@ import com.google.common.collect.ImmutableList;
 import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
 import static org.opensearch.rest.RestRequest.Method.GET;
 
+import static org.opensearch.jobscheduler.spi.LockModel.GET_LOCK_ACTION;
+import static org.opensearch.jobscheduler.spi.LockModel.SEQUENCE_NUMBER;
+import static org.opensearch.jobscheduler.spi.LockModel.SEQUENCE_NUMBER;
+import static org.opensearch.jobscheduler.spi.LockModel.PRIMARY_TERM;
+import static org.opensearch.jobscheduler.spi.LockModel.LOCK_ID;
+import static org.opensearch.jobscheduler.spi.LockModel.LOCK_MODEL;
+
 /**
  * This class consists of the REST handler to GET a lock model for extensions
  */
 public class RestGetLockAction extends BaseRestHandler {
 
-    public static final String GET_LOCK_ACTION = "get_lock_action";
-    public static final String SEQUENCE_NUMBER = "seq_no";
-    public static final String PRIMARY_TERM = "primary_term";
-    public static final String LOCK_ID = "lock_id";
-    public static final String LOCK_MODEL = "lock_model";
     public static LockModel lockModelResponseHolder;
 
     private final Logger logger = LogManager.getLogger(RestGetLockAction.class);
@@ -109,12 +111,12 @@ public class RestGetLockAction extends BaseRestHandler {
         }
 
         return channel -> {
-            // Prepare response
-            XContentBuilder builder = channel.newBuilder();
-            RestStatus restStatus = RestStatus.OK;
-            String restResponseString = lockModelResponseHolder != null ? "success" : "failed";
             BytesRestResponse bytesRestResponse;
-            try {
+            try (XContentBuilder builder = channel.newBuilder()) {
+                // Prepare response
+                RestStatus restStatus = RestStatus.OK;
+                String restResponseString = lockModelResponseHolder != null ? "success" : "failed";
+
                 builder.startObject();
                 builder.field("response", restResponseString);
                 if (restResponseString.equals("success")) {
@@ -133,10 +135,9 @@ public class RestGetLockAction extends BaseRestHandler {
                 }
                 builder.endObject();
                 bytesRestResponse = new BytesRestResponse(restStatus, builder);
-            } finally {
-                builder.close();
+                channel.sendResponse(bytesRestResponse);
             }
-            channel.sendResponse(bytesRestResponse);
+
         };
     }
 }

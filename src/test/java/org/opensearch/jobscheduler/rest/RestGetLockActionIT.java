@@ -28,6 +28,7 @@ import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.TestHelpers;
+import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.AcquireLockRequest;
 import org.opensearch.rest.RestHandler;
@@ -70,7 +71,7 @@ public class RestGetLockActionIT extends OpenSearchTestCase {
 
     public void testGetNames() {
         String name = getLockAction.getName();
-        assertEquals(RestGetLockAction.GET_LOCK_ACTION, name);
+        assertEquals(LockModel.GET_LOCK_ACTION, name);
     }
 
     public void testGetRoutes() {

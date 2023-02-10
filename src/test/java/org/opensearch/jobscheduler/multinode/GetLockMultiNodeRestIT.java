@@ -18,7 +18,7 @@ import org.junit.Before;
 import org.opensearch.client.Response;
 import org.opensearch.jobscheduler.ODFERestTestCase;
 import org.opensearch.jobscheduler.TestHelpers;
-import org.opensearch.jobscheduler.rest.RestGetLockAction;
+import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.test.OpenSearchIntegTestCase;
 
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
@@ -67,7 +67,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
     private String validateResponseAndGetLockId(Map<String, Object> responseMap) {
         assertEquals("success", responseMap.get("response"));
-        return (String) responseMap.get(RestGetLockAction.LOCK_ID);
+        return (String) responseMap.get(LockModel.LOCK_ID);
     }
 
     private String generateRequestBody(String jobIndexName, String jobId) {
