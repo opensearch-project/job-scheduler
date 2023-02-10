@@ -63,17 +63,11 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
     public List<Route> routes() {
         return ImmutableList.of(
             // New Job Details Entry Request
-            new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_details")),
+            new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_job_details")),
             // Update Job Details Entry Request
             new Route(
                 PUT,
-                String.format(
-                    Locale.ROOT,
-                    "%s/%s/{%s}",
-                    JobSchedulerPlugin.JS_BASE_URI,
-                    "_get/_job_details",
-                    GetJobDetailsRequest.DOCUMENT_ID
-                )
+                String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_job_details", GetJobDetailsRequest.DOCUMENT_ID)
             )
 
         );

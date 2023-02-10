@@ -34,6 +34,7 @@ import org.opensearch.rest.RestStatus;
 public class RestReleaseLockAction extends BaseRestHandler {
 
     public static final String RELEASE_LOCK_ACTION = "release_lock_action";
+    public static final String LOCK_ID = "lock_id";
 
     private final Logger logger = LogManager.getLogger(RestReleaseLockAction.class);
 
@@ -55,13 +56,13 @@ public class RestReleaseLockAction extends BaseRestHandler {
     @Override
     public List<Route> routes() {
         return ImmutableList.of(
-            new Route(PUT, String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock/{lock_id}"))
+            new Route(PUT, String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock", LOCK_ID))
         );
     }
 
     @Override
     public RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient nodeClient) throws IOException {
-        String lockId = restRequest.param("lock_id");
+        String lockId = restRequest.param(LOCK_ID);
         if (lockId == null || lockId.isEmpty()) {
             throw new IOException("lockId cannot be null or empty");
         }

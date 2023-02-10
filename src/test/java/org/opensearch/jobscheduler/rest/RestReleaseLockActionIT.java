@@ -44,7 +44,13 @@ public class RestReleaseLockActionIT extends OpenSearchTestCase {
         super.setUp();
         lockService = new LockService(Mockito.mock(Client.class), Mockito.mock(ClusterService.class));
         restReleaseLockAction = new RestReleaseLockAction(lockService);
-        this.releaseLockPath = String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock/{lock_id}");
+        this.releaseLockPath = String.format(
+            Locale.ROOT,
+            "%s/%s/{%s}",
+            JobSchedulerPlugin.JS_BASE_URI,
+            "_release_lock",
+            restReleaseLockAction.LOCK_ID
+        );
 
     }
 

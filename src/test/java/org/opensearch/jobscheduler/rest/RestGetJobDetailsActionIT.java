@@ -49,12 +49,12 @@ public class RestGetJobDetailsActionIT extends OpenSearchTestCase {
         super.setUp();
         this.jobDetailsService = Mockito.mock(JobDetailsService.class);
         this.action = new RestGetJobDetailsAction(jobDetailsService);
-        this.getJobDetailsPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_details");
+        this.getJobDetailsPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_job_details");
         this.updateJobDetailsPath = String.format(
             Locale.ROOT,
             "%s/%s/{%s}",
             JobSchedulerPlugin.JS_BASE_URI,
-            "_get/_job_details",
+            "_job_details",
             GetJobDetailsRequest.DOCUMENT_ID
         );
 
