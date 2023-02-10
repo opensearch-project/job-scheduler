@@ -16,6 +16,7 @@ import org.opensearch.common.settings.IndexScopedSettings;
 import org.opensearch.common.settings.SettingsFilter;
 
 import org.opensearch.jobscheduler.rest.RestGetJobDetailsAction;
+import org.opensearch.jobscheduler.rest.RestGetLockAction;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
@@ -228,7 +229,8 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         Supplier<DiscoveryNodes> nodesInCluster
     ) {
         RestGetJobDetailsAction restGetJobDetailsAction = new RestGetJobDetailsAction(jobDetailsService);
-        return ImmutableList.of(restGetJobDetailsAction);
+        RestGetLockAction restGetLockAction = new RestGetLockAction(lockService);
+        return ImmutableList.of(restGetJobDetailsAction, restGetLockAction);
     }
 
 }
