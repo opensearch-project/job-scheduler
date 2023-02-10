@@ -48,6 +48,8 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
 
     public JobDetailsService jobDetailsService;
 
+    private String jobDetailsResponseHolder;
+
     public RestGetJobDetailsAction(final JobDetailsService jobDetailsService) {
         this.jobDetailsService = jobDetailsService;
     }
@@ -84,7 +86,7 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
 
         GetJobDetailsRequest getJobDetailsRequest = GetJobDetailsRequest.parse(parser);
 
-        final String[] jobDetailsResponseHolder = new String[1];
+        // final String[] jobDetailsResponseHolder = new String[1];
 
         String documentId = restRequest.param(GetJobDetailsRequest.DOCUMENT_ID);
         String jobIndex = getJobDetailsRequest.getJobIndex();
@@ -93,7 +95,7 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
         String jobRunnerAction = getJobDetailsRequest.getJobRunnerAction();
         String extensionUniqueId = getJobDetailsRequest.getExtensionUniqueId();
 
-        CompletableFuture<String[]> inProgressFuture = new CompletableFuture<>();
+        CompletableFuture<String> inProgressFuture = new CompletableFuture<>();
 
         jobDetailsService.processJobDetails(
             documentId,
@@ -106,7 +108,7 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
                 @Override
                 public void onResponse(String indexedDocumentId) {
                     // Set document Id
-                    jobDetailsResponseHolder[0] = indexedDocumentId;
+                    jobDetailsResponseHolder = indexedDocumentId;
                     inProgressFuture.complete(jobDetailsResponseHolder);
                 }
 
@@ -133,13 +135,13 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
         return channel -> {
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
-            String restResponseString = jobDetailsResponseHolder[0] != null ? "success" : "failed";
+            String restResponseString = jobDetailsResponseHolder != null ? "success" : "failed";
             BytesRestResponse bytesRestResponse;
             try {
                 builder.startObject();
                 builder.field("response", restResponseString);
                 if (restResponseString.equals("success")) {
-                    builder.field(GetJobDetailsRequest.DOCUMENT_ID, jobDetailsResponseHolder[0]);
+                    builder.field(GetJobDetailsRequest.DOCUMENT_ID, jobDetailsResponseHolder);
                 } else {
                     restStatus = RestStatus.INTERNAL_SERVER_ERROR;
                 }

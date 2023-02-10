@@ -9,6 +9,7 @@
 package org.opensearch.jobscheduler;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.apache.hc.core5.http.ContentType;
@@ -25,10 +26,15 @@ import org.opensearch.common.xcontent.ToXContent;
 import org.opensearch.common.xcontent.ToXContentObject;
 import org.opensearch.common.xcontent.XContentBuilder;
 import org.opensearch.common.xcontent.XContentFactory;
+import org.opensearch.jobscheduler.spi.LockModel;
+import static org.opensearch.test.OpenSearchTestCase.randomAlphaOfLength;
+import static org.opensearch.test.OpenSearchTestCase.randomLong;
+import static org.opensearch.test.OpenSearchTestCase.randomBoolean;
 
 public class TestHelpers {
 
     public static final String GET_JOB_DETAILS_BASE_URI = "/_plugins/_job_scheduler/_get/_job_details";
+    public static final String RELEASE_LOCK_BASE_URI = "/_plugins/_job_scheduler/_release_lock/{lock_id}";
 
     public static String xContentBuilderToString(XContentBuilder builder) {
         return BytesReference.bytes(builder).utf8ToString();
@@ -85,4 +91,7 @@ public class TestHelpers {
         return client.performRequest(request);
     }
 
+    public static LockModel randomLockModel() {
+        return new LockModel(randomAlphaOfLength(10), randomAlphaOfLength(10), Instant.now(), randomLong(), randomBoolean());
+    }
 }

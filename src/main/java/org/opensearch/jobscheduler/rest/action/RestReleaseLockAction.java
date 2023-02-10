@@ -22,7 +22,6 @@ import org.opensearch.action.ActionListener;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-import org.opensearch.jobscheduler.rest.request.GetJobDetailsRequest;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
@@ -40,6 +39,10 @@ public class RestReleaseLockAction extends BaseRestHandler {
 
     private LockService lockService;
 
+    private LockModel releaseLock;
+
+    private boolean releaseResponse;
+
     public RestReleaseLockAction(LockService lockService) {
         this.lockService = lockService;
     }
@@ -52,31 +55,27 @@ public class RestReleaseLockAction extends BaseRestHandler {
     @Override
     public List<Route> routes() {
         return ImmutableList.of(
-            new Route(PUT, String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_put/_release_lock/{lock_id}"))
+            new Route(PUT, String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock/{lock_id}"))
         );
     }
 
     @Override
-    protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient nodeClient) throws IOException {
+    public RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient nodeClient) throws IOException {
         String lockId = restRequest.param("lock_id");
-        final LockModel[] lockModel = new LockModel[1];
+        if (lockId == null || lockId.isEmpty()) {
+            throw new IOException("lockId cannot be null or empty");
+        }
         CompletableFuture<LockModel> findInProgressFuture = new CompletableFuture<>();
-        lockService.findLock(lockId,ActionListener.wrap(
-                lock->{
-                    lockModel[0]=lock;
-                    findInProgressFuture.complete(lock);
-                },
-                exception->{
-                    logger.error("Could not find lock model with lockId " + lockId, exception);
-                    findInProgressFuture.completeExceptionally(exception);
-                }
-        ));
+        lockService.findLock(lockId, ActionListener.wrap(lock -> {
+            releaseLock = lock;
+            findInProgressFuture.complete(lock);
+        }, exception -> {
+            logger.error("Could not find lock model with lockId " + lockId, exception);
+            findInProgressFuture.completeExceptionally(exception);
+        }));
 
         try {
             findInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
-            if(lockModel[0]==null){
-                throw new IOException("Could not find lock model with lockId " + lockId);
-            }
         } catch (CompletionException e) {
             if (e.getCause() instanceof TimeoutException) {
                 logger.info(" Request timed out with an exception ", e);
@@ -87,40 +86,41 @@ public class RestReleaseLockAction extends BaseRestHandler {
             logger.info(" Could not find lock model with lockId due to exception ", e);
         }
 
-        CompletableFuture<Boolean> releaseLockInProgressFuture = new CompletableFuture<>();
+        if (releaseLock != null) {
+            CompletableFuture<Boolean> releaseLockInProgressFuture = new CompletableFuture<>();
+            lockService.release(releaseLock, new ActionListener<>() {
+                @Override
+                public void onResponse(Boolean response) {
+                    releaseResponse = response;
+                    releaseLockInProgressFuture.complete(response);
+                }
 
-        final boolean[] releaseResponse = new boolean[1];
-        lockService.release(lockModel[0], new ActionListener<>() {
-            @Override
-            public void onResponse(Boolean response) {
-                releaseResponse[0] =response;
-                releaseLockInProgressFuture.complete(response);
-            }
+                @Override
+                public void onFailure(Exception e) {
+                    logger.error("Releasing lock failed with an exception", e);
+                    releaseLockInProgressFuture.completeExceptionally(e);
+                }
+            });
 
-            @Override
-            public void onFailure(Exception e) {
-                logger.error("Releasing lock failed with an exception", e);
-                releaseLockInProgressFuture.completeExceptionally(e);
+            try {
+                releaseLockInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+            } catch (CompletionException e) {
+                if (e.getCause() instanceof TimeoutException) {
+                    logger.info(" Request timed out with an exception ", e);
+                } else {
+                    throw e;
+                }
+            } catch (Exception e) {
+                logger.info(" Could not release lock with " + releaseLock.getLockId() + " due to exception ", e);
             }
-        });
-
-        try {
-            releaseLockInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
-        } catch (CompletionException e) {
-            if (e.getCause() instanceof TimeoutException) {
-                logger.info(" Request timed out with an exception ", e);
-            } else {
-                throw e;
-            }
-        } catch (Exception e) {
-            logger.info(" Could not find lock model with lockId due to exception ", e);
+        } else {
+            throw new IOException("Could not find lock model with lockId " + lockId);
         }
-
 
         return channel -> {
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
-            String restResponseString = releaseResponse[0]? "success" : "failed";
+            String restResponseString = releaseResponse ? "success" : "failed";
             BytesRestResponse bytesRestResponse;
             try {
                 builder.startObject();
