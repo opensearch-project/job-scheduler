@@ -31,7 +31,7 @@ import org.opensearch.test.rest.FakeRestChannel;
 import org.opensearch.test.rest.FakeRestRequest;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
-public class RestGetJobDetailsActionIT extends OpenSearchTestCase {
+public class RestGetJobDetailsActionTests extends OpenSearchTestCase {
 
     private RestGetJobDetailsAction action;
     private JobDetailsService jobDetailsService;

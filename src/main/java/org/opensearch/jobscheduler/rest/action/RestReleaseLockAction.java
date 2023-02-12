@@ -66,6 +66,7 @@ public class RestReleaseLockAction extends BaseRestHandler {
         if (lockId == null || lockId.isEmpty()) {
             throw new IOException("lockId cannot be null or empty");
         }
+
         CompletableFuture<LockModel> findInProgressFuture = new CompletableFuture<>();
         lockService.findLock(lockId, ActionListener.wrap(lock -> {
             releaseLock = lock;
@@ -114,8 +115,6 @@ public class RestReleaseLockAction extends BaseRestHandler {
             } catch (Exception e) {
                 logger.info(" Could not release lock with " + releaseLock.getLockId() + " due to exception ", e);
             }
-        } else {
-            throw new IOException("Could not find lock model with lockId " + lockId);
         }
 
         return channel -> {

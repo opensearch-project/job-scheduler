@@ -28,6 +28,7 @@ import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.TestHelpers;
+import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.AcquireLockRequest;
@@ -38,7 +39,7 @@ import org.opensearch.test.rest.FakeRestChannel;
 import org.opensearch.test.rest.FakeRestRequest;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
-public class RestGetLockActionIT extends OpenSearchTestCase {
+public class RestGetLockActionTests extends OpenSearchTestCase {
 
     private ClusterService clusterService;
     private LockService lockService;

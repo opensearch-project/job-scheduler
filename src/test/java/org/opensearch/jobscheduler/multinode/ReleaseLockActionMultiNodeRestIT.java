@@ -9,46 +9,52 @@
 package org.opensearch.jobscheduler.multinode;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import org.junit.Before;
 import org.opensearch.client.Response;
 import org.opensearch.jobscheduler.ODFERestTestCase;
 import org.opensearch.jobscheduler.TestHelpers;
+import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.test.OpenSearchIntegTestCase;
 
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class ReleaseLockActionMultiNodeRestIT extends ODFERestTestCase {
-
-    private Response releaseLockResponse;
+    private Response initialGetLockResponse;
+    private String initialJobId;
+    private String initialJobIndexName;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        this.releaseLockResponse = TestHelpers.makeRequest(
+        this.initialJobId = "testJobId";
+        this.initialJobIndexName = "testJobIndexName";
+        // Send initial request to ensure lock index has been created
+        this.initialGetLockResponse = TestHelpers.makeRequest(
             client(),
-            "PUT",
-            TestHelpers.RELEASE_LOCK_BASE_URI,
-            ImmutableMap.of("lock_id", "lock_id"),
-            null,
+            "GET",
+            TestHelpers.GET_LOCK_BASE_URI,
+            ImmutableMap.of(),
+            TestHelpers.toHttpEntity(TestHelpers.generateAcquireLockRequestBody(initialJobIndexName, initialJobId)),
             null
         );
     }
 
-    public void testGetLockRestAPI() throws Exception {
-        assertEquals("success", entityAsMap(releaseLockResponse).get("response"));
-
+    public void testReleaseLockRestAPI() throws Exception {
+        String initialLockId = validateResponseAndGetLockId(entityAsMap(this.initialGetLockResponse));
+        assertEquals(TestHelpers.generateExpectedLockId(initialJobIndexName, initialJobId), initialLockId);
         // Submit 10 requests to release locks for different job indexes
-        for (int i = 0; i < 10; i++) {
-            Response releaseLockResponse = TestHelpers.makeRequest(
-                client(),
-                "PUT",
-                TestHelpers.RELEASE_LOCK_BASE_URI,
-                ImmutableMap.of("lock_id", "lock_id"),
-                null,
-                null
-            );
-
-            assertEquals("success", entityAsMap(releaseLockResponse).get("response"));
-        }
+        Response releaseLockResponse = TestHelpers.makeRequest(
+            client(),
+            "PUT",
+            TestHelpers.RELEASE_LOCK_BASE_URI + "/" + TestHelpers.generateExpectedLockId(initialJobIndexName, initialJobId),
+            ImmutableMap.of(),
+            null,
+            null
+        );
+        assertEquals("success", entityAsMap(releaseLockResponse).get("response"));
     }
 
+    private String validateResponseAndGetLockId(Map<String, Object> responseMap) {
+        return (String) responseMap.get(LockModel.LOCK_ID);
+    }
 }

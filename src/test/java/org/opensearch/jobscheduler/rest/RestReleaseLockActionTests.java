@@ -16,12 +16,10 @@ import java.util.Locale;
 import java.util.Map;
 import org.junit.Before;
 import org.mockito.Mockito;
-import org.opensearch.action.ActionListener;
 import org.opensearch.client.Client;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-import org.opensearch.jobscheduler.TestHelpers;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.rest.RestHandler;
@@ -31,7 +29,7 @@ import org.opensearch.test.rest.FakeRestChannel;
 import org.opensearch.test.rest.FakeRestRequest;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
-public class RestReleaseLockActionIT extends OpenSearchTestCase {
+public class RestReleaseLockActionTests extends OpenSearchTestCase {
 
     private RestReleaseLockAction restReleaseLockAction;
 
@@ -39,11 +37,17 @@ public class RestReleaseLockActionIT extends OpenSearchTestCase {
 
     private String releaseLockPath;
 
+    private ClusterService clusterService;
+
+    private Client client;
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        lockService = new LockService(Mockito.mock(Client.class), Mockito.mock(ClusterService.class));
-        restReleaseLockAction = new RestReleaseLockAction(lockService);
+        this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
+        this.client = Mockito.mock(Client.class);
+        this.lockService = new LockService(client, clusterService);
+        restReleaseLockAction = new RestReleaseLockAction(this.lockService);
         this.releaseLockPath = String.format(
             Locale.ROOT,
             "%s/%s/{%s}",
@@ -66,14 +70,13 @@ public class RestReleaseLockActionIT extends OpenSearchTestCase {
 
     public void testPrepareReleaseLockRequest() throws IOException {
         Map<String, String> params = new HashMap<>();
-        params.put("lock_id", "lock_id");
+        params.put(restReleaseLockAction.LOCK_ID, "lock_id");
         FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.PUT)
             .withPath(releaseLockPath)
             .withParams(params)
             .build();
+        // Mockito.doThrow().when(lockService).findLock("lock_id", ActionListener.wrap(response -> {}, exception -> {}));
         final FakeRestChannel channel = new FakeRestChannel(request, true, 0);
-        Mockito.doNothing().when(lockService).findLock("lock_id", ActionListener.wrap(response -> {}, exception -> {}));
-        Mockito.doNothing().when(lockService).release(TestHelpers.randomLockModel(), ActionListener.wrap(response -> {}, exception -> {}));
         restReleaseLockAction.prepareRequest(request, Mockito.mock(NodeClient.class));
         assertEquals(channel.responses().get(), 0);
         assertEquals(channel.errors().get(), 0);

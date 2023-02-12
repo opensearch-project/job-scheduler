@@ -39,7 +39,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
             "GET",
             TestHelpers.GET_LOCK_BASE_URI,
             ImmutableMap.of(),
-            TestHelpers.toHttpEntity(generateRequestBody(this.initialJobIndexName, this.initialJobId)),
+            TestHelpers.toHttpEntity(TestHelpers.generateAcquireLockRequestBody(this.initialJobIndexName, this.initialJobId)),
             null
         );
     }
@@ -47,7 +47,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
     public void testGetLockRestAPI() throws Exception {
 
         String initialLockId = validateResponseAndGetLockId(entityAsMap(this.initialGetLockResponse));
-        assertEquals(generateExpectedLockId(initialJobIndexName, initialJobId), initialLockId);
+        assertEquals(TestHelpers.generateExpectedLockId(initialJobIndexName, initialJobId), initialLockId);
 
         // Submit 10 requests to generate new lock models for different job indexes
         for (int i = 0; i < 10; i++) {
@@ -56,12 +56,12 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
                 "GET",
                 TestHelpers.GET_LOCK_BASE_URI,
                 ImmutableMap.of(),
-                TestHelpers.toHttpEntity(generateRequestBody(String.valueOf(i), String.valueOf(i))),
+                TestHelpers.toHttpEntity(TestHelpers.generateAcquireLockRequestBody(String.valueOf(i), String.valueOf(i))),
                 null
             );
 
             String lockId = validateResponseAndGetLockId(entityAsMap(getLockResponse));
-            assertEquals(generateExpectedLockId(String.valueOf(i), String.valueOf(i)), lockId);
+            assertEquals(TestHelpers.generateExpectedLockId(String.valueOf(i), String.valueOf(i)), lockId);
         }
     }
 
@@ -69,13 +69,4 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
         assertEquals("success", responseMap.get("response"));
         return (String) responseMap.get(LockModel.LOCK_ID);
     }
-
-    private String generateRequestBody(String jobIndexName, String jobId) {
-        return "{\"job_id\":\"" + jobId + "\",\"job_index_name\":\"" + jobIndexName + "\",\"lock_duration_seconds\":\"30.0\"}";
-    }
-
-    private String generateExpectedLockId(String jobIndexName, String jobId) {
-        return jobIndexName + "-" + jobId;
-    }
-
 }

@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.jobscheduler.rest;
+package org.opensearch.jobscheduler.rest.action;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,7 +39,6 @@ import static org.opensearch.rest.RestRequest.Method.GET;
 
 import static org.opensearch.jobscheduler.spi.LockModel.GET_LOCK_ACTION;
 import static org.opensearch.jobscheduler.spi.LockModel.SEQUENCE_NUMBER;
-import static org.opensearch.jobscheduler.spi.LockModel.SEQUENCE_NUMBER;
 import static org.opensearch.jobscheduler.spi.LockModel.PRIMARY_TERM;
 import static org.opensearch.jobscheduler.spi.LockModel.LOCK_ID;
 import static org.opensearch.jobscheduler.spi.LockModel.LOCK_MODEL;
@@ -49,7 +48,7 @@ import static org.opensearch.jobscheduler.spi.LockModel.LOCK_MODEL;
  */
 public class RestGetLockAction extends BaseRestHandler {
 
-    public static LockModel lockModelResponseHolder;
+    public LockModel lockModelResponseHolder;
 
     private final Logger logger = LogManager.getLogger(RestGetLockAction.class);
 
@@ -70,7 +69,7 @@ public class RestGetLockAction extends BaseRestHandler {
     }
 
     @Override
-    protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
+    public RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
@@ -82,21 +81,13 @@ public class RestGetLockAction extends BaseRestHandler {
 
         // Process acquire lock request
         CompletableFuture<LockModel> inProgressFuture = new CompletableFuture<>();
-        lockService.acquireLockWithId(jobIndexName, lockDurationSeconds, jobIndexName, new ActionListener<>() {
-            @Override
-            public void onResponse(LockModel lockModel) {
-
-                // set lockModel Response
-                lockModelResponseHolder = lockModel;
-                inProgressFuture.complete(lockModelResponseHolder);
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                logger.info("Could not acquire lock with ID : " + jobId, e);
-                inProgressFuture.completeExceptionally(e);
-            }
-        });
+        lockService.acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, ActionListener.wrap(lockModel -> {
+            lockModelResponseHolder = lockModel;
+            inProgressFuture.complete(lockModelResponseHolder);
+        }, exception -> {
+            logger.info("Could not acquire lock with ID : " + jobId, exception);
+            inProgressFuture.completeExceptionally(exception);
+        }));
 
         try {
             inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
@@ -137,7 +128,6 @@ public class RestGetLockAction extends BaseRestHandler {
                 bytesRestResponse = new BytesRestResponse(restStatus, builder);
                 channel.sendResponse(bytesRestResponse);
             }
-
         };
     }
 }
