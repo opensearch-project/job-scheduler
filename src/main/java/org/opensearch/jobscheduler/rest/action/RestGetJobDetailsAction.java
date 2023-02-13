@@ -79,9 +79,6 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
         GetJobDetailsRequest getJobDetailsRequest = GetJobDetailsRequest.parse(parser);
-
-        // final String[] jobDetailsResponseHolder = new String[1];
-
         String documentId = restRequest.param(GetJobDetailsRequest.DOCUMENT_ID);
         String jobIndex = getJobDetailsRequest.getJobIndex();
         String jobType = getJobDetailsRequest.getJobType();
