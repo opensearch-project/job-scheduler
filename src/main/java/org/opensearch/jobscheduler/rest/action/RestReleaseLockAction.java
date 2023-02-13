@@ -74,12 +74,12 @@ public class RestReleaseLockAction extends BaseRestHandler {
             releaseLock = findInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).get();
         } catch (CompletionException e) {
             if (e.getCause() instanceof TimeoutException) {
-                logger.info(" Request timed out with an exception ", e);
+                logger.error(" Request timed out with an exception ", e);
             } else {
                 throw e;
             }
         } catch (Exception e) {
-            logger.info(" Could not find lock model with lockId due to exception ", e);
+            logger.error(" Could not find lock model with lockId due to exception ", e);
         }
 
         CompletableFuture<Boolean> releaseLockInProgressFuture = new CompletableFuture<>();
@@ -101,12 +101,12 @@ public class RestReleaseLockAction extends BaseRestHandler {
                 releaseLockInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
             } catch (CompletionException e) {
                 if (e.getCause() instanceof TimeoutException) {
-                    logger.info(" Request timed out with an exception ", e);
+                    logger.error(" Request timed out with an exception ", e);
                 } else {
                     throw e;
                 }
             } catch (Exception e) {
-                logger.info(" Could not release lock with " + releaseLock.getLockId() + " due to exception ", e);
+                logger.error(" Could not release lock with " + releaseLock.getLockId() + " due to exception ", e);
             }
         }
 
