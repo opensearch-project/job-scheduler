@@ -13,9 +13,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.CompletionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.ActionListener;
@@ -39,10 +39,6 @@ public class RestReleaseLockAction extends BaseRestHandler {
     private final Logger logger = LogManager.getLogger(RestReleaseLockAction.class);
 
     private LockService lockService;
-
-    private LockModel releaseLock;
-
-    private boolean releaseResponse;
 
     public RestReleaseLockAction(LockService lockService) {
         this.lockService = lockService;
@@ -68,16 +64,14 @@ public class RestReleaseLockAction extends BaseRestHandler {
         }
 
         CompletableFuture<LockModel> findInProgressFuture = new CompletableFuture<>();
-        lockService.findLock(lockId, ActionListener.wrap(lock -> {
-            releaseLock = lock;
-            findInProgressFuture.complete(lock);
-        }, exception -> {
+        lockService.findLock(lockId, ActionListener.wrap(lock -> { findInProgressFuture.complete(lock); }, exception -> {
             logger.error("Could not find lock model with lockId " + lockId, exception);
             findInProgressFuture.completeExceptionally(exception);
         }));
 
+        LockModel releaseLock = null;
         try {
-            findInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+            releaseLock = findInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).get();
         } catch (CompletionException e) {
             if (e.getCause() instanceof TimeoutException) {
                 logger.info(" Request timed out with an exception ", e);
@@ -88,12 +82,11 @@ public class RestReleaseLockAction extends BaseRestHandler {
             logger.info(" Could not find lock model with lockId due to exception ", e);
         }
 
+        CompletableFuture<Boolean> releaseLockInProgressFuture = new CompletableFuture<>();
         if (releaseLock != null) {
-            CompletableFuture<Boolean> releaseLockInProgressFuture = new CompletableFuture<>();
             lockService.release(releaseLock, new ActionListener<>() {
                 @Override
                 public void onResponse(Boolean response) {
-                    releaseResponse = response;
                     releaseLockInProgressFuture.complete(response);
                 }
 
@@ -105,7 +98,7 @@ public class RestReleaseLockAction extends BaseRestHandler {
             });
 
             try {
-                releaseLockInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+                releaseLockInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
             } catch (CompletionException e) {
                 if (e.getCause() instanceof TimeoutException) {
                     logger.info(" Request timed out with an exception ", e);
@@ -118,6 +111,12 @@ public class RestReleaseLockAction extends BaseRestHandler {
         }
 
         return channel -> {
+            boolean releaseResponse = false;
+            try {
+                releaseResponse = releaseLockInProgressFuture.get();
+            } catch (Exception e) {
+                logger.error("Exception occured in releasing lock ", e);
+            }
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
             String restResponseString = releaseResponse ? "success" : "failed";

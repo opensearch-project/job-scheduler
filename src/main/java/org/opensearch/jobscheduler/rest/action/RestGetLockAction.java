@@ -47,9 +47,6 @@ import static org.opensearch.jobscheduler.spi.LockModel.LOCK_MODEL;
  * This class consists of the REST handler to GET a lock model for extensions
  */
 public class RestGetLockAction extends BaseRestHandler {
-
-    public LockModel lockModelResponseHolder;
-
     private final Logger logger = LogManager.getLogger(RestGetLockAction.class);
 
     public LockService lockService;
@@ -81,16 +78,18 @@ public class RestGetLockAction extends BaseRestHandler {
 
         // Process acquire lock request
         CompletableFuture<LockModel> inProgressFuture = new CompletableFuture<>();
-        lockService.acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, ActionListener.wrap(lockModel -> {
-            lockModelResponseHolder = lockModel;
-            inProgressFuture.complete(lockModelResponseHolder);
-        }, exception -> {
-            logger.info("Could not acquire lock with ID : " + jobId, exception);
-            inProgressFuture.completeExceptionally(exception);
-        }));
+        lockService.acquireLockWithId(
+            jobIndexName,
+            lockDurationSeconds,
+            jobId,
+            ActionListener.wrap(lockModel -> { inProgressFuture.complete(lockModel); }, exception -> {
+                logger.info("Could not acquire lock with ID : " + jobId, exception);
+                inProgressFuture.completeExceptionally(exception);
+            })
+        );
 
         try {
-            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
         } catch (CompletionException e) {
             if (e.getCause() instanceof TimeoutException) {
                 logger.error(" Request timed out with an exception ", e);
@@ -103,6 +102,12 @@ public class RestGetLockAction extends BaseRestHandler {
 
         return channel -> {
             BytesRestResponse bytesRestResponse;
+            LockModel lockModelResponseHolder = null;
+            try {
+                lockModelResponseHolder = inProgressFuture.get();
+            } catch (Exception e) {
+                logger.error("Exception occured in acquiring lock ", e);
+            }
             try (XContentBuilder builder = channel.newBuilder()) {
                 // Prepare response
                 RestStatus restStatus = RestStatus.OK;

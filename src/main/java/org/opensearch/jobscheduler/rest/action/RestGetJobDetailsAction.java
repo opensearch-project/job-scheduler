@@ -48,8 +48,6 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
 
     public JobDetailsService jobDetailsService;
 
-    private String jobDetailsResponseHolder;
-
     public RestGetJobDetailsAction(final JobDetailsService jobDetailsService) {
         this.jobDetailsService = jobDetailsService;
     }
@@ -99,8 +97,7 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
                 @Override
                 public void onResponse(String indexedDocumentId) {
                     // Set document Id
-                    jobDetailsResponseHolder = indexedDocumentId;
-                    inProgressFuture.complete(jobDetailsResponseHolder);
+                    inProgressFuture.complete(indexedDocumentId);
                 }
 
                 @Override
@@ -112,7 +109,7 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
         );
 
         try {
-            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
         } catch (CompletionException e) {
             if (e.getCause() instanceof TimeoutException) {
                 logger.info(" Request timed out with an exception ", e);
@@ -124,6 +121,12 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
         }
 
         return channel -> {
+            String jobDetailsResponseHolder = null;
+            try {
+                jobDetailsResponseHolder = inProgressFuture.get();
+            } catch (Exception e) {
+                logger.error("Exception occured in get job details ", e);
+            }
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
             String restResponseString = jobDetailsResponseHolder != null ? "success" : "failed";
