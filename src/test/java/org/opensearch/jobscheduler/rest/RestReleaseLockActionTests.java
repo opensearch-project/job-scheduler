@@ -75,7 +75,6 @@ public class RestReleaseLockActionTests extends OpenSearchTestCase {
             .withPath(releaseLockPath)
             .withParams(params)
             .build();
-        // Mockito.doThrow().when(lockService).findLock("lock_id", ActionListener.wrap(response -> {}, exception -> {}));
         final FakeRestChannel channel = new FakeRestChannel(request, true, 0);
         restReleaseLockAction.prepareRequest(request, Mockito.mock(NodeClient.class));
         assertEquals(channel.responses().get(), 0);
