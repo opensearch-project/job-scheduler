@@ -9,7 +9,6 @@
 package org.opensearch.jobscheduler;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.apache.hc.core5.http.ContentType;
@@ -26,10 +25,6 @@ import org.opensearch.common.xcontent.ToXContent;
 import org.opensearch.common.xcontent.ToXContentObject;
 import org.opensearch.common.xcontent.XContentBuilder;
 import org.opensearch.common.xcontent.XContentFactory;
-import org.opensearch.jobscheduler.spi.LockModel;
-import static org.opensearch.test.OpenSearchTestCase.randomAlphaOfLength;
-import static org.opensearch.test.OpenSearchTestCase.randomLong;
-import static org.opensearch.test.OpenSearchTestCase.randomBoolean;
 
 public class TestHelpers {
 
@@ -90,10 +85,6 @@ public class TestHelpers {
             request.setEntity(entity);
         }
         return client.performRequest(request);
-    }
-
-    public static LockModel randomLockModel() {
-        return new LockModel(randomAlphaOfLength(10), randomAlphaOfLength(10), Instant.now(), randomLong(), randomBoolean());
     }
 
     public static String generateAcquireLockRequestBody(String jobIndexName, String jobId) {

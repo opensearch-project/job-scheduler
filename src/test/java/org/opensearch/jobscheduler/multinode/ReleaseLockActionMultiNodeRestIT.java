@@ -42,7 +42,6 @@ public class ReleaseLockActionMultiNodeRestIT extends ODFERestTestCase {
     public void testReleaseLockRestAPI() throws Exception {
         String initialLockId = validateResponseAndGetLockId(entityAsMap(this.initialGetLockResponse));
         assertEquals(TestHelpers.generateExpectedLockId(initialJobIndexName, initialJobId), initialLockId);
-        // Submit 10 requests to release locks for different job indexes
         Response releaseLockResponse = TestHelpers.makeRequest(
             client(),
             "PUT",
