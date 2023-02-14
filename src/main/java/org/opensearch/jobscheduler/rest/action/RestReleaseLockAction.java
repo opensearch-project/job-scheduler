@@ -61,9 +61,10 @@ public class RestReleaseLockAction extends BaseRestHandler {
         if (lockId == null || lockId.isEmpty()) {
             throw new IOException("lockId cannot be null or empty");
         }
-
         CompletableFuture<Boolean> releaseLockInProgressFuture = new CompletableFuture<>();
-        if (lockService.lockIndexExist()) {
+        if (!lockService.lockIndexExist()) {
+            releaseLockInProgressFuture.complete(false);
+        } else {
             CompletableFuture<LockModel> findInProgressFuture = new CompletableFuture<>();
             lockService.findLock(lockId, ActionListener.wrap(lock -> { findInProgressFuture.complete(lock); }, exception -> {
                 logger.error("Could not find lock model with lockId " + lockId, exception);
