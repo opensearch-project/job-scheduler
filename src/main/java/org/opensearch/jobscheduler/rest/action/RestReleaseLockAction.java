@@ -13,9 +13,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.ActionListener;
@@ -34,8 +35,6 @@ import org.opensearch.rest.RestStatus;
 public class RestReleaseLockAction extends BaseRestHandler {
 
     public static final String RELEASE_LOCK_ACTION = "release_lock_action";
-    public static final String LOCK_ID = "lock_id";
-
     private final Logger logger = LogManager.getLogger(RestReleaseLockAction.class);
 
     private LockService lockService;
@@ -52,13 +51,13 @@ public class RestReleaseLockAction extends BaseRestHandler {
     @Override
     public List<Route> routes() {
         return ImmutableList.of(
-            new Route(PUT, String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock", LOCK_ID))
+            new Route(PUT, String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock", LockModel.LOCK_ID))
         );
     }
 
     @Override
     public RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient nodeClient) throws IOException {
-        String lockId = restRequest.param(LOCK_ID);
+        String lockId = restRequest.param(LockModel.LOCK_ID);
         if (lockId == null || lockId.isEmpty()) {
             throw new IOException("lockId cannot be null or empty");
         }
@@ -69,17 +68,20 @@ public class RestReleaseLockAction extends BaseRestHandler {
             findInProgressFuture.completeExceptionally(exception);
         }));
 
-        LockModel releaseLock = null;
+        LockModel releaseLock;
         try {
             releaseLock = findInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).get();
-        } catch (CompletionException e) {
+        } catch (CompletionException | InterruptedException | ExecutionException e) {
             if (e.getCause() instanceof TimeoutException) {
-                logger.error(" Request timed out with an exception ", e);
-            } else {
-                throw e;
+                logger.error(" Finding lock timed out ", e);
             }
-        } catch (Exception e) {
-            logger.error(" Could not find lock model with lockId due to exception ", e);
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else if (e.getCause() instanceof Error) {
+                throw (Error) e.getCause();
+            } else {
+                throw new RuntimeException(e.getCause());
+            }
         }
 
         CompletableFuture<Boolean> releaseLockInProgressFuture = new CompletableFuture<>();
@@ -101,12 +103,15 @@ public class RestReleaseLockAction extends BaseRestHandler {
                 releaseLockInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
             } catch (CompletionException e) {
                 if (e.getCause() instanceof TimeoutException) {
-                    logger.error(" Request timed out with an exception ", e);
-                } else {
-                    throw e;
+                    logger.error("Release lock timed out ", e);
                 }
-            } catch (Exception e) {
-                logger.error(" Could not release lock with " + releaseLock.getLockId() + " due to exception ", e);
+                if (e.getCause() instanceof RuntimeException) {
+                    throw (RuntimeException) e.getCause();
+                } else if (e.getCause() instanceof Error) {
+                    throw (Error) e.getCause();
+                } else {
+                    throw new RuntimeException(e.getCause());
+                }
             }
         }
 
@@ -123,7 +128,7 @@ public class RestReleaseLockAction extends BaseRestHandler {
             BytesRestResponse bytesRestResponse;
             try {
                 builder.startObject();
-                builder.field("response", restResponseString);
+                builder.field("release-lock", restResponseString);
                 if (restResponseString.equals("failed")) {
                     restStatus = RestStatus.INTERNAL_SERVER_ERROR;
                 }

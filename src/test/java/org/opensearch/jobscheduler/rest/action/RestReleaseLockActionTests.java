@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.jobscheduler.rest;
+package org.opensearch.jobscheduler.rest.action;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.io.IOException;
@@ -20,7 +20,7 @@ import org.opensearch.client.Client;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
+import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.rest.RestRequest;
@@ -48,13 +48,7 @@ public class RestReleaseLockActionTests extends OpenSearchTestCase {
         this.client = Mockito.mock(Client.class);
         this.lockService = new LockService(client, clusterService);
         restReleaseLockAction = new RestReleaseLockAction(this.lockService);
-        this.releaseLockPath = String.format(
-            Locale.ROOT,
-            "%s/%s/{%s}",
-            JobSchedulerPlugin.JS_BASE_URI,
-            "_release_lock",
-            restReleaseLockAction.LOCK_ID
-        );
+        this.releaseLockPath = String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock", LockModel.LOCK_ID);
 
     }
 
@@ -70,7 +64,7 @@ public class RestReleaseLockActionTests extends OpenSearchTestCase {
 
     public void testPrepareReleaseLockRequest() throws IOException {
         Map<String, String> params = new HashMap<>();
-        params.put(restReleaseLockAction.LOCK_ID, "lock_id");
+        params.put(LockModel.LOCK_ID, "lock_id");
         FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.PUT)
             .withPath(releaseLockPath)
             .withParams(params)

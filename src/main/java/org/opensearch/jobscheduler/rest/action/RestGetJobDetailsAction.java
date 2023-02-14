@@ -71,8 +71,9 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
         );
     }
 
+    @VisibleForTesting
     @Override
-    public RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
+    protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
@@ -112,12 +113,15 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
             inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
         } catch (CompletionException e) {
             if (e.getCause() instanceof TimeoutException) {
-                logger.info(" Request timed out with an exception ", e);
-            } else {
-                throw e;
+                logger.error("Get Job Details timed out ", e);
             }
-        } catch (Exception e) {
-            logger.info(" Could not process job index due to exception ", e);
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else if (e.getCause() instanceof Error) {
+                throw (Error) e.getCause();
+            } else {
+                throw new RuntimeException(e.getCause());
+            }
         }
 
         return channel -> {

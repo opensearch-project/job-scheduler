@@ -65,8 +65,9 @@ public class RestGetLockAction extends BaseRestHandler {
         return ImmutableList.of(new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_lock")));
     }
 
+    @VisibleForTesting
     @Override
-    public RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
+    protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
@@ -92,12 +93,15 @@ public class RestGetLockAction extends BaseRestHandler {
             inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
         } catch (CompletionException e) {
             if (e.getCause() instanceof TimeoutException) {
-                logger.error(" Request timed out with an exception ", e);
-            } else {
-                throw e;
+                logger.error("Acquiring lock timed out ", e);
             }
-        } catch (Exception e) {
-            logger.error(" Could not process acquire lock request due to exception ", e);
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else if (e.getCause() instanceof Error) {
+                throw (Error) e.getCause();
+            } else {
+                throw new RuntimeException(e.getCause());
+            }
         }
 
         return channel -> {
