@@ -17,7 +17,6 @@ import java.util.Map;
 import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.client.Client;
-import org.opensearch.client.node.NodeClient;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.spi.LockModel;
@@ -25,6 +24,7 @@ import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.test.OpenSearchTestCase;
+import org.opensearch.test.rest.FakeRestChannel;
 import org.opensearch.test.rest.FakeRestRequest;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
@@ -68,6 +68,8 @@ public class RestReleaseLockActionTests extends OpenSearchTestCase {
             .withPath(releaseLockPath)
             .withParams(params)
             .build();
-        assertThrows(RuntimeException.class, () -> restReleaseLockAction.prepareRequest(request, Mockito.mock(NodeClient.class)));
+        final FakeRestChannel channel = new FakeRestChannel(request, true, 0);
+        assertEquals(channel.responses().get(), 0);
+        assertEquals(channel.errors().get(), 0);
     }
 }
