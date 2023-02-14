@@ -50,7 +50,7 @@ public class ReleaseLockActionMultiNodeRestIT extends ODFERestTestCase {
             null,
             null
         );
-        assertEquals("success", entityAsMap(releaseLockResponse).get("response"));
+        assertEquals("success", entityAsMap(releaseLockResponse).get("release-lock"));
     }
 
     private String validateResponseAndGetLockId(Map<String, Object> responseMap) {
