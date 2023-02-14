@@ -84,7 +84,7 @@ public class RestGetLockAction extends BaseRestHandler {
             lockDurationSeconds,
             jobId,
             ActionListener.wrap(lockModel -> { inProgressFuture.complete(lockModel); }, exception -> {
-                logger.info("Could not acquire lock with ID : " + jobId, exception);
+                logger.error("Could not acquire lock with ID : " + jobId, exception);
                 inProgressFuture.completeExceptionally(exception);
             })
         );
@@ -122,12 +122,11 @@ public class RestGetLockAction extends BaseRestHandler {
                 if (restResponseString.equals("success")) {
 
                     // Prepare response fields
-                    LockModel lock = lockModelResponseHolder;
-                    long seqNo = lock.getSeqNo();
-                    long primaryTerm = lock.getPrimaryTerm();
+                    long seqNo = lockModelResponseHolder.getSeqNo();
+                    long primaryTerm = lockModelResponseHolder.getPrimaryTerm();
 
                     builder.field(LOCK_ID, LockModel.generateLockId(jobIndexName, jobId));
-                    builder.field(LOCK_MODEL, lock);
+                    builder.field(LOCK_MODEL, lockModelResponseHolder);
                     builder.field(SEQUENCE_NUMBER, seqNo);
                     builder.field(PRIMARY_TERM, primaryTerm);
                 } else {
