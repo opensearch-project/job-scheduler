@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.jobscheduler.rest;
+package org.opensearch.jobscheduler.rest.action;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.io.IOException;
@@ -38,7 +38,7 @@ import org.opensearch.test.rest.FakeRestChannel;
 import org.opensearch.test.rest.FakeRestRequest;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
-public class RestGetLockActionIT extends OpenSearchTestCase {
+public class RestGetLockActionTests extends OpenSearchTestCase {
 
     private ClusterService clusterService;
     private LockService lockService;

@@ -28,8 +28,9 @@ import org.opensearch.common.xcontent.XContentFactory;
 
 public class TestHelpers {
 
-    public static final String GET_JOB_DETAILS_BASE_URI = "/_plugins/_job_scheduler/_get/_job_details";
+    public static final String GET_JOB_DETAILS_BASE_URI = "/_plugins/_job_scheduler/_job_details";
     public static final String GET_LOCK_BASE_URI = "/_plugins/_job_scheduler/_lock";
+    public static final String RELEASE_LOCK_BASE_URI = "/_plugins/_job_scheduler/_release_lock";
 
     public static String xContentBuilderToString(XContentBuilder builder) {
         return BytesReference.bytes(builder).utf8ToString();
@@ -84,6 +85,14 @@ public class TestHelpers {
             request.setEntity(entity);
         }
         return client.performRequest(request);
+    }
+
+    public static String generateAcquireLockRequestBody(String jobIndexName, String jobId) {
+        return "{\"job_id\":\"" + jobId + "\",\"job_index_name\":\"" + jobIndexName + "\",\"lock_duration_seconds\":\"30.0\"}";
+    }
+
+    public static String generateExpectedLockId(String jobIndexName, String jobId) {
+        return jobIndexName + "-" + jobId;
     }
 
 }

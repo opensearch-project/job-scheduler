@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.jobscheduler.rest;
+package org.opensearch.jobscheduler.rest.action;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,7 +16,7 @@ import org.opensearch.common.xcontent.XContentBuilder;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 
-import org.opensearch.jobscheduler.transport.GetJobDetailsRequest;
+import org.opensearch.jobscheduler.rest.request.GetJobDetailsRequest;
 
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.rest.BaseRestHandler;
@@ -61,31 +61,23 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
     public List<Route> routes() {
         return ImmutableList.of(
             // New Job Details Entry Request
-            new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_details")),
+            new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_job_details")),
             // Update Job Details Entry Request
             new Route(
                 PUT,
-                String.format(
-                    Locale.ROOT,
-                    "%s/%s/{%s}",
-                    JobSchedulerPlugin.JS_BASE_URI,
-                    "_get/_job_details",
-                    GetJobDetailsRequest.DOCUMENT_ID
-                )
+                String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_job_details", GetJobDetailsRequest.DOCUMENT_ID)
             )
 
         );
     }
 
+    @VisibleForTesting
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
         GetJobDetailsRequest getJobDetailsRequest = GetJobDetailsRequest.parse(parser);
-
-        final String[] jobDetailsResponseHolder = new String[1];
-
         String documentId = restRequest.param(GetJobDetailsRequest.DOCUMENT_ID);
         String jobIndex = getJobDetailsRequest.getJobIndex();
         String jobType = getJobDetailsRequest.getJobType();
@@ -93,7 +85,7 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
         String jobRunnerAction = getJobDetailsRequest.getJobRunnerAction();
         String extensionUniqueId = getJobDetailsRequest.getExtensionUniqueId();
 
-        CompletableFuture<String[]> inProgressFuture = new CompletableFuture<>();
+        CompletableFuture<String> inProgressFuture = new CompletableFuture<>();
 
         jobDetailsService.processJobDetails(
             documentId,
@@ -106,8 +98,7 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
                 @Override
                 public void onResponse(String indexedDocumentId) {
                     // Set document Id
-                    jobDetailsResponseHolder[0] = indexedDocumentId;
-                    inProgressFuture.complete(jobDetailsResponseHolder);
+                    inProgressFuture.complete(indexedDocumentId);
                 }
 
                 @Override
@@ -119,27 +110,36 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
         );
 
         try {
-            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).join();
+            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
         } catch (CompletionException e) {
             if (e.getCause() instanceof TimeoutException) {
-                logger.info(" Request timed out with an exception ", e);
-            } else {
-                throw e;
+                logger.error("Get Job Details timed out ", e);
             }
-        } catch (Exception e) {
-            logger.info(" Could not process job index due to exception ", e);
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else if (e.getCause() instanceof Error) {
+                throw (Error) e.getCause();
+            } else {
+                throw new RuntimeException(e.getCause());
+            }
         }
 
         return channel -> {
+            String jobDetailsResponseHolder = null;
+            try {
+                jobDetailsResponseHolder = inProgressFuture.get();
+            } catch (Exception e) {
+                logger.error("Exception occured in get job details ", e);
+            }
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
-            String restResponseString = jobDetailsResponseHolder[0] != null ? "success" : "failed";
+            String restResponseString = jobDetailsResponseHolder != null ? "success" : "failed";
             BytesRestResponse bytesRestResponse;
             try {
                 builder.startObject();
                 builder.field("response", restResponseString);
                 if (restResponseString.equals("success")) {
-                    builder.field(GetJobDetailsRequest.DOCUMENT_ID, jobDetailsResponseHolder[0]);
+                    builder.field(GetJobDetailsRequest.DOCUMENT_ID, jobDetailsResponseHolder);
                 } else {
                     restStatus = RestStatus.INTERNAL_SERVER_ERROR;
                 }

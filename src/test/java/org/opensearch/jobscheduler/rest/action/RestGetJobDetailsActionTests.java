@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.jobscheduler.rest;
+package org.opensearch.jobscheduler.rest.action;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.io.IOException;
@@ -21,7 +21,7 @@ import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.bytes.BytesArray;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-import org.opensearch.jobscheduler.transport.GetJobDetailsRequest;
+import org.opensearch.jobscheduler.rest.request.GetJobDetailsRequest;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.rest.RestRequest;
@@ -30,7 +30,7 @@ import org.opensearch.test.rest.FakeRestChannel;
 import org.opensearch.test.rest.FakeRestRequest;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
-public class RestGetJobDetailsActionIT extends OpenSearchTestCase {
+public class RestGetJobDetailsActionTests extends OpenSearchTestCase {
 
     private RestGetJobDetailsAction action;
     private JobDetailsService jobDetailsService;
@@ -48,12 +48,12 @@ public class RestGetJobDetailsActionIT extends OpenSearchTestCase {
         super.setUp();
         this.jobDetailsService = Mockito.mock(JobDetailsService.class);
         this.action = new RestGetJobDetailsAction(jobDetailsService);
-        this.getJobDetailsPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_get/_job_details");
+        this.getJobDetailsPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_job_details");
         this.updateJobDetailsPath = String.format(
             Locale.ROOT,
             "%s/%s/{%s}",
             JobSchedulerPlugin.JS_BASE_URI,
-            "_get/_job_details",
+            "_job_details",
             GetJobDetailsRequest.DOCUMENT_ID
         );
 

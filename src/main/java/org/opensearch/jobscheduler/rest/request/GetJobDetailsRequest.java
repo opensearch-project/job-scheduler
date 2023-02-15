@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.jobscheduler.transport;
+package org.opensearch.jobscheduler.rest.request;
 
 import java.util.Objects;
 import org.opensearch.action.ActionRequest;
