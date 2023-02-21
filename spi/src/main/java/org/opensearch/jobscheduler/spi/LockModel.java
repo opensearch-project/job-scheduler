@@ -13,6 +13,7 @@ import org.opensearch.common.xcontent.ToXContentObject;
 import org.opensearch.common.xcontent.XContentBuilder;
 import org.opensearch.common.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentParserUtils;
+import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.index.seqno.SequenceNumbers;
 
 import java.io.IOException;
@@ -173,7 +174,7 @@ public final class LockModel implements ToXContentObject {
 
     @Override
     public String toString() {
-        return Strings.toString(this, false, true);
+        return Strings.toString(XContentType.JSON, this, false, true);
     }
 
     public String getLockId() {
