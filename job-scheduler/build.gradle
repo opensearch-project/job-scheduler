@@ -100,10 +100,6 @@ allprojects {
             publications {
                 // add license information to generated poms
                 all {
-                    pom {
-                        name = "opensearch-job-scheduler"
-                        description = "OpenSearch Job Scheduler plugin"
-                    }
                     pom.withXml { XmlProvider xml ->
                         Node node = xml.asNode()
                         node.appendNode('inceptionYear', '2021')
