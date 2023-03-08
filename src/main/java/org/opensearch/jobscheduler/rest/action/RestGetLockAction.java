@@ -26,6 +26,7 @@ import org.opensearch.rest.RestRequest;
 import org.opensearch.rest.RestStatus;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 
@@ -41,7 +42,11 @@ import static org.opensearch.jobscheduler.spi.LockModel.GET_LOCK_ACTION;
 import static org.opensearch.jobscheduler.spi.LockModel.SEQUENCE_NUMBER;
 import static org.opensearch.jobscheduler.spi.LockModel.PRIMARY_TERM;
 import static org.opensearch.jobscheduler.spi.LockModel.LOCK_ID;
-import static org.opensearch.jobscheduler.spi.LockModel.LOCK_MODEL;
+import static org.opensearch.jobscheduler.spi.LockModel.JOB_INDEX_NAME;
+import static org.opensearch.jobscheduler.spi.LockModel.JOB_ID;
+import static org.opensearch.jobscheduler.spi.LockModel.LOCK_TIME;
+import static org.opensearch.jobscheduler.spi.LockModel.LOCK_DURATION;
+import static org.opensearch.jobscheduler.spi.LockModel.RELEASED;
 
 /**
  * This class consists of the REST handler to GET a lock model for extensions
@@ -124,9 +129,15 @@ public class RestGetLockAction extends BaseRestHandler {
                     // Prepare response fields
                     long seqNo = lockModelResponseHolder.getSeqNo();
                     long primaryTerm = lockModelResponseHolder.getPrimaryTerm();
+                    Instant lockTime = lockModelResponseHolder.getLockTime();
+                    boolean released = lockModelResponseHolder.isReleased();
 
                     builder.field(LOCK_ID, LockModel.generateLockId(jobIndexName, jobId));
-                    builder.field(LOCK_MODEL, lockModelResponseHolder);
+                    builder.field(JOB_ID, jobId);
+                    builder.field(JOB_INDEX_NAME, jobIndexName);
+                    builder.field(LOCK_TIME, lockTime);
+                    builder.field(LOCK_DURATION, lockDurationSeconds);
+                    builder.field(RELEASED, released);
                     builder.field(SEQUENCE_NUMBER, seqNo);
                     builder.field(PRIMARY_TERM, primaryTerm);
                 } else {
