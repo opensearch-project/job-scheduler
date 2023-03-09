@@ -72,7 +72,6 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
         XContentParser parser = XContentType.JSON.xContent()
             .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getEntity().getContent());
-        parser.nextToken();
 
         AcquireLockResponse acquireLockResponse = AcquireLockResponse.parse(parser);
 

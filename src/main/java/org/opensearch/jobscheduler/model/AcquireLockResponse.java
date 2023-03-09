@@ -56,7 +56,7 @@ public class AcquireLockResponse implements ToXContentObject {
         Long seqNo = null;
         Long primaryTerm = null;
 
-        XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.currentToken(), parser);
+        XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
         while (!XContentParser.Token.END_OBJECT.equals(parser.nextToken())) {
             String fieldName = parser.currentName();
             parser.nextToken();
