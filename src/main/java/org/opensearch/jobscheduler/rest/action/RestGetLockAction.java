@@ -12,10 +12,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.ActionListener;
 import org.opensearch.client.node.NodeClient;
+import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-
+import org.opensearch.jobscheduler.model.AcquireLockResponse;
 import org.opensearch.jobscheduler.transport.AcquireLockRequest;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.jobscheduler.spi.LockModel;
@@ -26,7 +27,6 @@ import org.opensearch.rest.RestRequest;
 import org.opensearch.rest.RestStatus;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 
@@ -39,14 +39,6 @@ import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedT
 import static org.opensearch.rest.RestRequest.Method.GET;
 
 import static org.opensearch.jobscheduler.spi.LockModel.GET_LOCK_ACTION;
-import static org.opensearch.jobscheduler.spi.LockModel.SEQUENCE_NUMBER;
-import static org.opensearch.jobscheduler.spi.LockModel.PRIMARY_TERM;
-import static org.opensearch.jobscheduler.spi.LockModel.LOCK_ID;
-import static org.opensearch.jobscheduler.spi.LockModel.JOB_INDEX_NAME;
-import static org.opensearch.jobscheduler.spi.LockModel.JOB_ID;
-import static org.opensearch.jobscheduler.spi.LockModel.LOCK_TIME;
-import static org.opensearch.jobscheduler.spi.LockModel.LOCK_DURATION;
-import static org.opensearch.jobscheduler.spi.LockModel.RELEASED;
 
 /**
  * This class consists of the REST handler to GET a lock model for extensions
@@ -121,29 +113,19 @@ public class RestGetLockAction extends BaseRestHandler {
                 // Prepare response
                 RestStatus restStatus = RestStatus.OK;
                 String restResponseString = lockModelResponseHolder != null ? "success" : "failed";
-
-                builder.startObject();
-                builder.field("response", restResponseString);
                 if (restResponseString.equals("success")) {
+                    // Create Response
+                    AcquireLockResponse acquireLockResponse = new AcquireLockResponse(
+                        lockModelResponseHolder,
+                        LockModel.generateLockId(jobIndexName, jobId),
+                        lockModelResponseHolder.getSeqNo(),
+                        lockModelResponseHolder.getPrimaryTerm()
+                    );
+                    acquireLockResponse.toXContent(builder, ToXContent.EMPTY_PARAMS);
 
-                    // Prepare response fields
-                    long seqNo = lockModelResponseHolder.getSeqNo();
-                    long primaryTerm = lockModelResponseHolder.getPrimaryTerm();
-                    Instant lockTime = lockModelResponseHolder.getLockTime();
-                    boolean released = lockModelResponseHolder.isReleased();
-
-                    builder.field(LOCK_ID, LockModel.generateLockId(jobIndexName, jobId));
-                    builder.field(JOB_ID, jobId);
-                    builder.field(JOB_INDEX_NAME, jobIndexName);
-                    builder.field(LOCK_TIME, lockTime);
-                    builder.field(LOCK_DURATION, lockDurationSeconds);
-                    builder.field(RELEASED, released);
-                    builder.field(SEQUENCE_NUMBER, seqNo);
-                    builder.field(PRIMARY_TERM, primaryTerm);
                 } else {
                     restStatus = RestStatus.INTERNAL_SERVER_ERROR;
                 }
-                builder.endObject();
                 bytesRestResponse = new BytesRestResponse(restStatus, builder);
                 channel.sendResponse(bytesRestResponse);
             }
