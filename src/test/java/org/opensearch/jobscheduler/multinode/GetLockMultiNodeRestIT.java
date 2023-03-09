@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableMap;
 
 import static org.junit.Assert.assertEquals;
 
+import java.time.Instant;
 import java.util.Map;
 
 import org.junit.Before;
@@ -66,7 +67,17 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
     }
 
     private String validateResponseAndGetLockId(Map<String, Object> responseMap) {
+
+        // Validate response map fields
         assertEquals("success", responseMap.get("response"));
+        assertNotNull((String) responseMap.get(LockModel.LOCK_ID));
+        assertNotNull((String) responseMap.get(LockModel.JOB_ID));
+        assertNotNull((String) responseMap.get(LockModel.JOB_INDEX_NAME));
+        assertNotNull(Instant.ofEpochSecond((long) responseMap.get(LockModel.LOCK_TIME)));
+        assertNotNull((boolean) responseMap.get(LockModel.RELEASED));
+        assertNotNull((long) responseMap.get(LockModel.SEQUENCE_NUMBER));
+        assertNotNull((long) responseMap.get(LockModel.PRIMARY_TERM));
+
         return (String) responseMap.get(LockModel.LOCK_ID);
     }
 }
