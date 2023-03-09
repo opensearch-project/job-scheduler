@@ -41,6 +41,7 @@ import static org.opensearch.rest.RestRequest.Method.GET;
 import static org.opensearch.jobscheduler.spi.LockModel.GET_LOCK_ACTION;
 import static org.opensearch.jobscheduler.spi.LockModel.SEQUENCE_NUMBER;
 import static org.opensearch.jobscheduler.spi.LockModel.PRIMARY_TERM;
+import static org.opensearch.jobscheduler.spi.LockModel.LOCK_ID;
 import static org.opensearch.jobscheduler.spi.LockModel.JOB_INDEX_NAME;
 import static org.opensearch.jobscheduler.spi.LockModel.JOB_ID;
 import static org.opensearch.jobscheduler.spi.LockModel.LOCK_TIME;
@@ -131,6 +132,7 @@ public class RestGetLockAction extends BaseRestHandler {
                     Instant lockTime = lockModelResponseHolder.getLockTime();
                     boolean released = lockModelResponseHolder.isReleased();
 
+                    builder.field(LOCK_ID, LockModel.generateLockId(jobIndexName, jobId));
                     builder.field(JOB_ID, jobId);
                     builder.field(JOB_INDEX_NAME, jobIndexName);
                     builder.field(LOCK_TIME, lockTime);
