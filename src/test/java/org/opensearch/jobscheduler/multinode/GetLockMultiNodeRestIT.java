@@ -73,7 +73,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
         assertNotNull((String) responseMap.get(LockModel.LOCK_ID));
         assertNotNull((String) responseMap.get(LockModel.JOB_ID));
         assertNotNull((String) responseMap.get(LockModel.JOB_INDEX_NAME));
-        assertNotNull(Instant.ofEpochSecond((long) responseMap.get(LockModel.LOCK_TIME)));
+        assertNotNull(Instant.ofEpochSecond(Long.parseLong((String) responseMap.get(LockModel.LOCK_TIME))));
         assertNotNull((boolean) responseMap.get(LockModel.RELEASED));
         assertNotNull((long) responseMap.get(LockModel.SEQUENCE_NUMBER));
         assertNotNull((long) responseMap.get(LockModel.PRIMARY_TERM));
