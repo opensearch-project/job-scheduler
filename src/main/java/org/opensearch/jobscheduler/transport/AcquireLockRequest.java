@@ -14,13 +14,15 @@ import org.opensearch.action.ActionRequest;
 import org.opensearch.action.ActionRequestValidationException;
 import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.io.stream.StreamOutput;
+import org.opensearch.core.xcontent.ToXContentObject;
+import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentParserUtils;
 
 /**
  * Request from extensions to acquire a lock for scheduled job execution
  */
-public class AcquireLockRequest extends ActionRequest {
+public class AcquireLockRequest extends ActionRequest implements ToXContentObject {
 
     /**
      * the id of the job
@@ -120,6 +122,16 @@ public class AcquireLockRequest extends ActionRequest {
             }
         }
         return new AcquireLockRequest(jobId, jobIndexName, lockDurationSeconds);
+    }
+
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.startObject();
+        builder.field(JOB_ID, jobId);
+        builder.field(JOB_INDEX_NAME, jobIndexName);
+        builder.field(LOCK_DURATION_SECONDS, lockDurationSeconds);
+        builder.endObject();
+        return builder;
     }
 
 }
