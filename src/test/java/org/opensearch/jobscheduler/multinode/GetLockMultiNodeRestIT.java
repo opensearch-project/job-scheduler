@@ -10,15 +10,17 @@ package org.opensearch.jobscheduler.multinode;
 
 import com.google.common.collect.ImmutableMap;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.Map;
+import java.io.IOException;
 
 import org.junit.Before;
 import org.opensearch.client.Response;
+import org.opensearch.common.xcontent.LoggingDeprecationHandler;
+import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.core.xcontent.NamedXContentRegistry;
+import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.jobscheduler.ODFERestTestCase;
 import org.opensearch.jobscheduler.TestHelpers;
-import org.opensearch.jobscheduler.spi.LockModel;
+import org.opensearch.jobscheduler.transport.AcquireLockResponse;
 import org.opensearch.test.OpenSearchIntegTestCase;
 
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
@@ -46,7 +48,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
     public void testGetLockRestAPI() throws Exception {
 
-        String initialLockId = validateResponseAndGetLockId(entityAsMap(this.initialGetLockResponse));
+        String initialLockId = validateResponseAndGetLockId(initialGetLockResponse);
         assertEquals(TestHelpers.generateExpectedLockId(initialJobIndexName, initialJobId), initialLockId);
 
         // Submit 10 requests to generate new lock models for different job indexes
@@ -60,13 +62,25 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
                 null
             );
 
-            String lockId = validateResponseAndGetLockId(entityAsMap(getLockResponse));
+            String lockId = validateResponseAndGetLockId(getLockResponse);
+
             assertEquals(TestHelpers.generateExpectedLockId(String.valueOf(i), String.valueOf(i)), lockId);
         }
     }
 
-    private String validateResponseAndGetLockId(Map<String, Object> responseMap) {
-        assertEquals("success", responseMap.get("response"));
-        return (String) responseMap.get(LockModel.LOCK_ID);
+    private String validateResponseAndGetLockId(Response response) throws IOException {
+
+        XContentParser parser = XContentType.JSON.xContent()
+            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getEntity().getContent());
+
+        AcquireLockResponse acquireLockResponse = AcquireLockResponse.parse(parser);
+
+        // Validate response map fields
+        assertNotNull(acquireLockResponse.getLockId());
+        assertNotNull(acquireLockResponse.getSeqNo());
+        assertNotNull(acquireLockResponse.getPrimaryTerm());
+        assertNotNull(acquireLockResponse.getLock());
+
+        return acquireLockResponse.getLockId();
     }
 }
