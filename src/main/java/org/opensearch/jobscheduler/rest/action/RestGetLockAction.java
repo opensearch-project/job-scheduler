@@ -16,7 +16,7 @@ import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-import org.opensearch.jobscheduler.model.AcquireLockResponse;
+import org.opensearch.jobscheduler.transport.AcquireLockResponse;
 import org.opensearch.jobscheduler.transport.AcquireLockRequest;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.jobscheduler.spi.LockModel;
