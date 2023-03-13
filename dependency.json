@@ -1,0 +1,13 @@
+{
+    "substitute": [
+      "OpenSearch"
+    ],
+    "skip": [
+      "BrazilPath",
+      "AWSElasticsearchBuildScripts",
+      "AWSElasticsearchBuildConfig",
+      "JDK11",
+      "BrazilGradle",
+      "JqPackage"
+    ]
+}
