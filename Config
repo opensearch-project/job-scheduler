@@ -19,6 +19,13 @@ package.Opendistro-job-scheduler = {
             AWSElasticsearchBuildScripts = 4.0;
             BrazilPath = 1.1;
             JDK11=1.0;
+
+            # Add these 2 for our brazil gradle build system
+            BrazilGradle = 7.x;
+            JqPackage = 1.x;
+
+            # This is actual package that needs to be substituted during build
+            OpenSearch = 2.6.0;
         };
     };
 

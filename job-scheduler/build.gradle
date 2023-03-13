@@ -10,6 +10,9 @@ buildscript {
         opensearch_version = System.getProperty("opensearch.version", "2.5.0-SNAPSHOT")
         isSnapshot = "true" == System.getProperty("build.snapshot", "true")
         buildVersionQualifier = System.getProperty("build.version_qualifier", "")
+        if(!isSnapshot){
+          opensearch_version = opensearch_version.replace("-SNAPSHOT","") 
+        }
     }
 
     repositories {
@@ -315,4 +318,47 @@ task updateVersion {
         // Include the required files that needs to be updated with new Version
         ant.replaceregexp(file:'build.gradle', match: '"opensearch.version", "\\d.*"', replace: '"opensearch.version", "' + newVersion.tokenize('-')[0] + '-SNAPSHOT"', flags:'g', byline:true)
     }
+}
+
+// Create gradle cache by resolving all the project dependencies, used by brazil-gradle
+  		  
+void resolveConfiguration(configuration) {
+  	if (configuration.canBeResolved && isResolveableConfiguration(configuration)) {
+  		configuration.resolve()
+  	}
+}
+  		  
+boolean isResolveableConfiguration(configuration) {
+  	def nonResolveableConfigurations = ['loggerUsagePlugin']
+  	def dependency_list = configuration.allDependencies
+  	for(dep in dependency_list){
+  		if("${dep.group}:${dep.name}" == "org.opensearch.distribution.integ-test-zip:opensearch"){
+  		    println("Skipping configuration: ${configuration.getName()} because it contains dependency ${dep.group}:${dep.name}:${dep.version}")
+  		    return false
+  		}
+  	}
+  	if (nonResolveableConfigurations.contains(configuration.getName())) {
+  		return false
+  	}
+  	return true
+}
+  		  
+allprojects {
+  	tasks.register('resolveAllDependencies') {
+  		doLast {
+  		    project.rootProject.allprojects.each { subProject ->
+  		       subProject.configurations.each { configuration ->
+  		           resolveConfiguration(configuration)
+  		       }
+  		    }
+  	    }
+    }
+}
+  		  
+// If you use `aws-os-brazil-gradle-plugin-general`
+task release(type: Copy, group: 'build') {
+  	dependsOn assemble
+  	from(zipTree(bundlePlugin.getArchiveFile()))
+  	into "../build/plugins/opendistro-job-scheduler"
+  	includeEmptyDirs = false
 }

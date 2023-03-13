@@ -3,6 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+pluginManagement {
+  	repositories{
+  		mavenLocal()
+  		mavenCentral()
+  		google()
+  		maven{
+  		    url "https://plugins.gradle.org/m2/"
+  		}
+  		maven {
+  		    name = 'Snapshots'
+  		    url = 'https://aws.oss.sonatype.org/content/repositories/snapshots'
+  		    credentials {
+  		        username "$System.env.SONATYPE_USERNAME"
+  		        password "$System.env.SONATYPE_PASSWORD"
+  		    }
+  		}
+  		gradlePluginPortal()
+  	}
+}
+
 rootProject.name = 'opensearch-job-scheduler'
 
 include "spi"
