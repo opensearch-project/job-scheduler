@@ -12,7 +12,7 @@ package.Opendistro-job-scheduler = {
         network-access = blocked;
     };
 
-    build-system = aws-os-build-job-scheduler-plugin;
+    build-system = aws-os-brazil-gradle-plugin-general;
     build-tools = {
         opensearch_2.6.0 = {
             AWSElasticsearchBuildConfig = opensearch_2.6.0;
