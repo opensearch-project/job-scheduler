@@ -20,7 +20,6 @@
  com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.14.1
  com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.14.1
  com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.1
- com.fasterxml.jackson:jackson-bom:2.14.1
  com.github.spotbugs:spotbugs-annotations:4.0.2
  com.googlecode.concurrent-trees:concurrent-trees:2.6.1
  com.google.code.findbugs:jsr305:3.0.2
@@ -146,10 +145,10 @@
  org.eclipse.platform:org.eclipse.text:3.12.0
  org.hamcrest:hamcrest:2.1
  org.hdrhistogram:HdrHistogram:2.1.12
- org.jacoco:org.jacoco.agent:0.8.8
- org.jacoco:org.jacoco.ant:0.8.8
- org.jacoco:org.jacoco.core:0.8.8
- org.jacoco:org.jacoco.report:0.8.8
+ org.jacoco:org.jacoco.agent:0.8.7
+ org.jacoco:org.jacoco.ant:0.8.7
+ org.jacoco:org.jacoco.core:0.8.7
+ org.jacoco:org.jacoco.report:0.8.7
  org.jdom:jdom2:2.0.6
  org.jdom:jdom2:2.0.6.1
  org.jetbrains:annotations:13.0
@@ -162,22 +161,26 @@
  org.locationtech.spatial4j:spatial4j:0.7
  org.mockito:mockito-core:4.7.0
  org.objenesis:objenesis:3.2
- org.opensearch.client:opensearch-rest-client:2.5.0-SNAPSHOT
- org.opensearch.client:opensearch-rest-client-sniffer:2.5.0-SNAPSHOT
- org.opensearch.distribution.integ-test-zip:opensearch:2.5.0-SNAPSHOT
- org.opensearch.gradle:build-tools:2.5.0-SNAPSHOT
- org.opensearch:opensearch:2.5.0-SNAPSHOT
- org.opensearch:opensearch-cli:2.5.0-SNAPSHOT
- org.opensearch:opensearch-core:2.5.0-SNAPSHOT
- org.opensearch:opensearch-geo:2.5.0-SNAPSHOT
- org.opensearch:opensearch-nio:2.5.0-SNAPSHOT
- org.opensearch:opensearch-secure-sm:2.5.0-SNAPSHOT
- org.opensearch:opensearch-x-content:2.5.0-SNAPSHOT
- org.opensearch.test:framework:2.5.0-SNAPSHOT
- org.opensearch.test:logger-usage:2.5.0-SNAPSHOT
+ org.opensearch.client:opensearch-rest-client:2.5.0
+ org.opensearch.client:opensearch-rest-client-sniffer:2.5.0
+ org.opensearch.distribution.integ-test-zip:opensearch:2.5.0
+ org.opensearch.gradle:build-tools:2.5.0
+ org.opensearch:opensearch:2.5.0
+ org.opensearch:opensearch-cli:2.5.0
+ org.opensearch:opensearch-core:2.5.0
+ org.opensearch:opensearch-geo:2.5.0
+ org.opensearch:opensearch-nio:2.5.0
+ org.opensearch:opensearch-secure-sm:2.5.0
+ org.opensearch:opensearch-x-content:2.5.0
+ org.opensearch.test:framework:2.5.0
+ org.opensearch.test:logger-usage:2.5.0
+ org.ow2.asm:asm:9.1
  org.ow2.asm:asm:9.2
+ org.ow2.asm:asm-analysis:9.1
  org.ow2.asm:asm-analysis:9.2
+ org.ow2.asm:asm-commons:9.1
  org.ow2.asm:asm-commons:9.2
+ org.ow2.asm:asm-tree:9.1
  org.ow2.asm:asm-tree:9.2
  org.redline-rpm:redline:1.2.9
  org.slf4j:slf4j-api:1.7.30
