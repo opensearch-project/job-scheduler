@@ -15,11 +15,12 @@
  com.ethlo.time:itu:1.7.0
  com.fasterxml.jackson.core:jackson-annotations:2.14.1
  com.fasterxml.jackson.core:jackson-core:2.14.1
+ com.fasterxml.jackson.core:jackson-core:2.14.2
  com.fasterxml.jackson.core:jackson-databind:2.13.3
  com.fasterxml.jackson.core:jackson-databind:2.14.1
- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.14.1
- com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.14.1
- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.1
+ com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.14.2
+ com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.14.2
+ com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.2
  com.github.spotbugs:spotbugs-annotations:4.0.2
  com.googlecode.concurrent-trees:concurrent-trees:2.6.1
  com.google.code.findbugs:jsr305:3.0.2
@@ -40,7 +41,6 @@
  com.jcraft:jzlib:1.1.2
  commons-cli:commons-cli:1.5.0
  commons-codec:commons-codec:1.15
- commons-codec:commons-codec:1.9
  commons-io:commons-io:2.11.0
  commons-io:commons-io:2.6
  commons-io:commons-io:2.7
@@ -49,10 +49,9 @@
  com.netflix.nebula:gradle-extra-configurations-plugin:8.0.0
  com.netflix.nebula:gradle-info-plugin:12.0.0
  com.netflix.nebula:gradle-ospackage-plugin:8.3.0
- com.netflix.nebula:nebula-core:latest.release
  com.netflix.nebula:nebula-gradle-interop:1.0.11
  com.netflix.nebula:nebula-gradle-interop:2.0.0
- com.netflix.nebula:nebula-publishing-plugin:4.6.0
+ com.netflix.nebula:nebula-publishing-plugin:19.2.0
  com.networknt:json-schema-validator:1.0.73
  com.perforce:p4java:2015.2.1365273
  com.tdunning:t-digest:3.2
@@ -61,10 +60,10 @@
  de.regnis.q.sequence:sequence-library:1.0.3
  de.thetaphi:forbiddenapis:3.4
  gradle.plugin.com.github.johnrengelman:shadow:7.1.2
- joda-time:joda-time:2.10.12
+ joda-time:joda-time:2.12.2
  junit:junit:4.13.2
  nebula.ospackage:nebula.ospackage.gradle.plugin:8.3.0
- net.bytebuddy:byte-buddy:1.12.18
+ net.bytebuddy:byte-buddy:1.12.22
  net.java.dev.jna:jna:3.4.0
  net.java.dev.jna:jna:4.1.0
  net.java.dev.jna:jna:5.11.0
@@ -87,35 +86,31 @@
  org.apache.commons:commons-compress:1.22
  org.apache.commons:commons-compress:1.8
  org.apache.commons:commons-lang3:3.12.0
- org.apache.commons:commons-lang3:3.4
  org.apache.commons:commons-lang3:3.7
  org.apache.commons:commons-lang3:3.9
  org.apache.httpcomponents:httpasyncclient:4.1.5
  org.apache.httpcomponents:httpclient:4.5.13
- org.apache.httpcomponents:httpclient:4.5.2
- org.apache.httpcomponents:httpclient-cache:4.5.2
  org.apache.httpcomponents:httpcore:4.4.15
- org.apache.httpcomponents:httpcore:4.4.4
  org.apache.httpcomponents:httpcore-nio:4.4.15
  org.apache.logging.log4j:log4j-api:2.17.1
  org.apache.logging.log4j:log4j-core:2.17.1
  org.apache.logging.log4j:log4j-jul:2.17.1
- org.apache.lucene:lucene-analysis-common:9.4.2
- org.apache.lucene:lucene-backward-codecs:9.4.2
- org.apache.lucene:lucene-codecs:9.4.2
- org.apache.lucene:lucene-core:9.4.2
- org.apache.lucene:lucene-grouping:9.4.2
- org.apache.lucene:lucene-highlighter:9.4.2
- org.apache.lucene:lucene-join:9.4.2
- org.apache.lucene:lucene-memory:9.4.2
- org.apache.lucene:lucene-misc:9.4.2
- org.apache.lucene:lucene-queries:9.4.2
- org.apache.lucene:lucene-queryparser:9.4.2
- org.apache.lucene:lucene-sandbox:9.4.2
- org.apache.lucene:lucene-spatial3d:9.4.2
- org.apache.lucene:lucene-spatial-extras:9.4.2
- org.apache.lucene:lucene-suggest:9.4.2
- org.apache.lucene:lucene-test-framework:9.4.2
+ org.apache.lucene:lucene-analysis-common:9.5.0
+ org.apache.lucene:lucene-backward-codecs:9.5.0
+ org.apache.lucene:lucene-codecs:9.5.0
+ org.apache.lucene:lucene-core:9.5.0
+ org.apache.lucene:lucene-grouping:9.5.0
+ org.apache.lucene:lucene-highlighter:9.5.0
+ org.apache.lucene:lucene-join:9.5.0
+ org.apache.lucene:lucene-memory:9.5.0
+ org.apache.lucene:lucene-misc:9.5.0
+ org.apache.lucene:lucene-queries:9.5.0
+ org.apache.lucene:lucene-queryparser:9.5.0
+ org.apache.lucene:lucene-sandbox:9.5.0
+ org.apache.lucene:lucene-spatial3d:9.5.0
+ org.apache.lucene:lucene-spatial-extras:9.5.0
+ org.apache.lucene:lucene-suggest:9.5.0
+ org.apache.lucene:lucene-test-framework:9.5.0
  org.apache.maven:maven-model:3.6.2
  org.apache.rat:apache-rat:0.15
  org.apache.rat:apache-rat-api:0.15
@@ -159,21 +154,22 @@
  org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.10
  org.locationtech.jts:jts-core:1.15.0
  org.locationtech.spatial4j:spatial4j:0.7
- org.mockito:mockito-core:4.7.0
+ org.mockito:mockito-core:5.1.0
  org.objenesis:objenesis:3.2
- org.opensearch.client:opensearch-rest-client:2.5.0
- org.opensearch.client:opensearch-rest-client-sniffer:2.5.0
- org.opensearch.distribution.integ-test-zip:opensearch:2.5.0
- org.opensearch.gradle:build-tools:2.5.0
- org.opensearch:opensearch:2.5.0
- org.opensearch:opensearch-cli:2.5.0
- org.opensearch:opensearch-core:2.5.0
- org.opensearch:opensearch-geo:2.5.0
- org.opensearch:opensearch-nio:2.5.0
- org.opensearch:opensearch-secure-sm:2.5.0
- org.opensearch:opensearch-x-content:2.5.0
- org.opensearch.test:framework:2.5.0
- org.opensearch.test:logger-usage:2.5.0
+ org.opensearch.client:opensearch-rest-client:2.6.0
+ org.opensearch.client:opensearch-rest-client-sniffer:2.6.0
+ org.opensearch.distribution.integ-test-zip:opensearch:2.6.0
+ org.opensearch.gradle:build-tools:2.6.0
+ org.opensearch:opensearch:2.6.0
+ org.opensearch:opensearch-cli:2.6.0
+ org.opensearch:opensearch-common:2.6.0
+ org.opensearch:opensearch-core:2.6.0
+ org.opensearch:opensearch-geo:2.6.0
+ org.opensearch:opensearch-nio:2.6.0
+ org.opensearch:opensearch-secure-sm:2.6.0
+ org.opensearch:opensearch-x-content:2.6.0
+ org.opensearch.test:framework:2.6.0
+ org.opensearch.test:logger-usage:2.6.0
  org.ow2.asm:asm:9.1
  org.ow2.asm:asm:9.2
  org.ow2.asm:asm-analysis:9.1
@@ -194,3 +190,4 @@
  org.vafer:jdependency:2.7.0
  org.yaml:snakeyaml:1.30
  org.yaml:snakeyaml:1.32
+ org.yaml:snakeyaml:1.33
