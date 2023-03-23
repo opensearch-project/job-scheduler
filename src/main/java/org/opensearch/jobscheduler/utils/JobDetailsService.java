@@ -72,7 +72,7 @@ public class JobDetailsService implements IndexingOperationListener {
     public static final String JOB_DETAILS_INDEX_NAME = ".opensearch-job-scheduler-job-details";
     private static final String PLUGINS_JOB_DETAILS_MAPPING_FILE = "/mappings/opensearch_job_scheduler_job_details.json";
 
-    public static Long TIME_OUT_FOR_REQUEST = 10L;
+    public static Long TIME_OUT_FOR_REQUEST = 15L;
     private final Client client;
     private final ClusterService clusterService;
     private Set<String> indicesToListen;
