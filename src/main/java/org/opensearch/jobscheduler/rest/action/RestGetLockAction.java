@@ -76,15 +76,12 @@ public class RestGetLockAction extends BaseRestHandler {
 
         // Process acquire lock request
         CompletableFuture<LockModel> inProgressFuture = new CompletableFuture<>();
-        lockService.acquireLockWithId(
-            jobIndexName,
-            lockDurationSeconds,
-            jobId,
-            ActionListener.wrap(lockModel -> { inProgressFuture.complete(lockModel); }, exception -> {
-                logger.error("Could not acquire lock with ID : " + jobId, exception);
-                inProgressFuture.completeExceptionally(exception);
-            })
-        );
+        lockService.acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, ActionListener.wrap(lockModel -> {
+            inProgressFuture.complete(lockModel);
+        }, exception -> {
+            logger.error("Could not acquire lock with ID : " + jobId, exception);
+            inProgressFuture.completeExceptionally(exception);
+        }));
 
         try {
             inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
