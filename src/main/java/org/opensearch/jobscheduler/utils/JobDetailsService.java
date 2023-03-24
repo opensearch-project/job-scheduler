@@ -31,9 +31,6 @@ import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.extensions.action.ExtensionProxyAction;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
-import org.opensearch.common.bytes.BytesReference;
-import org.opensearch.common.io.stream.BytesStreamOutput;
-import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.index.engine.DocumentMissingException;
@@ -501,24 +498,6 @@ public class JobDetailsService implements IndexingOperationListener {
             logger.error("IOException occurred updating job details for documentId " + documentId, e);
             listener.onResponse(null);
         }
-    }
-
-    /**
-     * Takes in an object of type T that extends {@link Writeable} and converts the writeable fields to a byte array
-     *
-     * @param <T> a class that extends writeable
-     * @param actionParams the action parameters to be serialized
-     * @throws IOException if serialization fails
-     * @return the byte array of the parameters
-     */
-    public static <T extends Writeable> byte[] convertParamsToBytes(T actionParams) throws IOException {
-        // Write all to output stream
-        BytesStreamOutput out = new BytesStreamOutput();
-        actionParams.writeTo(out);
-        out.flush();
-
-        // convert bytes stream to byte array
-        return BytesReference.toBytes(out.bytes());
     }
 
     private String jobDetailsMapping() {

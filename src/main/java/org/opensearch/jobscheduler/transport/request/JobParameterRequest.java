@@ -83,7 +83,7 @@ public class JobParameterRequest implements Writeable {
      * @throws IOException when message de-serialization fails.
      */
     public JobParameterRequest(byte[] requestParams) throws IOException {
-        this(StreamInput.wrap(requestParams));
+        this(StreamInput.wrap(ExtensionJobActionRequest.trimRequestBytes(requestParams)));
     }
 
     @Override
