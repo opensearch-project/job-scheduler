@@ -11,7 +11,6 @@ package org.opensearch.jobscheduler.transport.request;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import org.opensearch.common.bytes.BytesReference;
 import org.opensearch.common.io.stream.BytesStreamOutput;
@@ -35,33 +34,6 @@ public class ExtensionJobActionRequest<T extends Writeable> extends ExtensionAct
      */
     public ExtensionJobActionRequest(String extensionActionName, T actionParams) throws IOException {
         super(extensionActionName, convertParamsToBytes(actionParams));
-    }
-
-    /**
-     * Finds the index of the specified byte value within the given byte array
-     *
-     * @param bytes the byte array to process
-     * @param value the byte to identify index of
-     * @return the index of the byte value
-     */
-    private static int indexOf(byte[] bytes, byte value) {
-        for (int offset = 0; offset < bytes.length; ++offset) {
-            if (bytes[offset] == value) {
-                return offset;
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Trims off the fully qualified request class name bytes and null byte from the ExtensionActionRequest requestBytes
-     *
-     * @param requestBytes the request bytes of an ExtensionActionRequest
-     * @return the trimmed array of bytes
-     */
-    public static byte[] trimRequestBytes(byte[] requestBytes) {
-        int nullPos = indexOf(requestBytes, ExtensionJobActionRequest.UNIT_SEPARATOR);
-        return Arrays.copyOfRange(requestBytes, nullPos + 1, requestBytes.length);
     }
 
     /**
