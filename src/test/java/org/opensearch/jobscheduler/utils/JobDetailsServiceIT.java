@@ -11,6 +11,7 @@ package org.opensearch.jobscheduler.utils;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -92,6 +93,33 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             2L,
             2.0
         );
+    }
+
+    /**
+     * Finds the index of the specified byte value within the given byte array
+     *
+     * @param bytes the byte array to process
+     * @param value the byte to identify index of
+     * @return the index of the byte value
+     */
+    private int indexOf(byte[] bytes, byte value) {
+        for (int offset = 0; offset < bytes.length; ++offset) {
+            if (bytes[offset] == value) {
+                return offset;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Trims off the fully qualified request class name bytes and null byte from the ExtensionActionRequest requestBytes
+     *
+     * @param requestBytes the request bytes of an ExtensionActionRequest
+     * @return the trimmed array of bytes
+     */
+    private byte[] trimRequestBytes(byte[] requestBytes) {
+        int pos = indexOf(requestBytes, ExtensionJobActionRequest.UNIT_SEPARATOR);
+        return Arrays.copyOfRange(requestBytes, pos + 1, requestBytes.length);
     }
 
     public void testGetJobDetailsSanity() throws ExecutionException, InterruptedException, TimeoutException {
@@ -308,8 +336,11 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
                 actionRequest = new ExtensionActionRequest(in);
 
+                // Trim request class bytes from requestBytes
+                byte[] trimmedRequestBytes = trimRequestBytes(actionRequest.getRequestBytes());
+
                 // Test deserialization of action request params
-                JobRunnerRequest deserializedRequest = new JobRunnerRequest(actionRequest.getRequestBytes());
+                JobRunnerRequest deserializedRequest = new JobRunnerRequest(trimmedRequestBytes);
 
                 // Test deserialization of extension job parameter document Id
                 String deserializedDocumentId = deserializedRequest.getJobParameterDocumentId();
@@ -343,8 +374,11 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             try (BytesStreamInput in = new BytesStreamInput(BytesReference.toBytes(out.bytes()))) {
                 actionRequest = new ExtensionActionRequest(in);
 
+                // Trim request class bytes from requestBytes
+                byte[] trimmedRequestBytes = trimRequestBytes(actionRequest.getRequestBytes());
+
                 // Test deserialization of action request params
-                JobParameterRequest deserializedRequest = new JobParameterRequest(actionRequest.getRequestBytes());
+                JobParameterRequest deserializedRequest = new JobParameterRequest(trimmedRequestBytes);
                 assertEquals(jobParamRequest.getId(), deserializedRequest.getId());
                 assertEquals(jobParamRequest.getJobSource(), deserializedRequest.getJobSource());
 

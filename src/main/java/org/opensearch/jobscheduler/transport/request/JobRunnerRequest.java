@@ -68,7 +68,7 @@ public class JobRunnerRequest implements Writeable {
      * @throws IOException when message de-serialization fails.
      */
     public JobRunnerRequest(byte[] requestParams) throws IOException {
-        this(StreamInput.wrap(ExtensionJobActionRequest.trimRequestBytes(requestParams)));
+        this(StreamInput.wrap(requestParams));
     }
 
     @Override
