@@ -37,7 +37,7 @@ public class ExtensionJobActionRequest<T extends Writeable> extends ExtensionAct
     }
 
     /**
-     * Converts an object of type T that extends {@link Writeable} into a byte array and prepends the fully qualified class name bytes
+     * Converts an object of type T that extends {@link Writeable} into a byte array and prepends the fully qualified request class name bytes
      *
      * @param <T> a class that extends writeable
      * @param actionParams the action parameters to be serialized
