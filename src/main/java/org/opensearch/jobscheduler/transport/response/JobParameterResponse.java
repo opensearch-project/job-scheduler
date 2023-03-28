@@ -10,15 +10,15 @@ package org.opensearch.jobscheduler.transport.response;
 
 import java.io.IOException;
 
+import org.opensearch.action.ActionResponse;
 import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.io.stream.StreamOutput;
-import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 
 /**
  * Response from extensions to parse a ScheduledJobParameter
  */
-public class JobParameterResponse implements Writeable {
+public class JobParameterResponse extends ActionResponse {
 
     /**
      * jobParameter is job index entry intended to be used to validate prior to job execution

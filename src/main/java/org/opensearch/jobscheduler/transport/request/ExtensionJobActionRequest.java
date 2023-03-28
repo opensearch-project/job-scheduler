@@ -53,7 +53,7 @@ public class ExtensionJobActionRequest<T extends Writeable> extends ExtensionAct
         byte[] requestBytes = BytesReference.toBytes(out.bytes());
 
         // Convert fully qualifed class name to byte array
-        byte[] requestClassBytes = ExtensionActionRequest.class.getName().getBytes(StandardCharsets.UTF_8);
+        byte[] requestClassBytes = actionParams.getClass().getName().getBytes(StandardCharsets.UTF_8);
 
         // Generate ExtensionActionRequest responseByte array
         byte[] proxyRequestBytes = ByteBuffer.allocate(requestClassBytes.length + 1 + requestBytes.length)
