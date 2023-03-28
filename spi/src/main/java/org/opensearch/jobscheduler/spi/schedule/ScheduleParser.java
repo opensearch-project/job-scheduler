@@ -8,7 +8,7 @@
  */
 package org.opensearch.jobscheduler.spi.schedule;
 
-import org.opensearch.common.xcontent.XContentParser;
+import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentParserUtils;
 
 import java.io.IOException;
