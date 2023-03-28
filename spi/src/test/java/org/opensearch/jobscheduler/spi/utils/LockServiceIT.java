@@ -13,7 +13,7 @@ import org.junit.Ignore;
 import org.mockito.Mockito;
 import org.opensearch.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.common.xcontent.XContentBuilder;
+import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.LockModel;

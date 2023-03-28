@@ -10,7 +10,7 @@ package org.opensearch.jobscheduler.spi.schedule;
 
 import org.opensearch.common.collect.Tuple;
 import org.opensearch.common.io.stream.Writeable;
-import org.opensearch.common.xcontent.ToXContentObject;
+import org.opensearch.core.xcontent.ToXContentObject;
 
 import java.time.Duration;
 import java.time.Instant;
