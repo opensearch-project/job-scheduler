@@ -9,7 +9,7 @@
 package org.opensearch.jobscheduler.spi;
 
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
-import org.opensearch.common.xcontent.ToXContentObject;
+import org.opensearch.core.xcontent.ToXContentObject;
 
 import java.time.Instant;
 
