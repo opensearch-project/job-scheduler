@@ -10,16 +10,17 @@ package org.opensearch.jobscheduler.transport.request;
 
 import java.io.IOException;
 
+import org.opensearch.action.ActionRequest;
+import org.opensearch.action.ActionRequestValidationException;
 import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.io.stream.StreamOutput;
-import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 
 /**
  * Request to extensions to invoke their ScheduledJobRunner implementation
  *
  */
-public class JobRunnerRequest implements Writeable {
+public class JobRunnerRequest extends ActionRequest {
 
     /**
      * accessToken is the placeholder for the user Identity/access token to be used to perform validation prior to invoking the extension action
@@ -78,6 +79,11 @@ public class JobRunnerRequest implements Writeable {
         this.jobExecutionContext.writeTo(out);
     }
 
+    @Override
+    public ActionRequestValidationException validate() {
+        return null;
+    }
+
     public String getAccessToken() {
         return this.accessToken;
     }
@@ -89,4 +95,5 @@ public class JobRunnerRequest implements Writeable {
     public JobExecutionContext getJobExecutionContext() {
         return this.jobExecutionContext;
     }
+
 }
