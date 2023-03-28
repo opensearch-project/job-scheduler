@@ -27,6 +27,7 @@ import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.bytes.BytesReference;
 import org.opensearch.common.io.stream.BytesStreamInput;
 import org.opensearch.common.io.stream.BytesStreamOutput;
+import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.XContentParser;
@@ -40,7 +41,6 @@ import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.request.ExtensionJobActionRequest;
-import org.opensearch.jobscheduler.transport.response.ExtensionJobActionResponse;
 import org.opensearch.jobscheduler.transport.request.JobParameterRequest;
 import org.opensearch.jobscheduler.transport.response.JobParameterResponse;
 import org.opensearch.jobscheduler.transport.request.JobRunnerRequest;
@@ -120,6 +120,24 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
     private byte[] trimRequestBytes(byte[] requestBytes) {
         int pos = indexOf(requestBytes, ExtensionJobActionRequest.UNIT_SEPARATOR);
         return Arrays.copyOfRange(requestBytes, pos + 1, requestBytes.length);
+    }
+
+    /**
+     * Takes in an object of type T that extends {@link Writeable} and converts the writeable fields to a byte array
+     *
+     * @param <T> a class that extends writeable
+     * @param actionParams the action parameters to be serialized
+     * @throws IOException if serialization fails
+     * @return the byte array of the parameters
+     */
+    private static <T extends Writeable> byte[] convertParamsToBytes(T actionParams) throws IOException {
+        // Write all to output stream
+        BytesStreamOutput out = new BytesStreamOutput();
+        actionParams.writeTo(out);
+        out.flush();
+
+        // convert bytes stream to byte array
+        return BytesReference.toBytes(out.bytes());
     }
 
     public void testGetJobDetailsSanity() throws ExecutionException, InterruptedException, TimeoutException {
@@ -388,11 +406,11 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         }
     }
 
-    public void testJobRunnerExtensionJobActionResponse() throws IOException {
+    public void testJobRunnerExtensionActionResponse() throws IOException {
 
         // Create JobRunnerResponse
         JobRunnerResponse jobRunnerResponse = new JobRunnerResponse(true);
-        ExtensionActionResponse actionResponse = new ExtensionJobActionResponse<JobRunnerResponse>(jobRunnerResponse);
+        ExtensionActionResponse actionResponse = new ExtensionActionResponse(convertParamsToBytes(jobRunnerResponse));
 
         // Test ExtensionActionResponse deserialization
         try (BytesStreamOutput out = new BytesStreamOutput()) {
@@ -410,11 +428,11 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     }
 
-    public void testJobParameterExtensionJobActionResponse() throws IOException {
+    public void testJobParameterExtensionActionResponse() throws IOException {
 
         // Create JobParameterResponse
         JobParameterResponse jobParameterResponse = new JobParameterResponse(this.extensionJobParameter);
-        ExtensionActionResponse actionResponse = new ExtensionJobActionResponse<JobParameterResponse>(jobParameterResponse);
+        ExtensionActionResponse actionResponse = new ExtensionActionResponse(convertParamsToBytes(jobParameterResponse));
 
         // Test ExtensionActionReseponse deserialization
         try (BytesStreamOutput out = new BytesStreamOutput()) {
