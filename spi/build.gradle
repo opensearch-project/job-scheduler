@@ -66,7 +66,7 @@ configurations.all {
 shadowJar {
     relocate 'com.cronutils', 'org.opensearch.jobscheduler.repackage.com.cronutils'
     relocate 'org.slf4j', 'org.opensearch.jobscheduler.repackage.org.slf4j' // dependency of cron-utils
-    classifier = null
+    archiveClassifier = null
 }
 
 test {
