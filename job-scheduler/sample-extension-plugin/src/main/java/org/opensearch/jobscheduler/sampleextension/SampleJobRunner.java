@@ -123,10 +123,9 @@ public class SampleJobRunner implements ScheduledJobRunner {
 
                     lockService.release(
                         lock,
-                        ActionListener.wrap(
-                            released -> { log.info("Released lock for job {}", jobParameter.getName()); },
-                            exception -> { throw new IllegalStateException("Failed to release lock."); }
-                        )
+                        ActionListener.wrap(released -> { log.info("Released lock for job {}", jobParameter.getName()); }, exception -> {
+                            throw new IllegalStateException("Failed to release lock.");
+                        })
                     );
                 }, exception -> { throw new IllegalStateException("Failed to acquire lock."); }));
             }
