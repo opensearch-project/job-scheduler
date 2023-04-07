@@ -16,9 +16,9 @@ package.Opendistro-job-scheduler = {
     build-tools = {
         opensearch_2.7.0 = {
             AWSElasticsearchBuildConfig = opensearch_2.7.0;
-            AWSElasticsearchBuildScripts = 4.0;
+            AWSElasticsearchBuildScripts = 4.1;
             BrazilPath = 1.1;
-            JDK11=1.0;
+            JDK17=1.0;
             BrazilGradle = 7.x;
             JqPackage = 1.x;
             
