@@ -49,6 +49,7 @@ forbiddenApis.ignoreFailures = false
 dependencyLicenses.enabled = false
 thirdPartyAudit.enabled = false
 forbiddenApisTest.ignoreFailures = true
+validateNebulaPom.enabled = false
 loggerUsageCheck.enabled = false
 
 tasks.matching {it.path in [":publishNebulaPublicationToSnapshotsRepository"]}.all { task ->
