@@ -51,8 +51,8 @@ thirdPartyAudit.enabled = false
 forbiddenApisTest.ignoreFailures = true
 loggerUsageCheck.enabled = false
 
-tasks.matching {it.path in [":validateMavenPom", ":validateNebulaPom", ":validatePluginZipPom"]}.all { task ->
-    task.dependsOn ':generatePomFileForNebulaPublication', ':generatePomFileForPluginZipPublication', ':generatePomFileForMavenPublication'
+tasks.matching {it.path in [":publishNebulaPublicationToSnapshotsRepository"]}.all { task ->
+    task.dependsOn 'generatePomFileForPluginZipPublication'
 }
 
 opensearchplugin {
