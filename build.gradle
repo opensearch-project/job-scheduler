@@ -52,6 +52,10 @@ forbiddenApisTest.ignoreFailures = true
 validateNebulaPom.enabled = false
 loggerUsageCheck.enabled = false
 
+tasks.matching {it.path in [":publishNebulaPublicationToSnapshotsRepository"]}.all { task ->
+    task.dependsOn 'generatePomFileForPluginZipPublication'
+}
+
 opensearchplugin {
     name 'opensearch-job-scheduler'
     description 'OpenSearch Job Scheduler plugin'
