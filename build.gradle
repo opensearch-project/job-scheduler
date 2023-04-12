@@ -107,6 +107,7 @@ allprojects {
                     pom {
                         name = "opensearch-job-scheduler"
                         description = "OpenSearch Job Scheduler plugin"
+                        groupId = "org.opensearch.plugin"
                     }
                     pom.withXml { XmlProvider xml ->
                         Node node = xml.asNode()
