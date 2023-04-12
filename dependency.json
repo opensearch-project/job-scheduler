@@ -6,7 +6,7 @@
       "BrazilPath",
       "AWSElasticsearchBuildScripts",
       "AWSElasticsearchBuildConfig",
-      "JDK11",
+      "JDK17",
       "BrazilGradle",
       "JqPackage"
     ]
