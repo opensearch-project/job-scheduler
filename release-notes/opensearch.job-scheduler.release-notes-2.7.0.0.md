@@ -9,5 +9,5 @@ Compatible with OpenSearch 2.7.0
 * Adding groupId to pom section of build.gradle ([#363](https://github.com/opensearch-project/job-scheduler/pull/363))
 
 ### Maintenance
-* Update to Gradle 8.0.2
+* Update to Gradle 8.0.2 ([#348](https://github.com/opensearch-project/job-scheduler/pull/348))
 
