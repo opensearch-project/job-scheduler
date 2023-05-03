@@ -103,25 +103,25 @@ allprojects {
             }
             publications {
                 // add license information to generated poms
-                all {
-                    pom {
-                        name = "opensearch-job-scheduler"
-                        description = "OpenSearch Job Scheduler plugin"
-                        groupId = "org.opensearch.plugin"
-                    }
-                    pom.withXml { XmlProvider xml ->
-                        Node node = xml.asNode()
-                        node.appendNode('inceptionYear', '2021')
-
-                        Node license = node.appendNode('licenses').appendNode('license')
-                        license.appendNode('name', project.licenseName)
-                        license.appendNode('url', project.licenseUrl)
-
-                        Node developer = node.appendNode('developers').appendNode('developer')
-                        developer.appendNode('name', 'OpenSearch')
-                        developer.appendNode('url', 'https://github.com/opensearch-project/job-scheduler')
-                    }
-                }
+//               all {
+//                    pom {
+//                        name = "opensearch-job-scheduler"
+//                        description = "OpenSearch Job Scheduler plugin"
+//                        groupId = "org.opensearch.plugin"
+//                    }
+//                    pom.withXml { XmlProvider xml ->
+//                        Node node = xml.asNode()
+//                        node.appendNode('inceptionYear', '2021')
+//
+//                        Node license = node.appendNode('licenses').appendNode('license')
+//                        license.appendNode('name', project.licenseName)
+//                        license.appendNode('url', project.licenseUrl)
+//
+//                        Node developer = node.appendNode('developers').appendNode('developer')
+//                        developer.appendNode('name', 'OpenSearch')
+//                        developer.appendNode('url', 'https://github.com/opensearch-project/job-scheduler')
+//                    }
+//                }
             }
         }
     }
@@ -136,11 +136,31 @@ publishing {
                 groupId = "org.opensearch.plugin"
             }
         }
+        mavenJava(MavenPublication){ publication ->
+            pom {
+                name = "opensearch-job-scheduler"
+                description = "OpenSearch Job Scheduler plugin"
+                packaging = "jar"
+                groupId = "org.opensearch"
+            }
+            pom.withXml { XmlProvider xml ->
+                Node node = xml.asNode()
+                node.appendNode('inceptionYear', '2021')
+
+                Node license = node.appendNode('licenses').appendNode('license')
+                license.appendNode('name', project.licenseName)
+                license.appendNode('url', project.licenseUrl)
+
+                Node developer = node.appendNode('developers').appendNode('developer')
+                developer.appendNode('name', 'OpenSearch')
+                developer.appendNode('url', 'https://github.com/opensearch-project/job-scheduler')
+            }
+        }
     }
     repositories {
         maven {
             name = "Snapshots" //  optional target repository name
-            url = "https://aws.oss.sonatype.org/content/repositories/snapshots"
+            url = "https://aws.oss.sonatype.org/content/repositories/snapshots/snapshots"
             credentials {
                 username "$System.env.SONATYPE_USERNAME"
                 password "$System.env.SONATYPE_PASSWORD"
