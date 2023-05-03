@@ -52,7 +52,7 @@ forbiddenApisTest.ignoreFailures = true
 validateNebulaPom.enabled = false
 loggerUsageCheck.enabled = false
 
-tasks.matching {it.path in [":publishNebulaPublicationToSnapshotsRepository",":validatePluginJarPom",":validatePluginZipPom"]}.all { task ->
+tasks.matching {it.path in [":publishNebulaPublicationToSnapshotsRepository",":validatePluginJarPom",":validatePluginZipPom",":publishNebulaPublicationToMavenLocal"]}.all { task ->
     task.dependsOn 'generatePomFileForPluginZipPublication','generatePomFileForNebulaPublication','generatePomFileForPluginJarPublication'
 }
 
