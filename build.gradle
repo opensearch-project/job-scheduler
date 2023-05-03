@@ -57,7 +57,9 @@ tasks.matching {it.path in [
     ":publishPluginZipPublicationToSnapshotsRepository",
     ":publishNebulaPublicationToSnapshotsRepository",
     ":publishPluginJarPublicationToMavenLocal",
-    ":publishNebulaPublicationToMavenLocal"
+    ":publishNebulaPublicationToMavenLocal",
+    ":validatePluginJarPom",
+    ":validatePluginZipPom"
 ]}.all { task ->
     task.dependsOn 'generatePomFileForPluginZipPublication', 'generatePomFileForPluginJarPublication', 'generatePomFileForNebulaPublication'
 }
