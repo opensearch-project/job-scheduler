@@ -52,8 +52,14 @@ forbiddenApisTest.ignoreFailures = true
 validateNebulaPom.enabled = false
 loggerUsageCheck.enabled = false
 
-tasks.matching {it.path in [":publishNebulaPublicationToSnapshotsRepository"]}.all { task ->
-    task.dependsOn 'generatePomFileForPluginZipPublication'
+tasks.matching {it.path in [
+    ":publishPluginJarPublicationToSnapshotsRepository",
+    ":publishPluginZipPublicationToSnapshotsRepository",
+    ":publishNebulaPublicationToSnapshotsRepository",
+    ":publishPluginJarPublicationToMavenLocal",
+    ":publishNebulaPublicationToMavenLocal"
+]}.all { task ->
+    task.dependsOn 'generatePomFileForPluginZipPublication', 'generatePomFileForPluginJarPublication', 'generatePomFileForNebulaPublication'
 }
 
 opensearchplugin {
@@ -134,6 +140,13 @@ publishing {
                 name = "opensearch-job-scheduler"
                 description = "OpenSearch Job Scheduler plugin"
                 groupId = "org.opensearch.plugin"
+            }
+        }
+        pluginJar(MavenPublication) { publication ->
+            pom {
+                name = "opensearch-job-scheduler"
+                description = "OpenSearch Job Scheduler plugin"
+                groupId = "org.opensearch"
             }
         }
     }
