@@ -63,7 +63,7 @@ tasks.whenTaskAdded {task ->
 tasks.matching {it.path in [
         ":generatePomFileForPluginJarPublication"
 ]}.all { task ->
-    task.mustRunAfter 'publishNebulaPublicationToMavenLocal', 'publishNebulaPublicationToSnapshotsRepository'
+    task.mustRunAfter 'publishNebulaPublicationToMavenLocal', 'publishNebulaPublicationToSnapshotsRepository', 'publishNebulaPublicationToStagingRepository'
 }
 
 tasks.matching {it.path in [
@@ -76,7 +76,7 @@ tasks.matching {it.path in [
 tasks.matching {it.path in [
         ":generatePomFileForPluginZipPublication"
 ]}.all { task ->
-    task.mustRunAfter 'publishPluginJarPublicationToMavenLocal', 'publishPluginJarPublicationToSnapshotsRepository'
+    task.mustRunAfter 'publishPluginJarPublicationToMavenLocal', 'publishPluginJarPublicationToSnapshotsRepository', 'publishPluginJarPublicationToStagingRepository'
 }
 
 tasks.matching {it.path in [
@@ -176,6 +176,10 @@ publishing {
                 username "$System.env.SONATYPE_USERNAME"
                 password "$System.env.SONATYPE_PASSWORD"
             }
+        }
+        maven {
+            name = 'Staging'
+            url = "${rootProject.buildDir}/local-staging-repo"
         }
     }
 }
