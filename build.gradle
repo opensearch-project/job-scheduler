@@ -52,11 +52,18 @@ forbiddenApisTest.ignoreFailures = true
 validateNebulaPom.enabled = false
 loggerUsageCheck.enabled = false
 
+// Order is publish nebula, then jar then zip
+
+tasks.whenTaskAdded {task ->
+    if(task.name.contains("validatePluginJarPom") || task.name.contains("validatePluginZipPom")) {
+        task.enabled = false
+    }
+}
+
 tasks.matching {it.path in [
-    ":publishPluginZipPublicationToMavenLocal",
-    ":validatePluginZipPom"
+        ":generatePomFileForPluginJarPublication"
 ]}.all { task ->
-    task.dependsOn 'generatePomFileForPluginZipPublication'
+    task.mustRunAfter 'publishNebulaPublicationToMavenLocal'
 }
 
 tasks.matching {it.path in [
@@ -73,16 +80,10 @@ tasks.matching {it.path in [
 }
 
 tasks.matching {it.path in [
-        ":publishNebulaPublicationToSnapshotsRepository",
-        ":publishNebulaPublicationToMavenLocal"
+        ":publishPluginZipPublicationToMavenLocal",
+        ":validatePluginZipPom"
 ]}.all { task ->
-    task.dependsOn 'generatePomFileForNebulaPublication'
-}
-
-tasks.matching {it.path in [
-        ":generatePomFileForPluginJarPublication"
-]}.all { task ->
-    task.mustRunAfter 'publishNebulaPublicationToMavenLocal'
+    task.dependsOn 'generatePomFileForPluginZipPublication'
 }
 
 opensearchplugin {
