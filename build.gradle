@@ -63,7 +63,7 @@ tasks.whenTaskAdded {task ->
 tasks.matching {it.path in [
         ":generatePomFileForPluginJarPublication"
 ]}.all { task ->
-    task.mustRunAfter 'publishNebulaPublicationToMavenLocal'
+    task.mustRunAfter 'publishNebulaPublicationToMavenLocal', 'publishNebulaPublicationToSnapshotsRepository'
 }
 
 tasks.matching {it.path in [
@@ -76,7 +76,7 @@ tasks.matching {it.path in [
 tasks.matching {it.path in [
         ":generatePomFileForPluginZipPublication"
 ]}.all { task ->
-    task.mustRunAfter 'publishPluginJarPublicationToMavenLocal'
+    task.mustRunAfter 'publishPluginJarPublicationToMavenLocal', 'publishPluginJarPublicationToSnapshotsRepository'
 }
 
 tasks.matching {it.path in [
