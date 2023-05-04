@@ -24,7 +24,7 @@ buildscript {
 }
 
 plugins {
-    id 'com.netflix.nebula.ospackage' version "11.0.0"
+    id 'com.netflix.nebula.ospackage' version "11.3.0"
     id 'java-library'
     id "com.diffplug.spotless" version "6.17.0" apply false
 }
@@ -52,8 +52,37 @@ forbiddenApisTest.ignoreFailures = true
 validateNebulaPom.enabled = false
 loggerUsageCheck.enabled = false
 
-tasks.matching {it.path in [":publishNebulaPublicationToSnapshotsRepository",":validatePluginJarPom",":validatePluginZipPom"]}.all { task ->
-    task.dependsOn 'generatePomFileForPluginZipPublication','generatePomFileForNebulaPublication','generatePomFileForPluginJarPublication'
+tasks.matching {it.path in [
+    ":publishPluginZipPublicationToMavenLocal",
+    ":validatePluginZipPom"
+]}.all { task ->
+    task.dependsOn 'generatePomFileForPluginZipPublication'
+}
+
+tasks.matching {it.path in [
+        ":publishPluginJarPublicationToMavenLocal",
+        ":validatePluginJarPom"
+]}.all { task ->
+    task.dependsOn 'generatePomFileForPluginJarPublication'
+}
+
+tasks.matching {it.path in [
+        ":generatePomFileForPluginZipPublication"
+]}.all { task ->
+    task.mustRunAfter 'publishPluginJarPublicationToMavenLocal'
+}
+
+tasks.matching {it.path in [
+        ":publishNebulaPublicationToSnapshotsRepository",
+        ":publishNebulaPublicationToMavenLocal"
+]}.all { task ->
+    task.dependsOn 'generatePomFileForNebulaPublication'
+}
+
+tasks.matching {it.path in [
+        ":generatePomFileForPluginJarPublication"
+]}.all { task ->
+    task.mustRunAfter 'publishNebulaPublicationToMavenLocal'
 }
 
 opensearchplugin {
@@ -93,46 +122,15 @@ allprojects {
     // Default to the apache license
     project.ext.licenseName = 'The Apache Software License, Version 2.0'
     project.ext.licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-    plugins.withType(ShadowPlugin).whenPluginAdded {
-        publishing {
-            repositories {
-                maven {
-                    name = 'staging'
-                    url = "${rootProject.buildDir}/local-staging-repo"
-                }
-            }
-            publications {
-                // add license information to generated poms
-//               all {
-//                    pom {
-//                        name = "opensearch-job-scheduler"
-//                        description = "OpenSearch Job Scheduler plugin"
-//                        groupId = "org.opensearch.plugin"
-//                    }
-//                    pom.withXml { XmlProvider xml ->
-//                        Node node = xml.asNode()
-//                        node.appendNode('inceptionYear', '2021')
-//
-//                        Node license = node.appendNode('licenses').appendNode('license')
-//                        license.appendNode('name', project.licenseName)
-//                        license.appendNode('url', project.licenseUrl)
-//
-//                        Node developer = node.appendNode('developers').appendNode('developer')
-//                        developer.appendNode('name', 'OpenSearch')
-//                        developer.appendNode('url', 'https://github.com/opensearch-project/job-scheduler')
-//                    }
-//                }
-            }
-        }
-    }
 }
 
 publishing {
     publications {
-        pluginZip(MavenPublication) { publication ->
+        pluginZip(MavenPublication) {
             pom {
                 name = "opensearch-job-scheduler"
                 description = "OpenSearch Job Scheduler plugin"
+                packaging = "zip"
                 groupId = "org.opensearch.plugin"
             }
             pom.withXml { XmlProvider xml ->
@@ -148,7 +146,7 @@ publishing {
                 developer.appendNode('url', 'https://github.com/opensearch-project/job-scheduler')
             }
         }
-        pluginJar(MavenPublication){ publication ->
+        pluginJar(MavenPublication){
             pom {
                 name = "opensearch-job-scheduler"
                 description = "OpenSearch Job Scheduler plugin"
