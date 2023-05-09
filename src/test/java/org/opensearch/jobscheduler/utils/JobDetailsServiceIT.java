@@ -347,7 +347,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
                 actionRequest = new ExtensionActionRequest(in);
 
                 // Trim request class bytes from requestBytes
-                byte[] trimmedRequestBytes = trimRequestBytes(actionRequest.getRequestBytes());
+                byte[] trimmedRequestBytes = trimRequestBytes(actionRequest.getRequestBytes().toByteArray());
 
                 // Test deserialization of action request params
                 JobRunnerRequest deserializedRequest = new JobRunnerRequest(trimmedRequestBytes);
@@ -385,7 +385,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
                 actionRequest = new ExtensionActionRequest(in);
 
                 // Trim request class bytes from requestBytes
-                byte[] trimmedRequestBytes = trimRequestBytes(actionRequest.getRequestBytes());
+                byte[] trimmedRequestBytes = trimRequestBytes(actionRequest.getRequestBytes().toByteArray());
 
                 // Test deserialization of action request params
                 JobParameterRequest deserializedRequest = new JobParameterRequest(trimmedRequestBytes);
