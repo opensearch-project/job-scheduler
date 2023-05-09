@@ -24,7 +24,7 @@ buildscript {
 }
 
 plugins {
-    id 'com.netflix.nebula.ospackage' version "11.0.0"
+    id 'com.netflix.nebula.ospackage' version "11.3.0"
     id 'java-library'
     id "com.diffplug.spotless" version "6.17.0" apply false
 }
@@ -51,10 +51,6 @@ thirdPartyAudit.enabled = false
 forbiddenApisTest.ignoreFailures = true
 validateNebulaPom.enabled = false
 loggerUsageCheck.enabled = false
-
-tasks.matching {it.path in [":publishNebulaPublicationToSnapshotsRepository"]}.all { task ->
-    task.dependsOn 'generatePomFileForPluginZipPublication'
-}
 
 opensearchplugin {
     name 'opensearch-job-scheduler'
@@ -107,7 +103,6 @@ allprojects {
                     pom {
                         name = "opensearch-job-scheduler"
                         description = "OpenSearch Job Scheduler plugin"
-                        groupId = "org.opensearch.plugin"
                     }
                     pom.withXml { XmlProvider xml ->
                         Node node = xml.asNode()
