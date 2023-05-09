@@ -226,13 +226,9 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             this.indicesToListen,
             this.indexToJobProviders
         );
-        jobDetailsService.deleteJobDetails(
-            expectedDocumentId,
-            ActionListener.wrap(
-                deleted -> { assertTrue("Failed to delete JobDetails.", deleted); },
-                exception -> { fail(exception.getMessage()); }
-            )
-        );
+        jobDetailsService.deleteJobDetails(expectedDocumentId, ActionListener.wrap(deleted -> {
+            assertTrue("Failed to delete JobDetails.", deleted);
+        }, exception -> { fail(exception.getMessage()); }));
     }
 
     public void testDeleteNonExistingJobDetails() throws ExecutionException, InterruptedException, TimeoutException {
@@ -244,13 +240,9 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         );
         jobDetailsService.createJobDetailsIndex(ActionListener.wrap(created -> {
             if (created) {
-                jobDetailsService.deleteJobDetails(
-                    expectedDocumentId,
-                    ActionListener.wrap(
-                        deleted -> { assertTrue("Failed to delete job details for documentId.", deleted); },
-                        exception -> fail(exception.getMessage())
-                    )
-                );
+                jobDetailsService.deleteJobDetails(expectedDocumentId, ActionListener.wrap(deleted -> {
+                    assertTrue("Failed to delete job details for documentId.", deleted);
+                }, exception -> fail(exception.getMessage())));
             } else {
                 fail("Failed to job details for extension");
             }
