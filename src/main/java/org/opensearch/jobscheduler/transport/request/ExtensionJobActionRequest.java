@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import com.google.protobuf.ByteString;
 import org.opensearch.common.bytes.BytesReference;
 import org.opensearch.common.io.stream.BytesStreamOutput;
 import org.opensearch.common.io.stream.Writeable;
@@ -33,7 +34,7 @@ public class ExtensionJobActionRequest<T extends Writeable> extends ExtensionAct
      * @throws IOException if serialization fails
      */
     public ExtensionJobActionRequest(String extensionActionName, T actionParams) throws IOException {
-        super(extensionActionName, convertParamsToBytes(actionParams));
+        super(extensionActionName, convertParamsToByteString(actionParams));
     }
 
     /**
@@ -44,7 +45,7 @@ public class ExtensionJobActionRequest<T extends Writeable> extends ExtensionAct
      * @throws IOException if serialization fails
      * @return the byte array of the parameters
      */
-    private static <T extends Writeable> byte[] convertParamsToBytes(T actionParams) throws IOException {
+    private static <T extends Writeable> ByteString convertParamsToByteString(T actionParams) throws IOException {
 
         // Write inner request to output stream and convert to byte array
         BytesStreamOutput out = new BytesStreamOutput();
@@ -62,7 +63,7 @@ public class ExtensionJobActionRequest<T extends Writeable> extends ExtensionAct
             .put(requestBytes)
             .array();
 
-        return proxyRequestBytes;
+        return ByteString.copyFrom(proxyRequestBytes);
     }
 
 }
