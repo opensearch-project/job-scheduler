@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.rest.request;
 
 import org.opensearch.action.ActionRequest;
@@ -12,16 +15,13 @@ import org.opensearch.core.xcontent.XContentParser;
 
 import java.io.IOException;
 
-
 public class DeleteJobDetailsRequest extends ActionRequest {
 
     public static String documentId;
 
     public static final String DOCUMENT_ID = "document_id";
 
-    public DeleteJobDetailsRequest(
-            String documentId
-    ) {
+    public DeleteJobDetailsRequest(String documentId) {
         super();
         this.documentId = documentId;
     }
@@ -45,7 +45,6 @@ public class DeleteJobDetailsRequest extends ActionRequest {
         return new DeleteJobDetailsRequest(documentId);
 
     }
-
 
     @Override
     public ActionRequestValidationException validate() {

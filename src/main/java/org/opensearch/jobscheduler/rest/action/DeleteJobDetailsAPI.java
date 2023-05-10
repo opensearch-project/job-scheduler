@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler.rest.action;
 
 import com.google.common.collect.ImmutableList;
@@ -32,7 +35,6 @@ import java.util.concurrent.TimeoutException;
 import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
 import static org.opensearch.jobscheduler.rest.request.DeleteJobDetailsRequest.DOCUMENT_ID;
 import static org.opensearch.rest.RestRequest.Method.DELETE;
-import static org.opensearch.rest.RestRequest.Method.PUT;
 
 public class DeleteJobDetailsAPI extends BaseRestHandler {
 
@@ -54,11 +56,8 @@ public class DeleteJobDetailsAPI extends BaseRestHandler {
     @Override
     public List<Route> routes() {
         return ImmutableList.of(
-                // Delete Job Details Entry Request
-                new Route(
-                        DELETE,
-                        String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_job_details", DOCUMENT_ID)
-                )
+            // Delete Job Details Entry Request
+            new Route(DELETE, String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_job_details", DOCUMENT_ID))
 
         );
     }
@@ -74,22 +73,19 @@ public class DeleteJobDetailsAPI extends BaseRestHandler {
 
         CompletableFuture<Boolean> inProgressFuture = new CompletableFuture<>();
 
-        jobDetailsService.deleteJobDetails(
-                documentId,
-                new ActionListener<>() {
+        jobDetailsService.deleteJobDetails(documentId, new ActionListener<>() {
 
-                    @Override
-                    public void onResponse(Boolean aBoolean) {
-                        inProgressFuture.complete(aBoolean);
-                    }
+            @Override
+            public void onResponse(Boolean aBoolean) {
+                inProgressFuture.complete(aBoolean);
+            }
 
-                    @Override
-                    public void onFailure(Exception e) {
-                        logger.info("could not process job index", e);
-                        inProgressFuture.completeExceptionally(e);
-                    }
-                }
-        );
+            @Override
+            public void onFailure(Exception e) {
+                logger.info("could not process job index", e);
+                inProgressFuture.completeExceptionally(e);
+            }
+        });
 
         try {
             inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
