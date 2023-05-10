@@ -243,7 +243,7 @@ public final class LockService {
         }
     }
 
-    private void findLock(final String lockId, ActionListener<LockModel> listener) {
+    public void findLock(final String lockId, ActionListener<LockModel> listener) {
         GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
         client.get(getRequest, ActionListener.wrap(response -> {
             if (!response.isExists()) {

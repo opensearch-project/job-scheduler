@@ -16,6 +16,7 @@ import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.opensearch.Version;
@@ -76,6 +77,7 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
     private ScheduledJobRunner jobRunner;
 
     private JobSweeper sweeper;
+    private JobDetailsService jobDetailsService;
 
     private DiscoveryNode discoveryNode;
 
@@ -88,6 +90,7 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
         this.scheduler = Mockito.mock(JobScheduler.class);
         this.jobRunner = Mockito.mock(ScheduledJobRunner.class);
         this.jobParser = Mockito.mock(ScheduledJobParser.class);
+        this.jobDetailsService = Mockito.mock(JobDetailsService.class);
 
         // NamedXContentRegistry.Entry xContentRegistryEntry = new NamedXContentRegistry.Entry(ScheduledJobParameter.class,
         // new ParseField("JOB_TYPE"), this.jobParser);
@@ -124,7 +127,8 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
             xContentRegistry,
             jobProviderMap,
             scheduler,
-            new LockService(client, clusterService)
+            new LockService(client, clusterService),
+            jobDetailsService
         );
     }
 

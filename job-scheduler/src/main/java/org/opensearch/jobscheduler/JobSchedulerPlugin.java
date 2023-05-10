@@ -8,6 +8,15 @@
  */
 package org.opensearch.jobscheduler;
 
+import org.opensearch.cluster.node.DiscoveryNodes;
+import org.opensearch.common.settings.Setting;
+import org.opensearch.common.settings.Settings;
+import org.opensearch.common.settings.ClusterSettings;
+import org.opensearch.common.settings.IndexScopedSettings;
+import org.opensearch.common.settings.SettingsFilter;
+import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
+import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
+import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
@@ -23,35 +32,39 @@ import org.opensearch.cluster.metadata.IndexNameExpressionResolver;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.core.ParseField;
 import org.opensearch.common.io.stream.NamedWriteableRegistry;
-import org.opensearch.common.settings.Setting;
-import org.opensearch.common.settings.Settings;
 import org.opensearch.common.util.concurrent.OpenSearchExecutors;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.env.Environment;
 import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
+import org.opensearch.jobscheduler.utils.JobDetailsService;
+import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.repositories.RepositoriesService;
+import org.opensearch.rest.RestController;
 import org.opensearch.script.ScriptService;
 import org.opensearch.threadpool.ExecutorBuilder;
 import org.opensearch.threadpool.FixedExecutorBuilder;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.watcher.ResourceWatcherService;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.function.Supplier;
 
-public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
+import com.google.common.collect.ImmutableList;
+
+public class JobSchedulerPlugin extends Plugin implements ActionPlugin, ExtensiblePlugin {
 
     public static final String OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME = "open_distro_job_scheduler";
+    public static final String JS_BASE_URI = "/_plugins/_job_scheduler";
 
     private static final Logger log = LogManager.getLogger(JobSchedulerPlugin.class);
 
@@ -60,6 +73,8 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
     private LockService lockService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
+
+    private JobDetailsService jobDetailsService;
 
     public JobSchedulerPlugin() {
         this.indicesToListen = new HashSet<>();
@@ -81,6 +96,7 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
         this.lockService = new LockService(client, clusterService);
+        this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
             environment.settings(),
@@ -89,7 +105,8 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
             threadPool,
             xContentRegistry,
             this.scheduler,
-            this.lockService
+            this.lockService,
+            this.jobDetailsService
         );
         clusterService.addListener(this.sweeper);
         clusterService.addLifecycleListener(this.sweeper);
@@ -135,6 +152,10 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
 
     @Override
     public void onIndexModule(IndexModule indexModule) {
+        if (indexModule.getIndex().getName().equals(JobDetailsService.JOB_DETAILS_INDEX_NAME)) {
+            indexModule.addIndexOperationListener(this.jobDetailsService);
+            log.info("JobDetailsService started listening to operations on index {}", JobDetailsService.JOB_DETAILS_INDEX_NAME);
+        }
         if (this.indicesToListen.contains(indexModule.getIndex().getName())) {
             indexModule.addIndexOperationListener(this.sweeper);
             log.info("JobSweeper started listening to operations on index {}", indexModule.getIndex().getName());
@@ -181,8 +202,36 @@ public class JobSchedulerPlugin extends Plugin implements ExtensiblePlugin {
         ThreadPool threadPool,
         NamedXContentRegistry registry,
         JobScheduler scheduler,
-        LockService lockService
+        LockService lockService,
+        JobDetailsService jobDetailsService
     ) {
-        return new JobSweeper(settings, client, clusterService, threadPool, registry, this.indexToJobProviders, scheduler, lockService);
+        return new JobSweeper(
+            settings,
+            client,
+            clusterService,
+            threadPool,
+            registry,
+            this.indexToJobProviders,
+            scheduler,
+            lockService,
+            jobDetailsService
+        );
     }
+
+    @Override
+    public List getRestHandlers(
+        Settings settings,
+        RestController restController,
+        ClusterSettings clusterSettings,
+        IndexScopedSettings indexScopedSettings,
+        SettingsFilter settingsFilter,
+        IndexNameExpressionResolver indexNameExpressionResolver,
+        Supplier<DiscoveryNodes> nodesInCluster
+    ) {
+        RestGetJobDetailsAction restGetJobDetailsAction = new RestGetJobDetailsAction(jobDetailsService);
+        RestGetLockAction restGetLockAction = new RestGetLockAction(lockService);
+        RestReleaseLockAction restReleaseLockAction = new RestReleaseLockAction(lockService);
+        return ImmutableList.of(restGetJobDetailsAction, restGetLockAction, restReleaseLockAction);
+    }
+
 }

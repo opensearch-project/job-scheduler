@@ -16,6 +16,7 @@ import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.jobscheduler.utils.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -84,6 +85,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
     private ConcurrentHashMap<ShardId, ConcurrentHashMap<String, JobDocVersion>> sweptJobs;
     private JobScheduler scheduler;
     private LockService lockService;
+    private JobDetailsService jobDetailsService;
 
     private volatile long lastFullSweepTimeNano;
 
@@ -103,7 +105,8 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         NamedXContentRegistry registry,
         Map<String, ScheduledJobProvider> indexToProviders,
         JobScheduler scheduler,
-        LockService lockService
+        LockService lockService,
+        JobDetailsService jobDetailsService
     ) {
         this.client = client;
         this.clusterService = clusterService;
@@ -112,6 +115,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         this.indexToProviders = indexToProviders;
         this.scheduler = scheduler;
         this.lockService = lockService;
+        this.jobDetailsService = jobDetailsService;
 
         this.lastFullSweepTimeNano = System.nanoTime();
         this.loadSettings(settings);

@@ -8,12 +8,17 @@
  */
 package org.opensearch.jobscheduler.spi;
 
+import java.io.IOException;
 import java.util.Locale;
+
+import org.opensearch.common.io.stream.StreamInput;
+import org.opensearch.common.io.stream.StreamOutput;
+import org.opensearch.common.io.stream.Writeable;
 
 /**
  * Structure to represent scheduled job document version. JobScheduler use this to determine this job
  */
-public class JobDocVersion implements Comparable<JobDocVersion> {
+public class JobDocVersion implements Comparable<JobDocVersion>, Writeable {
     private final long primaryTerm;
     private final long seqNo;
     private final long version;
@@ -22,6 +27,19 @@ public class JobDocVersion implements Comparable<JobDocVersion> {
         this.primaryTerm = primaryTerm;
         this.seqNo = seqNo;
         this.version = version;
+    }
+
+    public JobDocVersion(StreamInput in) throws IOException {
+        this.primaryTerm = in.readLong();
+        this.seqNo = in.readLong();
+        this.version = in.readLong();
+    }
+
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeLong(this.primaryTerm);
+        out.writeLong(this.seqNo);
+        out.writeLong(this.version);
     }
 
     public long getPrimaryTerm() {
