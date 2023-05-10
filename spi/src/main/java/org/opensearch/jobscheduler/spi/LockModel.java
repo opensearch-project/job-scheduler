@@ -8,12 +8,14 @@
  */
 package org.opensearch.jobscheduler.spi;
 
-import org.opensearch.common.Strings;
+import org.opensearch.ExceptionsHelper;
+import org.opensearch.OpenSearchException;
+import org.opensearch.common.bytes.BytesReference;
 import org.opensearch.core.xcontent.ToXContentObject;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentParserUtils;
-import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.index.seqno.SequenceNumbers;
 
 import java.io.IOException;
@@ -29,6 +31,13 @@ public final class LockModel implements ToXContentObject {
     public static final String LOCK_TIME = "lock_time";
     public static final String LOCK_DURATION = "lock_duration_seconds";
     public static final String RELEASED = "released";
+
+    // Rest Fields
+    public static final String GET_LOCK_ACTION = "get_lock_action";
+    public static final String SEQUENCE_NUMBER = "seq_no";
+    public static final String PRIMARY_TERM = "primary_term";
+    public static final String LOCK_ID = "lock_id";
+    public static final String LOCK_MODEL = "lock_model";
 
     private final String lockId;
     private final String jobIndexName;
@@ -174,7 +183,23 @@ public final class LockModel implements ToXContentObject {
 
     @Override
     public String toString() {
-        return Strings.toString(XContentType.JSON, this, false, true);
+        try {
+            XContentBuilder builder = JsonXContent.contentBuilder();
+            builder.humanReadable(true);
+            this.toXContent(builder, EMPTY_PARAMS);
+            return BytesReference.bytes(builder).utf8ToString();
+        } catch (IOException e) {
+            try {
+                XContentBuilder builder = JsonXContent.contentBuilder();
+                builder.startObject();
+                builder.field("error", "error building toString out of XContent: " + e.getMessage());
+                builder.field("stack_trace", ExceptionsHelper.stackTrace(e));
+                builder.endObject();
+                return BytesReference.bytes(builder).utf8ToString();
+            } catch (IOException e2) {
+                throw new OpenSearchException("cannot generate error message for deserialization", e);
+            }
+        }
     }
 
     public String getLockId() {

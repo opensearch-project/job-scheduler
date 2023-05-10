@@ -1,0 +1,20 @@
+{
+  "dynamic": "false",
+  "properties": {
+    "job_index_name": {
+      "type": "keyword"
+    },
+    "job_type_name": {
+      "type": "keyword"
+    },
+    "job_parser_action": {
+      "type": "keyword"
+    },
+    "job_runner_action": {
+      "type": "keyword"
+    },
+    "extension_unique_id": {
+      "type": "keyword"
+    }
+  }
+}
