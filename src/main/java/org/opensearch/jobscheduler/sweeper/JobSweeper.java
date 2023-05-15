@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.sweeper;
 
+import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.JobSchedulerSettings;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
@@ -191,6 +192,13 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         if (result.getResultType().equals(Engine.Result.Type.FAILURE)) {
             log.info("Indexing failed for job {} on index {}", index.id(), shardId.getIndexName());
             return;
+        }
+
+        if (JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
+            && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null) {
+            JobSchedulerPlugin.GuiceHolder.getIdentityService()
+                .getScheduledJobIdentityManager()
+                .saveUserDetails(index.id(), shardId.getIndexName());
         }
 
         String localNodeId = clusterService.localNode().getId();

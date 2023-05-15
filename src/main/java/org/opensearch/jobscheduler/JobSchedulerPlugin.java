@@ -9,11 +9,16 @@
 package org.opensearch.jobscheduler;
 
 import org.opensearch.cluster.node.DiscoveryNodes;
+import org.opensearch.common.component.Lifecycle;
+import org.opensearch.common.component.LifecycleComponent;
+import org.opensearch.common.component.LifecycleListener;
+import org.opensearch.common.inject.Inject;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.IndexScopedSettings;
 import org.opensearch.common.settings.SettingsFilter;
+import org.opensearch.identity.IdentityService;
 import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
@@ -232,6 +237,49 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         RestGetLockAction restGetLockAction = new RestGetLockAction(lockService);
         RestReleaseLockAction restReleaseLockAction = new RestReleaseLockAction(lockService);
         return ImmutableList.of(restGetJobDetailsAction, restGetLockAction, restReleaseLockAction);
+    }
+
+    @Override
+    public Collection<Class<? extends LifecycleComponent>> getGuiceServiceClasses() {
+
+        final List<Class<? extends LifecycleComponent>> services = new ArrayList<>(1);
+        services.add(GuiceHolder.class);
+        return services;
+    }
+
+    public static class GuiceHolder implements LifecycleComponent {
+
+        private static IdentityService identityService;
+
+        @Inject
+        public GuiceHolder(final IdentityService identityService) {
+            GuiceHolder.identityService = identityService;
+        }
+
+        public static IdentityService getIdentityService() {
+            return identityService;
+        }
+
+        @Override
+        public void close() {}
+
+        @Override
+        public Lifecycle.State lifecycleState() {
+            return null;
+        }
+
+        @Override
+        public void addLifecycleListener(LifecycleListener listener) {}
+
+        @Override
+        public void removeLifecycleListener(LifecycleListener listener) {}
+
+        @Override
+        public void start() {}
+
+        @Override
+        public void stop() {}
+
     }
 
 }
