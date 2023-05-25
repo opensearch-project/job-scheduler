@@ -8,6 +8,20 @@
  */
 package org.opensearch.jobscheduler.sweeper;
 
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.opensearch.common.Strings;
+import org.opensearch.common.bytes.BytesArray;
+import org.opensearch.common.xcontent.XContentFactory;
+import org.opensearch.common.xcontent.json.JsonXContent;
+import org.opensearch.core.xcontent.ToXContent;
+import org.opensearch.core.xcontent.XContent;
+import org.opensearch.core.xcontent.XContentBuilder;
+import org.opensearch.core.xcontent.XContentGenerator;
+import org.opensearch.index.mapper.MapperService;
+import org.opensearch.index.mapper.ParseContext;
+import org.opensearch.index.mapper.ParsedDocument;
+import org.opensearch.index.mapper.SourceToParse;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.JobSchedulerSettings;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
@@ -56,6 +70,7 @@ import org.opensearch.search.sort.FieldSortBuilder;
 import org.opensearch.threadpool.Scheduler;
 import org.opensearch.threadpool.ThreadPool;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -68,6 +83,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.opensearch.common.xcontent.XContentFactory.jsonBuilder;
 
 /**
  * Sweeper component that handles job indexing and cluster changes.
@@ -187,18 +204,166 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         this.fullSweepExecutor.shutdown();
     }
 
+    // /**
+    // * Create a new {@link XContentParser}.
+    // */
+    // private final XContentParser createParser(XContent xContent, String data) throws IOException {
+    // return xContent.createParser(xContentRegistry, LoggingDeprecationHandler.INSTANCE, data);
+    // }
+
+    /**
+     * Create a new {@link XContentParser}.
+     */
+    protected final XContentParser createParser(NamedXContentRegistry namedXContentRegistry, XContent xContent, BytesReference data)
+        throws IOException {
+        if (data instanceof BytesArray) {
+            final BytesArray array = (BytesArray) data;
+            return xContent.createParser(
+                namedXContentRegistry,
+                LoggingDeprecationHandler.INSTANCE,
+                array.array(),
+                array.offset(),
+                array.length()
+            );
+        }
+        return xContent.createParser(namedXContentRegistry, LoggingDeprecationHandler.INSTANCE, data.streamInput());
+    }
+
+    /**
+     * Create a new {@link XContentParser}.
+     */
+    protected final XContentParser createParser(XContent xContent, BytesReference data) throws IOException {
+        return createParser(xContentRegistry, xContent, data);
+    }
+
+    /**
+     * Low level implementation detail of {@link XContentGenerator#copyCurrentStructure(XContentParser)}.
+     */
+    private static void copyCurrentStructure(XContentGenerator destination, XContentParser parser) throws IOException {
+        XContentParser.Token token = parser.currentToken();
+
+        log.info("Token: " + token);
+
+        // Let's handle field-name separately first
+        if (token == XContentParser.Token.FIELD_NAME) {
+            destination.writeFieldName(parser.currentName());
+            token = parser.nextToken();
+            // fall-through to copy the associated value
+        }
+
+        switch (token) {
+            case START_ARRAY:
+                destination.writeStartArray();
+                while (parser.nextToken() != XContentParser.Token.END_ARRAY) {
+                    copyCurrentStructure(destination, parser);
+                }
+                destination.writeEndArray();
+                break;
+            case START_OBJECT:
+                destination.writeStartObject();
+                while (parser.nextToken() != XContentParser.Token.END_OBJECT) {
+                    copyCurrentStructure(destination, parser);
+                }
+                destination.writeEndObject();
+                break;
+            default: // others are simple:
+                destination.copyCurrentEvent(parser);
+        }
+    }
+
+    @Override
+    public Engine.Index preIndex(ShardId shardId, Engine.Index operation) {
+        if (JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
+            && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null) {
+            JobSchedulerPlugin.GuiceHolder.getIdentityService()
+                .getScheduledJobIdentityManager()
+                .saveUserDetails(operation.id(), shardId.getIndexName());
+        }
+        if (JobSchedulerPlugin.GuiceHolder.getIndicesService() != null) {
+            MapperService mapperService = JobSchedulerPlugin.GuiceHolder.getIndicesService()
+                .indexService(shardId.getIndex())
+                .mapperService();
+            List<ParseContext.Document> operationDocs = operation.docs();
+            for (ParseContext.Document document : operationDocs) {
+                document.add(new StringField("persistent", "this_is_persistence", Field.Store.YES));
+                document.add(new StringField("transient", "this_is_transient", Field.Store.NO));
+                log.info("document after adding: " + document);
+                log.info("document fields after adding: " + document.getFields());
+            }
+            ParsedDocument parsedDoc = operation.parsedDoc();
+            for (ParseContext.Document document : parsedDoc.docs()) {
+                document.add(new StringField("persistent", "this_is_persistence", Field.Store.YES));
+                document.add(new StringField("transient", "this_is_transient", Field.Store.NO));
+            }
+            parsedDoc.rootDoc().add(new StringField("persistent", "this_is_persistence", Field.Store.YES));
+            parsedDoc.rootDoc().add(new StringField("transient", "this_is_transient", Field.Store.NO));
+
+            try {
+                XContentBuilder builder = jsonBuilder();
+                parsedDoc.source().toXContent(builder, ToXContent.EMPTY_PARAMS);
+                String content = Strings.toString(builder);
+                log.info("XContent: " + content);
+                XContentParser parser = createParser(JsonXContent.jsonXContent, parsedDoc.source());
+                XContentParser.Token token;
+                XContentBuilder docMinusOperator = XContentFactory.contentBuilder(parser.contentType());
+                docMinusOperator.startObject();
+                // the start of the parser
+                if (parser.currentToken() == null) {
+                    parser.nextToken();
+                }
+                String currentFieldName = null;
+                while ((token = parser.currentToken()) != null) {
+                    String tokenName = parser.currentName();
+                    log.info("tokenName: " + tokenName);
+                    log.info("currentToken: " + token);
+                    if (token == XContentParser.Token.FIELD_NAME) {
+                        currentFieldName = tokenName;
+                        if ("operator".equals(currentFieldName)) {
+                            parser.nextToken();
+                        } else {
+                            docMinusOperator.field(currentFieldName);
+                            parser.nextToken();
+                            docMinusOperator.copyCurrentStructure(parser);
+                        }
+
+                    } else {
+                        parser.nextToken();
+                    }
+                }
+                docMinusOperator.endObject();
+
+                String docMinusOperatorContent = Strings.toString(docMinusOperator);
+                log.info("docMinusOperatorContent: " + docMinusOperatorContent);
+
+                SourceToParse toParse = new SourceToParse(
+                    shardId.getIndexName(),
+                    operation.id(),
+                    BytesReference.bytes(docMinusOperator),
+                    XContentType.JSON
+                );
+
+                ParsedDocument newParsedDoc = mapperService.documentMapper().parse(toParse);
+
+                log.info("newParsedDoc: " + newParsedDoc);
+
+                Engine.Index newIndex = new Engine.Index(operation.uid(), operation.primaryTerm(), newParsedDoc);
+
+                log.info("Returning newIndex: " + newIndex);
+                return newIndex;
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        log.info("Should not log. Returning operation.");
+        return operation;
+    }
+
     @Override
     public void postIndex(ShardId shardId, Engine.Index index, Engine.IndexResult result) {
         if (result.getResultType().equals(Engine.Result.Type.FAILURE)) {
             log.info("Indexing failed for job {} on index {}", index.id(), shardId.getIndexName());
             return;
-        }
-
-        if (JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
-            && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null) {
-            JobSchedulerPlugin.GuiceHolder.getIdentityService()
-                .getScheduledJobIdentityManager()
-                .saveUserDetails(index.id(), shardId.getIndexName());
         }
 
         String localNodeId = clusterService.localNode().getId();

@@ -19,6 +19,7 @@ import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.IndexScopedSettings;
 import org.opensearch.common.settings.SettingsFilter;
 import org.opensearch.identity.IdentityService;
+import org.opensearch.indices.IndicesService;
 import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
@@ -251,13 +252,20 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
 
         private static IdentityService identityService;
 
+        private static IndicesService indicesService;
+
         @Inject
-        public GuiceHolder(final IdentityService identityService) {
+        public GuiceHolder(final IdentityService identityService, IndicesService indicesService) {
             GuiceHolder.identityService = identityService;
+            GuiceHolder.indicesService = indicesService;
         }
 
         public static IdentityService getIdentityService() {
             return identityService;
+        }
+
+        public static IndicesService getIndicesService() {
+            return indicesService;
         }
 
         @Override
