@@ -18,6 +18,7 @@ import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContent;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentGenerator;
+import org.opensearch.identity.schedule.ScheduledJobOperator;
 import org.opensearch.index.mapper.MapperService;
 import org.opensearch.index.mapper.ParseContext;
 import org.opensearch.index.mapper.ParsedDocument;
@@ -273,12 +274,6 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
 
     @Override
     public Engine.Index preIndex(ShardId shardId, Engine.Index operation) {
-        if (JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
-            && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null) {
-            JobSchedulerPlugin.GuiceHolder.getIdentityService()
-                .getScheduledJobIdentityManager()
-                .saveUserDetails(operation.id(), shardId.getIndexName());
-        }
         if (JobSchedulerPlugin.GuiceHolder.getIndicesService() != null) {
             MapperService mapperService = JobSchedulerPlugin.GuiceHolder.getIndicesService()
                 .indexService(shardId.getIndex())
@@ -306,7 +301,9 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                 XContentParser parser = createParser(JsonXContent.jsonXContent, parsedDoc.source());
                 XContentParser.Token token;
                 XContentBuilder docMinusOperator = XContentFactory.contentBuilder(parser.contentType());
+                XContentBuilder operatorBuilder = XContentFactory.contentBuilder(parser.contentType());
                 docMinusOperator.startObject();
+                operatorBuilder.startObject();
                 // the start of the parser
                 if (parser.currentToken() == null) {
                     parser.nextToken();
@@ -319,7 +316,9 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                     if (token == XContentParser.Token.FIELD_NAME) {
                         currentFieldName = tokenName;
                         if ("operator".equals(currentFieldName)) {
+                            operatorBuilder.field(currentFieldName);
                             parser.nextToken();
+                            operatorBuilder.copyCurrentStructure(parser);
                         } else {
                             docMinusOperator.field(currentFieldName);
                             parser.nextToken();
@@ -331,24 +330,38 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                     }
                 }
                 docMinusOperator.endObject();
+                operatorBuilder.endObject();
 
                 String docMinusOperatorContent = Strings.toString(docMinusOperator);
                 log.info("docMinusOperatorContent: " + docMinusOperatorContent);
 
-                SourceToParse toParse = new SourceToParse(
+                String operatorContent = Strings.toString(operatorBuilder);
+                log.info("operatorContent: " + operatorContent);
+
+                SourceToParse docMinusOperatorSource = new SourceToParse(
                     shardId.getIndexName(),
                     operation.id(),
                     BytesReference.bytes(docMinusOperator),
                     XContentType.JSON
                 );
 
-                ParsedDocument newParsedDoc = mapperService.documentMapper().parse(toParse);
+                ParsedDocument parsedDocMinusOperator = mapperService.documentMapper().parse(docMinusOperatorSource);
 
-                log.info("newParsedDoc: " + newParsedDoc);
+                XContentParser operatorParser = createParser(JsonXContent.jsonXContent, BytesReference.bytes(operatorBuilder));
+                ScheduledJobOperator operator = ScheduledJobOperator.parse(operatorParser);
 
-                Engine.Index newIndex = new Engine.Index(operation.uid(), operation.primaryTerm(), newParsedDoc);
+                log.info("parsedDocMinusOperator: " + parsedDocMinusOperator);
+                log.info("ScheduledJobOperator: " + operator);
+
+                Engine.Index newIndex = new Engine.Index(operation.uid(), operation.primaryTerm(), parsedDocMinusOperator);
 
                 log.info("Returning newIndex: " + newIndex);
+                if (JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
+                    && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null) {
+                    JobSchedulerPlugin.GuiceHolder.getIdentityService()
+                        .getScheduledJobIdentityManager()
+                        .saveUserDetails(operation.id(), shardId.getIndexName(), operator);
+                }
                 return newIndex;
 
             } catch (IOException e) {
