@@ -189,13 +189,9 @@ public class JobScheduler {
             // schedule next execution
             this.reschedule(jobParameter, jobInfo, jobRunner, version, jitterLimit);
 
-            System.out.println("Index to Job Details: " + JobDetailsService.getIndexToJobDetails());
-            System.out.println("Job ID: " + jobInfo.getJobId());
             // TODO How to get entry corresponding to jobInfo?
             // TODO Need JobDetails to get extension unique id when requesting token issuance
             JobDetails entry = jobDetailsService.findJobDetailsByJobIndex(jobInfo.getIndexName());
-
-            System.out.println("Job Details Entry: " + entry);
 
             JobExecutionContext context;
             if (JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
@@ -205,8 +201,6 @@ public class JobScheduler {
                 AuthToken accessToken = JobSchedulerPlugin.GuiceHolder.getIdentityService()
                     .getScheduledJobIdentityManager()
                     .issueAccessTokenOnBehalfOfUser(jobInfo.getJobId(), jobInfo.getIndexName(), Optional.of(entry.getExtensionUniqueId()));
-                System.out.println("AccessToken: " + accessToken);
-                System.out.println("AccessToken Value: " + accessToken.getTokenValue());
                 // invoke job runner
                 context = new JobExecutionContext(
                     jobInfo.getExpectedPreviousExecutionTime(),

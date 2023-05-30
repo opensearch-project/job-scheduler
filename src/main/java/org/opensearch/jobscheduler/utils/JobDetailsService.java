@@ -230,9 +230,6 @@ public class JobDetailsService implements IndexingOperationListener {
                 final Boolean[] extensionJobRunnerStatus = new Boolean[1];
                 CompletableFuture<Boolean[]> inProgressFuture = new CompletableFuture<>();
 
-                System.out.println("jobParameter: " + jobParameter);
-                System.out.println("context: " + context);
-
                 try {
                     // TODO : Replace the placeholder with the provided access token from the inital job detials request
 
@@ -244,7 +241,6 @@ public class JobDetailsService implements IndexingOperationListener {
                         ExtensionProxyAction.INSTANCE,
                         new ExtensionJobActionRequest<JobRunnerRequest>(extensionJobRunnerAction, jobRunnerRequest),
                         ActionListener.wrap(response -> {
-                            System.out.println("ExtensionJobActionResponse: " + response);
 
                             // Extract response bytes into a streamInput and set the extensionJobParameter
                             JobRunnerResponse jobRunnerResponse = new JobRunnerResponse(response.getResponseBytes());
