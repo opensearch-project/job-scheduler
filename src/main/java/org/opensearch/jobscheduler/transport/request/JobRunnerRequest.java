@@ -12,6 +12,7 @@ import java.io.IOException;
 
 import org.opensearch.action.ActionRequest;
 import org.opensearch.action.ActionRequestValidationException;
+import org.opensearch.common.io.stream.FilterStreamInput;
 import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.io.stream.StreamOutput;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
@@ -69,7 +70,7 @@ public class JobRunnerRequest extends ActionRequest {
      * @throws IOException when message de-serialization fails.
      */
     public JobRunnerRequest(byte[] requestParams) throws IOException {
-        this(StreamInput.wrap(requestParams));
+        this(FilterStreamInput.wrap(requestParams));
     }
 
     @Override

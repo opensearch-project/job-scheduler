@@ -15,6 +15,7 @@ import java.io.InputStreamReader;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.OpenSearchException;
 import org.opensearch.ResourceAlreadyExistsException;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.DocWriteResponse;
@@ -22,6 +23,9 @@ import org.opensearch.action.admin.indices.create.CreateIndexRequest;
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.get.GetRequest;
 import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.search.SearchRequest;
+import org.opensearch.action.search.SearchResponse;
+import org.opensearch.action.support.WriteRequest;
 import org.opensearch.action.update.UpdateRequest;
 import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
@@ -36,6 +40,8 @@ import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.index.engine.DocumentMissingException;
 import org.opensearch.index.engine.Engine;
 import org.opensearch.index.engine.VersionConflictEngineException;
+import org.opensearch.index.query.BoolQueryBuilder;
+import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.seqno.SequenceNumbers;
 import org.opensearch.index.shard.IndexingOperationListener;
 import org.opensearch.index.shard.ShardId;
@@ -52,6 +58,7 @@ import org.opensearch.jobscheduler.transport.request.JobParameterRequest;
 import org.opensearch.jobscheduler.transport.response.JobParameterResponse;
 import org.opensearch.jobscheduler.transport.request.JobRunnerRequest;
 import org.opensearch.jobscheduler.transport.response.JobRunnerResponse;
+import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -59,9 +66,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.Map;
+
+import static org.opensearch.index.query.QueryBuilders.matchQuery;
+import static org.opensearch.index.query.QueryBuilders.termQuery;
 
 public class JobDetailsService implements IndexingOperationListener {
 
@@ -219,6 +230,9 @@ public class JobDetailsService implements IndexingOperationListener {
                 final Boolean[] extensionJobRunnerStatus = new Boolean[1];
                 CompletableFuture<Boolean[]> inProgressFuture = new CompletableFuture<>();
 
+                System.out.println("jobParameter: " + jobParameter);
+                System.out.println("context: " + context);
+
                 try {
                     // TODO : Replace the placeholder with the provided access token from the inital job detials request
 
@@ -230,6 +244,7 @@ public class JobDetailsService implements IndexingOperationListener {
                         ExtensionProxyAction.INSTANCE,
                         new ExtensionJobActionRequest<JobRunnerRequest>(extensionJobRunnerAction, jobRunnerRequest),
                         ActionListener.wrap(response -> {
+                            System.out.println("ExtensionJobActionResponse: " + response);
 
                             // Extract response bytes into a streamInput and set the extensionJobParameter
                             JobRunnerResponse jobRunnerResponse = new JobRunnerResponse(response.getResponseBytes());
@@ -403,7 +418,11 @@ public class JobDetailsService implements IndexingOperationListener {
             // Create index request, document Id will be randomly generated
             final IndexRequest request = new IndexRequest(JOB_DETAILS_INDEX_NAME).source(
                 tempJobDetails.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS)
-            ).setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO).setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM).create(true);
+            )
+                .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
+                .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+                .create(true);
 
             // Index Job Details
             client.index(request, ActionListener.wrap(response -> { listener.onResponse(response.getId()); }, exception -> {
@@ -444,6 +463,103 @@ public class JobDetailsService implements IndexingOperationListener {
             logger.error("Exception occurred finding job details for documentId " + documentId, exception);
             listener.onFailure(exception);
         }));
+    }
+
+    /**
+     * Find Job details for a particular document Id
+     * @param jobTypeName a non-null job type name.
+     */
+    public JobDetails findJobDetailsByJobType(final String jobTypeName) {
+        SearchRequest searchRequest = new SearchRequest().indices(JOB_DETAILS_INDEX_NAME);
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery().must(matchQuery("job_type", jobTypeName));
+        searchRequest.source(SearchSourceBuilder.searchSource().query(boolQuery));
+
+        CompletableFuture<JobDetails> jobDetailsInProgressFuture = new CompletableFuture<>();
+
+        client.search(searchRequest, ActionListener.wrap(response -> {
+            long totalHits = response.getHits().getTotalHits().value;
+            String errMsg = null;
+            if (totalHits > 1) {
+                // Should not happen
+                errMsg = "Multiple Job Details already exists in " + JOB_DETAILS_INDEX_NAME + " for job_type " + jobTypeName;
+                logger.warn(errMsg);
+            } else if (totalHits == 0) {
+                errMsg = "Could not find Job Details in " + JOB_DETAILS_INDEX_NAME + " for job_type " + jobTypeName;
+                logger.warn(errMsg);
+            } else {
+                try {
+                    XContentParser parser = XContentType.JSON.xContent()
+                        .createParser(
+                            NamedXContentRegistry.EMPTY,
+                            LoggingDeprecationHandler.INSTANCE,
+                            response.getHits().getHits()[1].getSourceAsString()
+                        );
+                    parser.nextToken();
+                    jobDetailsInProgressFuture.complete(JobDetails.parse(parser));
+                } catch (IOException e) {
+                    logger.error("IOException occurred finding JobDetails for job_type " + jobTypeName, e);
+                    jobDetailsInProgressFuture.completeExceptionally(e);
+                }
+            }
+            if (errMsg != null) {
+                OpenSearchException ose = new OpenSearchException(errMsg);
+                jobDetailsInProgressFuture.completeExceptionally(ose);
+            }
+        }, exception -> {
+            logger.error("Exception occurred finding job details for jobTypeName " + jobTypeName, exception);
+            jobDetailsInProgressFuture.completeExceptionally(exception);
+        }));
+
+        JobDetails jobDetails;
+        try {
+            jobDetails = jobDetailsInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).get();
+        } catch (CompletionException | InterruptedException | ExecutionException e) {
+            if (e.getCause() instanceof TimeoutException) {
+                logger.error(" Finding job details timed out ", e);
+            }
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else if (e.getCause() instanceof Error) {
+                throw (Error) e.getCause();
+            } else {
+                throw new RuntimeException(e.getCause());
+            }
+        }
+        return jobDetails;
+    }
+
+    /**
+     * Find Job details for a particular document Id
+     * @param jobIndexName a non-null job index name.
+     */
+    public JobDetails findJobDetailsByJobIndex(final String jobIndexName) {
+        JobDetails jobDetails = null;
+
+        SearchResponse searchResponse = client.prepareSearch(JOB_DETAILS_INDEX_NAME).setQuery(termQuery("job_index", jobIndexName)).get();
+        long totalHits = searchResponse.getHits().getTotalHits().value;
+        String errMsg = null;
+        if (totalHits > 1) {
+            // Should not happen
+            errMsg = "Multiple Job Details already exists in " + JOB_DETAILS_INDEX_NAME + " for job_index " + jobIndexName;
+            logger.warn(errMsg);
+        } else if (totalHits == 0) {
+            errMsg = "Could not find Job Details in " + JOB_DETAILS_INDEX_NAME + " for job_index " + jobIndexName;
+            logger.warn(errMsg);
+        } else {
+            try {
+                XContentParser parser = XContentType.JSON.xContent()
+                    .createParser(
+                        NamedXContentRegistry.EMPTY,
+                        LoggingDeprecationHandler.INSTANCE,
+                        searchResponse.getHits().getHits()[0].getSourceAsString()
+                    );
+                parser.nextToken();
+                jobDetails = JobDetails.parse(parser);
+            } catch (IOException e) {
+                logger.error("IOException occurred finding JobDetails for job_index " + jobIndexName, e);
+            }
+        }
+        return jobDetails;
     }
 
     /**

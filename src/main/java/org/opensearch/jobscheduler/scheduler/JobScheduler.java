@@ -8,12 +8,15 @@
  */
 package org.opensearch.jobscheduler.scheduler;
 
+import org.opensearch.identity.tokens.AuthToken;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
+import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.jobscheduler.utils.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,6 +31,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -42,11 +46,14 @@ public class JobScheduler {
     private Clock clock;
     private final LockService lockService;
 
-    public JobScheduler(ThreadPool threadPool, final LockService lockService) {
+    private final JobDetailsService jobDetailsService;
+
+    public JobScheduler(ThreadPool threadPool, final LockService lockService, final JobDetailsService jobDetailsService) {
         this.threadPool = threadPool;
         this.scheduledJobInfo = new ScheduledJobInfo();
         this.clock = Clock.systemDefaultZone();
         this.lockService = lockService;
+        this.jobDetailsService = jobDetailsService;
     }
 
     @VisibleForTesting
@@ -182,14 +189,43 @@ public class JobScheduler {
             // schedule next execution
             this.reschedule(jobParameter, jobInfo, jobRunner, version, jitterLimit);
 
-            // invoke job runner
-            JobExecutionContext context = new JobExecutionContext(
-                jobInfo.getExpectedPreviousExecutionTime(),
-                version,
-                lockService,
-                jobInfo.getIndexName(),
-                jobInfo.getJobId()
-            );
+            System.out.println("Index to Job Details: " + JobDetailsService.getIndexToJobDetails());
+            System.out.println("Job ID: " + jobInfo.getJobId());
+            // TODO How to get entry corresponding to jobInfo?
+            // TODO Need JobDetails to get extension unique id when requesting token issuance
+            JobDetails entry = jobDetailsService.findJobDetailsByJobIndex(jobInfo.getIndexName());
+
+            System.out.println("Job Details Entry: " + entry);
+
+            JobExecutionContext context;
+            if (JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
+                && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null
+                && entry != null
+                && entry.getExtensionUniqueId() != null) {
+                AuthToken accessToken = JobSchedulerPlugin.GuiceHolder.getIdentityService()
+                    .getScheduledJobIdentityManager()
+                    .issueAccessTokenOnBehalfOfUser(jobInfo.getJobId(), jobInfo.getIndexName(), Optional.of(entry.getExtensionUniqueId()));
+                System.out.println("AccessToken: " + accessToken);
+                System.out.println("AccessToken Value: " + accessToken.getTokenValue());
+                // invoke job runner
+                context = new JobExecutionContext(
+                    jobInfo.getExpectedPreviousExecutionTime(),
+                    version,
+                    lockService,
+                    jobInfo.getIndexName(),
+                    jobInfo.getJobId(),
+                    accessToken
+                );
+            } else {
+                // invoke job runner
+                context = new JobExecutionContext(
+                    jobInfo.getExpectedPreviousExecutionTime(),
+                    version,
+                    lockService,
+                    jobInfo.getIndexName(),
+                    jobInfo.getJobId()
+                );
+            }
 
             jobRunner.runJob(jobParameter, context);
         };
