@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.spi;
 
+import org.opensearch.common.io.stream.NamedWriteableAwareStreamInput;
 import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.io.stream.StreamOutput;
 import org.opensearch.common.io.stream.Writeable;
@@ -57,26 +58,13 @@ public class JobExecutionContext implements Writeable {
     }
 
     public JobExecutionContext(StreamInput in) throws IOException {
-        this.expectedExecutionTime = in.readInstant();
-        this.jobVersion = new JobDocVersion(in);
+        StreamInput nwin = new NamedWriteableAwareStreamInput(in, JobSchedulerNamedWriteableRegistry.getNamedWriteableRegistry());
+        this.expectedExecutionTime = nwin.readInstant();
+        this.jobVersion = new JobDocVersion(nwin);
         this.lockService = null;
-        this.jobIndexName = in.readString();
-        this.jobId = in.readString();
-        System.out.println("Reading in JobExecution Context");
-        System.out.println("Attempting to read...");
-        try {
-            this.accessToken = in.readOptionalNamedWriteable(AuthToken.class);
-        } catch (IOException e) {
-            System.out.println("Caught IOException: " + e.getMessage());
-            throw e;
-        } catch (RuntimeException e) {
-            System.out.println("Caught RuntimeException: " + e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            System.out.println("Caught Exception: " + e.getMessage());
-            throw e;
-        }
-        System.out.println("Read access token successfully");
+        this.jobIndexName = nwin.readString();
+        this.jobId = nwin.readString();
+        this.accessToken = nwin.readOptionalNamedWriteable(AuthToken.class);
     }
 
     @Override
@@ -85,9 +73,7 @@ public class JobExecutionContext implements Writeable {
         this.jobVersion.writeTo(out);
         out.writeString(this.jobIndexName);
         out.writeString(this.jobId);
-        System.out.println("Writing to JobExecution Context");
         out.writeOptionalNamedWriteable(this.accessToken);
-        System.out.println("Wrote access token successfully");
     }
 
     public Instant getExpectedExecutionTime() {
