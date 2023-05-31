@@ -407,6 +407,12 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
 
         if (this.scheduler.getScheduledJobIds(shardId.getIndexName()).contains(delete.id())) {
             log.info("Descheduling job {} on index {}", delete.id(), shardId.getIndexName());
+            if (JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
+                && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null) {
+                JobSchedulerPlugin.GuiceHolder.getIdentityService()
+                    .getScheduledJobIdentityManager()
+                    .deleteUserDetails(delete.id(), shardId.getIndexName());
+            }
             this.scheduler.deschedule(shardId.getIndexName(), delete.id());
             lockService.deleteLock(
                 LockModel.generateLockId(shardId.getIndexName(), delete.id()),
