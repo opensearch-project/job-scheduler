@@ -10,7 +10,6 @@ package org.opensearch.jobscheduler.sweeper;
 
 import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.common.xcontent.json.JsonXContent;
-import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.identity.schedule.ScheduledJobOperator;
 import org.opensearch.index.mapper.MapperService;
@@ -78,13 +77,13 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opensearch.common.xcontent.XContentFactory.jsonBuilder;
-
 /**
  * Sweeper component that handles job indexing and cluster changes.
  */
 public class JobSweeper extends LifecycleListener implements IndexingOperationListener, ClusterStateListener {
     private static final Logger log = LogManager.getLogger(JobSweeper.class);
+
+    private static final String OPERATOR = "operator";
 
     private Client client;
     private ClusterService clusterService;
@@ -200,24 +199,24 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
 
     @Override
     public Engine.Index preIndex(ShardId shardId, Engine.Index operation) {
-        if (JobSchedulerPlugin.GuiceHolder.getIndicesService() != null) {
+        if (JobSchedulerPlugin.GuiceHolder.getIndicesService() != null
+            && JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
+            && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null) {
             MapperService mapperService = JobSchedulerPlugin.GuiceHolder.getIndicesService()
                 .indexService(shardId.getIndex())
                 .mapperService();
             ParsedDocument parsedDoc = operation.parsedDoc();
 
             try {
-                XContentBuilder builder = jsonBuilder();
-                parsedDoc.source().toXContent(builder, ToXContent.EMPTY_PARAMS);
                 XContentParser parser = JsonXContent.jsonXContent.createParser(
                     xContentRegistry,
                     LoggingDeprecationHandler.INSTANCE,
                     BytesReference.toBytes(parsedDoc.source())
                 );
                 XContentParser.Token token;
-                XContentBuilder docMinusOperator = XContentFactory.contentBuilder(parser.contentType());
                 XContentBuilder operatorBuilder = XContentFactory.contentBuilder(parser.contentType());
-                docMinusOperator.startObject();
+                XContentBuilder builder = XContentFactory.contentBuilder(parser.contentType());
+                builder.startObject();
                 operatorBuilder.startObject();
                 // the start of the parser
                 if (parser.currentToken() == null) {
@@ -228,34 +227,34 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                     String tokenName = parser.currentName();
                     if (token == XContentParser.Token.FIELD_NAME) {
                         currentFieldName = tokenName;
-                        if ("operator".equals(currentFieldName)) {
+                        if (OPERATOR.equals(currentFieldName)) {
                             operatorBuilder.field(currentFieldName);
                             parser.nextToken();
                             operatorBuilder.copyCurrentStructure(parser);
                         } else {
-                            docMinusOperator.field(currentFieldName);
+                            builder.field(currentFieldName);
                             parser.nextToken();
-                            docMinusOperator.copyCurrentStructure(parser);
+                            builder.copyCurrentStructure(parser);
                         }
 
                     } else {
                         parser.nextToken();
                     }
                 }
-                docMinusOperator.endObject();
+                builder.endObject();
                 operatorBuilder.endObject();
 
-                SourceToParse docMinusOperatorSource = new SourceToParse(
+                SourceToParse toParse = new SourceToParse(
                     shardId.getIndexName(),
                     operation.id(),
-                    BytesReference.bytes(docMinusOperator),
+                    BytesReference.bytes(builder),
                     XContentType.JSON
                 );
 
-                ParsedDocument parsedDocMinusOperator = mapperService.documentMapper().parse(docMinusOperatorSource);
+                ParsedDocument docMinusOperator = mapperService.documentMapper().parse(toParse);
+                Engine.Index newIndex = new Engine.Index(operation.uid(), operation.primaryTerm(), docMinusOperator);
 
                 BytesReference operatorBytes = BytesReference.bytes(operatorBuilder);
-
                 XContentParser operatorParser = JsonXContent.jsonXContent.createParser(
                     xContentRegistry,
                     LoggingDeprecationHandler.INSTANCE,
@@ -263,21 +262,14 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                 );
                 ScheduledJobOperator operator = ScheduledJobOperator.parse(operatorParser);
 
-                Engine.Index newIndex = new Engine.Index(operation.uid(), operation.primaryTerm(), parsedDocMinusOperator);
-
-                if (JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
-                    && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null) {
-                    JobSchedulerPlugin.GuiceHolder.getIdentityService()
-                        .getScheduledJobIdentityManager()
-                        .saveUserDetails(operation.id(), shardId.getIndexName(), operator);
-                }
+                JobSchedulerPlugin.GuiceHolder.getIdentityService()
+                    .getScheduledJobIdentityManager()
+                    .saveUserDetails(operation.id(), shardId.getIndexName(), operator);
                 return newIndex;
-
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        log.info("Should not log. Returning operation.");
         return operation;
     }
 
