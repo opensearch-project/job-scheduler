@@ -189,8 +189,6 @@ public class JobScheduler {
             // schedule next execution
             this.reschedule(jobParameter, jobInfo, jobRunner, version, jitterLimit);
 
-            // TODO How to get entry corresponding to jobInfo?
-            // TODO Need JobDetails to get extension unique id when requesting token issuance
             JobDetails entry = jobDetailsService.findJobDetailsByJobIndex(jobInfo.getIndexName());
 
             JobExecutionContext context;
