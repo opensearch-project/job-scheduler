@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.sweeper;
 
-import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.identity.schedule.ScheduledJobOperator;
@@ -25,6 +24,7 @@ import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
+import org.opensearch.jobscheduler.utils.JobOperatorParser;
 import org.opensearch.jobscheduler.utils.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -205,49 +205,16 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
             return operation;
         }
         MapperService mapperService = JobSchedulerPlugin.GuiceHolder.getIndicesService().indexService(shardId.getIndex()).mapperService();
-        ParsedDocument parsedDoc = operation.parsedDoc();
 
         try {
-            XContentParser parser = JsonXContent.jsonXContent.createParser(
-                xContentRegistry,
-                LoggingDeprecationHandler.INSTANCE,
-                BytesReference.toBytes(parsedDoc.source())
-            );
-            XContentParser.Token token;
-            XContentBuilder operatorBuilder = XContentFactory.contentBuilder(parser.contentType());
-            XContentBuilder builder = XContentFactory.contentBuilder(parser.contentType());
-            builder.startObject();
-            operatorBuilder.startObject();
-            // the start of the parser
-            if (parser.currentToken() == null) {
-                parser.nextToken();
-            }
-            String currentFieldName = null;
-            while ((token = parser.currentToken()) != null) {
-                String tokenName = parser.currentName();
-                if (token == XContentParser.Token.FIELD_NAME) {
-                    currentFieldName = tokenName;
-                    if (OPERATOR.equals(currentFieldName)) {
-                        operatorBuilder.field(currentFieldName);
-                        parser.nextToken();
-                        operatorBuilder.copyCurrentStructure(parser);
-                    } else {
-                        builder.field(currentFieldName);
-                        parser.nextToken();
-                        builder.copyCurrentStructure(parser);
-                    }
-
-                } else {
-                    parser.nextToken();
-                }
-            }
-            builder.endObject();
-            operatorBuilder.endObject();
+            Map<String, XContentBuilder> builderMap = JobOperatorParser.separateOperatorFromJob(operation, xContentRegistry);
+            XContentBuilder jobBuilder = builderMap.get(JobOperatorParser.JOB);
+            XContentBuilder operatorBuilder = builderMap.get(JobOperatorParser.OPERATOR);
 
             SourceToParse toParse = new SourceToParse(
                 shardId.getIndexName(),
                 operation.id(),
-                BytesReference.bytes(builder),
+                BytesReference.bytes(jobBuilder),
                 XContentType.JSON
             );
 
