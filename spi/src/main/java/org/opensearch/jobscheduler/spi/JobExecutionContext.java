@@ -13,6 +13,7 @@ import org.opensearch.common.io.stream.StreamInput;
 import org.opensearch.common.io.stream.StreamOutput;
 import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.identity.tokens.AuthToken;
+import org.opensearch.identity.tokens.AuthTokenNamedWriteableRegistry;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 
 import java.io.IOException;
@@ -58,7 +59,7 @@ public class JobExecutionContext implements Writeable {
     }
 
     public JobExecutionContext(StreamInput in) throws IOException {
-        StreamInput nwin = new NamedWriteableAwareStreamInput(in, JobSchedulerNamedWriteableRegistry.getNamedWriteableRegistry());
+        StreamInput nwin = new NamedWriteableAwareStreamInput(in, AuthTokenNamedWriteableRegistry.getNamedWriteableRegistry());
         this.expectedExecutionTime = nwin.readInstant();
         this.jobVersion = new JobDocVersion(nwin);
         this.lockService = null;
