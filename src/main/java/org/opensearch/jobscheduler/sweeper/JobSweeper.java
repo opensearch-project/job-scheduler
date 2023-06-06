@@ -199,78 +199,76 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
 
     @Override
     public Engine.Index preIndex(ShardId shardId, Engine.Index operation) {
-        if (JobSchedulerPlugin.GuiceHolder.getIndicesService() != null
-            && JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
-            && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null) {
-            MapperService mapperService = JobSchedulerPlugin.GuiceHolder.getIndicesService()
-                .indexService(shardId.getIndex())
-                .mapperService();
-            ParsedDocument parsedDoc = operation.parsedDoc();
+        if (JobSchedulerPlugin.GuiceHolder.getIndicesService() == null
+            || JobSchedulerPlugin.GuiceHolder.getIdentityService() == null
+            || JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() == null) {
+            return operation;
+        }
+        MapperService mapperService = JobSchedulerPlugin.GuiceHolder.getIndicesService().indexService(shardId.getIndex()).mapperService();
+        ParsedDocument parsedDoc = operation.parsedDoc();
 
-            try {
-                XContentParser parser = JsonXContent.jsonXContent.createParser(
-                    xContentRegistry,
-                    LoggingDeprecationHandler.INSTANCE,
-                    BytesReference.toBytes(parsedDoc.source())
-                );
-                XContentParser.Token token;
-                XContentBuilder operatorBuilder = XContentFactory.contentBuilder(parser.contentType());
-                XContentBuilder builder = XContentFactory.contentBuilder(parser.contentType());
-                builder.startObject();
-                operatorBuilder.startObject();
-                // the start of the parser
-                if (parser.currentToken() == null) {
+        try {
+            XContentParser parser = JsonXContent.jsonXContent.createParser(
+                xContentRegistry,
+                LoggingDeprecationHandler.INSTANCE,
+                BytesReference.toBytes(parsedDoc.source())
+            );
+            XContentParser.Token token;
+            XContentBuilder operatorBuilder = XContentFactory.contentBuilder(parser.contentType());
+            XContentBuilder builder = XContentFactory.contentBuilder(parser.contentType());
+            builder.startObject();
+            operatorBuilder.startObject();
+            // the start of the parser
+            if (parser.currentToken() == null) {
+                parser.nextToken();
+            }
+            String currentFieldName = null;
+            while ((token = parser.currentToken()) != null) {
+                String tokenName = parser.currentName();
+                if (token == XContentParser.Token.FIELD_NAME) {
+                    currentFieldName = tokenName;
+                    if (OPERATOR.equals(currentFieldName)) {
+                        operatorBuilder.field(currentFieldName);
+                        parser.nextToken();
+                        operatorBuilder.copyCurrentStructure(parser);
+                    } else {
+                        builder.field(currentFieldName);
+                        parser.nextToken();
+                        builder.copyCurrentStructure(parser);
+                    }
+
+                } else {
                     parser.nextToken();
                 }
-                String currentFieldName = null;
-                while ((token = parser.currentToken()) != null) {
-                    String tokenName = parser.currentName();
-                    if (token == XContentParser.Token.FIELD_NAME) {
-                        currentFieldName = tokenName;
-                        if (OPERATOR.equals(currentFieldName)) {
-                            operatorBuilder.field(currentFieldName);
-                            parser.nextToken();
-                            operatorBuilder.copyCurrentStructure(parser);
-                        } else {
-                            builder.field(currentFieldName);
-                            parser.nextToken();
-                            builder.copyCurrentStructure(parser);
-                        }
-
-                    } else {
-                        parser.nextToken();
-                    }
-                }
-                builder.endObject();
-                operatorBuilder.endObject();
-
-                SourceToParse toParse = new SourceToParse(
-                    shardId.getIndexName(),
-                    operation.id(),
-                    BytesReference.bytes(builder),
-                    XContentType.JSON
-                );
-
-                ParsedDocument docMinusOperator = mapperService.documentMapper().parse(toParse);
-                Engine.Index newIndex = new Engine.Index(operation.uid(), operation.primaryTerm(), docMinusOperator);
-
-                BytesReference operatorBytes = BytesReference.bytes(operatorBuilder);
-                XContentParser operatorParser = JsonXContent.jsonXContent.createParser(
-                    xContentRegistry,
-                    LoggingDeprecationHandler.INSTANCE,
-                    BytesReference.toBytes(operatorBytes)
-                );
-                ScheduledJobOperator operator = ScheduledJobOperator.parse(operatorParser);
-
-                JobSchedulerPlugin.GuiceHolder.getIdentityService()
-                    .getScheduledJobIdentityManager()
-                    .saveUserDetails(operation.id(), shardId.getIndexName(), operator);
-                return newIndex;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
+            builder.endObject();
+            operatorBuilder.endObject();
+
+            SourceToParse toParse = new SourceToParse(
+                shardId.getIndexName(),
+                operation.id(),
+                BytesReference.bytes(builder),
+                XContentType.JSON
+            );
+
+            ParsedDocument docMinusOperator = mapperService.documentMapper().parse(toParse);
+            Engine.Index newIndex = new Engine.Index(operation.uid(), operation.primaryTerm(), docMinusOperator);
+
+            BytesReference operatorBytes = BytesReference.bytes(operatorBuilder);
+            XContentParser operatorParser = JsonXContent.jsonXContent.createParser(
+                xContentRegistry,
+                LoggingDeprecationHandler.INSTANCE,
+                BytesReference.toBytes(operatorBytes)
+            );
+            ScheduledJobOperator operator = ScheduledJobOperator.parse(operatorParser);
+
+            JobSchedulerPlugin.GuiceHolder.getIdentityService()
+                .getScheduledJobIdentityManager()
+                .saveUserDetails(operation.id(), shardId.getIndexName(), operator);
+            return newIndex;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return operation;
     }
 
     @Override
