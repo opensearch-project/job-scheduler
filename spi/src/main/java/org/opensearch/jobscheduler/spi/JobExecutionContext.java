@@ -32,21 +32,6 @@ public class JobExecutionContext implements Writeable {
         JobDocVersion jobVersion,
         LockService lockService,
         String jobIndexName,
-        String jobId
-    ) {
-        this.expectedExecutionTime = expectedExecutionTime;
-        this.jobVersion = jobVersion;
-        this.lockService = lockService;
-        this.jobIndexName = jobIndexName;
-        this.jobId = jobId;
-        this.accessToken = null;
-    }
-
-    public JobExecutionContext(
-        Instant expectedExecutionTime,
-        JobDocVersion jobVersion,
-        LockService lockService,
-        String jobIndexName,
         String jobId,
         AuthToken accessToken
     ) {

@@ -98,7 +98,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             new JobDocVersion(0, 0, 0),
             lockService,
             JOB_INDEX_NAME + uniqSuffix,
-            JOB_ID + uniqSuffix
+            JOB_ID + uniqSuffix,
+            null
         );
         Instant testTime = Instant.now();
         lockService.setTime(testTime);
@@ -136,7 +137,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             new JobDocVersion(0, 0, 0),
             lockService,
             JOB_INDEX_NAME + uniqSuffix,
-            JOB_ID + uniqSuffix
+            JOB_ID + uniqSuffix,
+            null
         );
         Instant testTime = Instant.now();
         lockService.setTime(testTime);
@@ -170,7 +172,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             new JobDocVersion(0, 0, 0),
             lockService,
             JOB_INDEX_NAME + uniqSuffix,
-            JOB_ID + uniqSuffix
+            JOB_ID + uniqSuffix,
+            null
         );
 
         lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
@@ -199,7 +202,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             new JobDocVersion(0, 0, 0),
             lockService,
             JOB_INDEX_NAME + uniqSuffix,
-            JOB_ID + uniqSuffix
+            JOB_ID + uniqSuffix,
+            null
         );
 
         lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
@@ -233,7 +237,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             new JobDocVersion(0, 0, 0),
             lockService,
             JOB_INDEX_NAME + uniqSuffix,
-            JOB_ID + uniqSuffix
+            JOB_ID + uniqSuffix,
+            null
         );
 
         lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
@@ -297,7 +302,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             new JobDocVersion(0, 0, 0),
             lockService,
             JOB_INDEX_NAME + uniqSuffix,
-            JOB_ID + uniqSuffix
+            JOB_ID + uniqSuffix,
+            null
         );
 
         lockService.createLockIndex(ActionListener.wrap(created -> {
@@ -360,7 +366,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             new JobDocVersion(0, 0, 0),
             lockService,
             JOB_INDEX_NAME + uniqSuffix,
-            JOB_ID + uniqSuffix
+            JOB_ID + uniqSuffix,
+            null
         );
 
         lockService.createLockIndex(ActionListener.wrap(created -> {
@@ -427,7 +434,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             new JobDocVersion(0, 0, 0),
             lockService,
             JOB_INDEX_NAME + uniqSuffix,
-            JOB_ID + uniqSuffix
+            JOB_ID + uniqSuffix,
+            null
         );
 
         lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {

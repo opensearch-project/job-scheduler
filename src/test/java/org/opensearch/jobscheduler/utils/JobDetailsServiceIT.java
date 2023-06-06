@@ -330,7 +330,8 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             new JobDocVersion(0, 0, 0),
             lockService,
             "indexName",
-            "id"
+            "id",
+            null
         );
         String documentId = "documentId";
 

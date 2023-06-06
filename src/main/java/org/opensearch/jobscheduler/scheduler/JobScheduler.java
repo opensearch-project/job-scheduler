@@ -192,32 +192,24 @@ public class JobScheduler {
             JobDetails entry = jobDetailsService.findJobDetailsByJobIndex(jobInfo.getIndexName());
 
             JobExecutionContext context;
+            AuthToken accessToken = null;
             if (JobSchedulerPlugin.GuiceHolder.getIdentityService() != null
                 && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null
                 && entry != null
                 && entry.getExtensionUniqueId() != null) {
-                AuthToken accessToken = JobSchedulerPlugin.GuiceHolder.getIdentityService()
+                accessToken = JobSchedulerPlugin.GuiceHolder.getIdentityService()
                     .getScheduledJobIdentityManager()
                     .issueAccessTokenOnBehalfOfUser(jobInfo.getJobId(), jobInfo.getIndexName(), Optional.of(entry.getExtensionUniqueId()));
-                // invoke job runner
-                context = new JobExecutionContext(
-                    jobInfo.getExpectedPreviousExecutionTime(),
-                    version,
-                    lockService,
-                    jobInfo.getIndexName(),
-                    jobInfo.getJobId(),
-                    accessToken
-                );
-            } else {
-                // invoke job runner
-                context = new JobExecutionContext(
-                    jobInfo.getExpectedPreviousExecutionTime(),
-                    version,
-                    lockService,
-                    jobInfo.getIndexName(),
-                    jobInfo.getJobId()
-                );
             }
+            // invoke job runner
+            context = new JobExecutionContext(
+                jobInfo.getExpectedPreviousExecutionTime(),
+                version,
+                lockService,
+                jobInfo.getIndexName(),
+                jobInfo.getJobId(),
+                accessToken
+            );
 
             jobRunner.runJob(jobParameter, context);
         };
