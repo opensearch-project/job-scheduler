@@ -1,10 +1,10 @@
 {
   "dynamic": "false",
   "properties": {
-    "job_index_name": {
+    "job_index": {
       "type": "keyword"
     },
-    "job_type_name": {
+    "job_type": {
       "type": "keyword"
     },
     "job_index": {
