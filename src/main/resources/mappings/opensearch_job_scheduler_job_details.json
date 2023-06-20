@@ -7,12 +7,6 @@
     "job_type": {
       "type": "keyword"
     },
-    "job_index": {
-      "type": "keyword"
-    },
-    "job_type": {
-      "type": "keyword"
-    },
     "job_parser_action": {
       "type": "keyword"
     },
