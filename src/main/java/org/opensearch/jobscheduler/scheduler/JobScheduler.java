@@ -201,7 +201,7 @@ public class JobScheduler {
                     .getScheduledJobIdentityManager()
                     .issueAccessTokenOnBehalfOfUser(jobInfo.getJobId(), jobInfo.getIndexName(), Optional.of(entry.getExtensionUniqueId()));
             }
- 
+
             // invoke job runner
             context = new JobExecutionContext(
                 jobInfo.getExpectedPreviousExecutionTime(),
