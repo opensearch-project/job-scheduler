@@ -148,7 +148,18 @@ public class JobScheduler {
             log.info("No next execution time for job {}", jobParameter.getName());
             return true;
         }
-        Duration duration = Duration.between(this.clock.instant(), nextExecutionTime);
+        Instant now = this.clock.instant();
+        Duration duration = Duration.between(now, nextExecutionTime);
+        if (duration.toNanos() < 0) {
+            log.info(
+                "job {} expect time: {} < current time: {}, set next excute time to current",
+                jobParameter.getName(),
+                nextExecutionTime.toEpochMilli(),
+                now.toEpochMilli()
+            );
+            nextExecutionTime = now;
+            duration = Duration.ZERO;
+        }
 
         // Too many jobs start at the same time point will bring burst. Add random jitter delay to spread out load.
         // Example, if interval is 10 minutes, jitter is 0.6, next job run will be randomly delayed by 0 to 10*0.6 minutes.
