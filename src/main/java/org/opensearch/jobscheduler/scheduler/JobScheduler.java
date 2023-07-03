@@ -119,13 +119,10 @@ public class JobScheduler {
         jobInfo.setExpectedPreviousExecutionTime(null);
         Scheduler.ScheduledCancellable scheduledCancellable = jobInfo.getScheduledCancellable();
 
-        if (scheduledCancellable != null) {
-            if (scheduledCancellable.cancel()) {
-                this.scheduledJobInfo.removeJob(indexName, id);
-            } else {
-                return false;
-            }
+        if (scheduledCancellable != null && scheduledCancellable.cancel() == false) {
+            return false;
         }
+        this.scheduledJobInfo.removeJob(indexName, id);
 
         return true;
     }
