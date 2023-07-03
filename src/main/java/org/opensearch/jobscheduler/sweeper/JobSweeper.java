@@ -69,6 +69,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -231,7 +232,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
 
             JobSchedulerPlugin.GuiceHolder.getIdentityService()
                 .getScheduledJobIdentityManager()
-                .saveUserDetails(operation.id(), shardId.getIndexName(), operator);
+                .associateJobWithOperator(operation.id(), shardId.getIndexName(), Optional.of(operator));
             return newIndex;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -277,7 +278,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                 && JobSchedulerPlugin.GuiceHolder.getIdentityService().getScheduledJobIdentityManager() != null) {
                 JobSchedulerPlugin.GuiceHolder.getIdentityService()
                     .getScheduledJobIdentityManager()
-                    .deleteUserDetails(delete.id(), shardId.getIndexName());
+                    .deleteJobOperatorEntry(delete.id(), shardId.getIndexName());
             }
             this.scheduler.deschedule(shardId.getIndexName(), delete.id());
             lockService.deleteLock(

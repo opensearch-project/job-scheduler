@@ -199,7 +199,11 @@ public class JobScheduler {
                 && entry.getExtensionUniqueId() != null) {
                 accessToken = JobSchedulerPlugin.GuiceHolder.getIdentityService()
                     .getScheduledJobIdentityManager()
-                    .issueAccessTokenOnBehalfOfUser(jobInfo.getJobId(), jobInfo.getIndexName(), Optional.of(entry.getExtensionUniqueId()));
+                    .issueAccessTokenOnBehalfOfOperator(
+                        jobInfo.getJobId(),
+                        jobInfo.getIndexName(),
+                        Optional.of(entry.getExtensionUniqueId())
+                    );
             }
 
             // invoke job runner
