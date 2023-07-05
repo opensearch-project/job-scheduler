@@ -152,9 +152,18 @@ repositories {
 
 dependencies {
     implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    constraints {
+        implementation("com.google.guava:guava:32.1.1-jre") {
+            because 'versions below 32.0.1 have active CVE'
+        }
+    }
     implementation group: 'com.google.guava', name: 'guava', version:'32.1.1-jre'
     implementation group: 'com.google.guava', name: 'failureaccess', version:'1.0.1'
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
+    //spotless
+    implementation('com.google.googlejavaformat:google-java-format:1.15.0') {
+        exclude group: 'com.google.guava'
+    }
 }
 
 // RPM & Debian build
