@@ -150,13 +150,17 @@ repositories {
     maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
 }
 
-dependencies {
-    implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
-    constraints {
-        implementation("com.google.guava:guava:32.1.1-jre") {
-            because 'versions below 32.0.1 have active CVE'
+configurations {
+    all {
+        resolutionStrategy {
+            force 'com.google.guava:guava:32.0.1-jre'
         }
     }
+}
+
+dependencies {
+    implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    implementation group: 'com.google.guava', name: 'guava', version:'32.0.1-jre'
     implementation group: 'com.google.guava', name: 'failureaccess', version:'1.0.1'
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
     //spotless
