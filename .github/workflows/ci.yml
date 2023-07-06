@@ -30,7 +30,7 @@ jobs:
 
       - name: Build and Test
         run: |
-          ./gradlew build -x bwcTestSuite
+          ./gradlew build
 
       - name: Publish to Maven Local
         run: |
