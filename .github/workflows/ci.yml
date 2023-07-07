@@ -29,14 +29,8 @@ jobs:
           java-version: ${{ matrix.java }}
 
       - name: Build and Test
-        if: ${{ (matrix.os == 'ubuntu-latest') && (matrix.os == 'windows-latest') }}
         run: |
-          ./gradlew build
-
-      - name: Build and Test
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: |
-          ./gradlew build -Dbuild.snapshot=true -x bwcTestSuite
+          ./gradlew build -x bwcTestSuite
 
       - name: Publish to Maven Local
         run: |
