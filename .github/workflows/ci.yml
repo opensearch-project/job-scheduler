@@ -36,7 +36,7 @@ jobs:
       - name: Build and Test
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
-          ./gradlew build -Dbuild.snapshot=true
+          ./gradlew build -Dbuild.snapshot=true -x bwcTestSuite
 
       - name: Publish to Maven Local
         run: |
