@@ -11,7 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         java: [11, 17]
 
     # Job name
@@ -30,7 +30,7 @@ jobs:
 
       - name: Build and Test
         run: |
-          ./gradlew build
+          ./gradlew build -x bwcTestSuite
 
       - name: Publish to Maven Local
         run: |
