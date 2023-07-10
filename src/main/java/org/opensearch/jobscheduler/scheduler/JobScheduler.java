@@ -119,7 +119,7 @@ public class JobScheduler {
         jobInfo.setExpectedPreviousExecutionTime(null);
         Scheduler.ScheduledCancellable scheduledCancellable = jobInfo.getScheduledCancellable();
 
-        if (scheduledCancellable != null && scheduledCancellable.cancel() == false) {
+        if (scheduledCancellable != null && !scheduledCancellable.cancel()) {
             return false;
         }
         this.scheduledJobInfo.removeJob(indexName, id);
@@ -147,9 +147,9 @@ public class JobScheduler {
         }
         Instant now = this.clock.instant();
         Duration duration = Duration.between(now, nextExecutionTime);
-        if (duration.toNanos() < 0) {
+        if (duration.isNegative()) {
             log.info(
-                "job {} expect time: {} < current time: {}, set next excute time to current",
+                "job {} expected time: {} < current time: {}, setting next execute time to current",
                 jobParameter.getName(),
                 nextExecutionTime.toEpochMilli(),
                 now.toEpochMilli()
