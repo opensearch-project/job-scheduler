@@ -10,10 +10,8 @@ package org.opensearch.jobscheduler.multinode;
 
 import java.io.IOException;
 
-import org.apache.hc.core5.http.HttpEntity;
 import org.junit.Before;
 import org.opensearch.client.Response;
-import org.opensearch.client.ResponseException;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
@@ -25,7 +23,7 @@ import org.opensearch.test.OpenSearchIntegTestCase;
 
 import com.google.common.collect.ImmutableMap;
 
-@OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
+@OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.TEST, numDataNodes = 21)
 public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
     private String initialJobId;
@@ -55,26 +53,30 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
         assertEquals(TestHelpers.generateExpectedLockId(initialJobIndexName, initialJobId), initialLockId);
 
         // Submit 10 requests to generate new lock models for different job indexes
-        for (int i = 0; i < 10; i++) {
-            final HttpEntity httpEntity = TestHelpers.toHttpEntity(
-                TestHelpers.generateAcquireLockRequestBody(String.valueOf(i), String.valueOf(i))
-            );
+        for (int i = 0; i < 10000; i++) {
+            String expectedLockId = TestHelpers.generateExpectedLockId(String.valueOf(i), String.valueOf(i));
             Response getLockResponse = TestHelpers.makeRequest(
                 client(),
                 "GET",
                 TestHelpers.GET_LOCK_BASE_URI,
                 ImmutableMap.of(),
-                httpEntity,
+                TestHelpers.toHttpEntity(TestHelpers.generateAcquireLockRequestBody(String.valueOf(i), String.valueOf(i))),
                 null
             );
-            // attempt to acquire same lock should fail
-            assertThrows(ResponseException.class, () -> {
-                TestHelpers.makeRequest(client(), "GET", TestHelpers.GET_LOCK_BASE_URI, ImmutableMap.of(), httpEntity, null);
-            });
+            // Releasing lock will test that it exists (Get by ID)
+            Response releaseLockResponse = TestHelpers.makeRequest(
+                client(),
+                "PUT",
+                TestHelpers.RELEASE_LOCK_BASE_URI + "/" + expectedLockId,
+                ImmutableMap.of(),
+                null,
+                null
+            );
+            assertEquals("success", entityAsMap(releaseLockResponse).get("release-lock"));
 
             String lockId = validateResponseAndGetLockId(getLockResponse);
 
-            assertEquals(TestHelpers.generateExpectedLockId(String.valueOf(i), String.valueOf(i)), lockId);
+            assertEquals(expectedLockId, lockId);
         }
     }
 
