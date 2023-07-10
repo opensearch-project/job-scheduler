@@ -8,12 +8,12 @@
  */
 package org.opensearch.jobscheduler.multinode;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.io.IOException;
 
+import org.apache.hc.core5.http.HttpEntity;
 import org.junit.Before;
 import org.opensearch.client.Response;
+import org.opensearch.client.ResponseException;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
@@ -23,6 +23,8 @@ import org.opensearch.jobscheduler.TestHelpers;
 import org.opensearch.jobscheduler.transport.AcquireLockResponse;
 import org.opensearch.test.OpenSearchIntegTestCase;
 
+import com.google.common.collect.ImmutableMap;
+
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
@@ -30,6 +32,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
     private String initialJobIndexName;
     private Response initialGetLockResponse;
 
+    @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -53,14 +56,21 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
         // Submit 10 requests to generate new lock models for different job indexes
         for (int i = 0; i < 10; i++) {
+            final HttpEntity httpEntity = TestHelpers.toHttpEntity(
+                TestHelpers.generateAcquireLockRequestBody(String.valueOf(i), String.valueOf(i))
+            );
             Response getLockResponse = TestHelpers.makeRequest(
                 client(),
                 "GET",
                 TestHelpers.GET_LOCK_BASE_URI,
                 ImmutableMap.of(),
-                TestHelpers.toHttpEntity(TestHelpers.generateAcquireLockRequestBody(String.valueOf(i), String.valueOf(i))),
+                httpEntity,
                 null
             );
+            // attempt to acquire same lock should fail
+            assertThrows(ResponseException.class, () -> {
+                TestHelpers.makeRequest(client(), "GET", TestHelpers.GET_LOCK_BASE_URI, ImmutableMap.of(), httpEntity, null);
+            });
 
             String lockId = validateResponseAndGetLockId(getLockResponse);
 
