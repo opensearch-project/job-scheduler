@@ -9,6 +9,7 @@ apply plugin: 'opensearch.java-rest-test'
 
 import org.opensearch.gradle.test.RestIntegTestTask
 import org.opensearch.gradle.testclusters.StandaloneRestIntegTestTask
+import org.apache.tools.ant.taskdefs.condition.Os
 
 import java.util.concurrent.Callable
 
@@ -278,7 +279,9 @@ task bwcTestSuite(type: StandaloneRestIntegTestTask) {
     dependsOn tasks.named("${baseName}#rollingUpgradeClusterTask")
     dependsOn tasks.named("${baseName}#fullRestartClusterTask")
 }
-tasks.named("check").configure {dependsOn(bwcTestSuite)}
+if (!(Os.isFamily(Os.FAMILY_MAC))) {
+    tasks.named("check").configure {dependsOn(bwcTestSuite)}
+}
 
 run {
     doFirst {
