@@ -23,7 +23,7 @@ import org.opensearch.test.OpenSearchIntegTestCase;
 
 import com.google.common.collect.ImmutableMap;
 
-@OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.TEST, numDataNodes = 21)
+@OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
     private String initialJobId;
@@ -53,7 +53,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
         assertEquals(TestHelpers.generateExpectedLockId(initialJobIndexName, initialJobId), initialLockId);
 
         // Submit 10 requests to generate new lock models for different job indexes
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 10; i++) {
             String expectedLockId = TestHelpers.generateExpectedLockId(String.valueOf(i), String.valueOf(i));
             Response getLockResponse = TestHelpers.makeRequest(
                 client(),
