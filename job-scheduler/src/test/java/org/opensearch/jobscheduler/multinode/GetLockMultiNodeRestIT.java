@@ -8,8 +8,6 @@
  */
 package org.opensearch.jobscheduler.multinode;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.io.IOException;
 
 import org.junit.Before;
@@ -23,6 +21,8 @@ import org.opensearch.jobscheduler.TestHelpers;
 import org.opensearch.jobscheduler.transport.AcquireLockResponse;
 import org.opensearch.test.OpenSearchIntegTestCase;
 
+import com.google.common.collect.ImmutableMap;
+
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
@@ -30,6 +30,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
     private String initialJobIndexName;
     private Response initialGetLockResponse;
 
+    @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -53,6 +54,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
         // Submit 10 requests to generate new lock models for different job indexes
         for (int i = 0; i < 10; i++) {
+            String expectedLockId = TestHelpers.generateExpectedLockId(String.valueOf(i), String.valueOf(i));
             Response getLockResponse = TestHelpers.makeRequest(
                 client(),
                 "GET",
@@ -61,10 +63,20 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
                 TestHelpers.toHttpEntity(TestHelpers.generateAcquireLockRequestBody(String.valueOf(i), String.valueOf(i))),
                 null
             );
+            // Releasing lock will test that it exists (Get by ID)
+            Response releaseLockResponse = TestHelpers.makeRequest(
+                client(),
+                "PUT",
+                TestHelpers.RELEASE_LOCK_BASE_URI + "/" + expectedLockId,
+                ImmutableMap.of(),
+                null,
+                null
+            );
+            assertEquals("success", entityAsMap(releaseLockResponse).get("release-lock"));
 
             String lockId = validateResponseAndGetLockId(getLockResponse);
 
-            assertEquals(TestHelpers.generateExpectedLockId(String.valueOf(i), String.valueOf(i)), lockId);
+            assertEquals(expectedLockId, lockId);
         }
     }
 

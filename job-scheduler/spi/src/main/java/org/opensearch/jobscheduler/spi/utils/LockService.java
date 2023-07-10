@@ -24,6 +24,7 @@ import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.update.UpdateRequest;
 import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.common.settings.Settings;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.ToXContent;
@@ -41,6 +42,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+
+import static org.opensearch.indices.replication.common.ReplicationType.DOCUMENT;
+import static org.opensearch.cluster.metadata.IndexMetadata.SETTING_REPLICATION_TYPE;
 
 public final class LockService {
     private static final Logger logger = LogManager.getLogger(LockService.class);
@@ -80,7 +84,10 @@ public final class LockService {
         if (lockIndexExist()) {
             listener.onResponse(true);
         } else {
-            final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(lockMapping());
+            // Temporarily force DOCUMENT replication until SEGMENT supports GET by id
+            // https://github.com/opensearch-project/OpenSearch/issues/8536
+            Settings replicationSettings = Settings.builder().put(SETTING_REPLICATION_TYPE, DOCUMENT.name()).build();
+            final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME, replicationSettings).mapping(lockMapping());
             client.admin()
                 .indices()
                 .create(request, ActionListener.wrap(response -> listener.onResponse(response.isAcknowledged()), exception -> {
