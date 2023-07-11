@@ -143,6 +143,33 @@ public class JobSchedulerTests extends OpenSearchTestCase {
         Assert.assertFalse(this.scheduler.reschedule(jobParameter, null, null, dummyVersion, jitterLimit));
     }
 
+    public void testReschedule_outOfExpectTime() {
+        Schedule schedule = Mockito.mock(Schedule.class);
+        ScheduledJobParameter jobParameter = buildScheduledJobParameter(
+            "job-id",
+            "dummy job name",
+            Instant.now().minus(1, ChronoUnit.HOURS),
+            Instant.now(),
+            schedule,
+            false,
+            0.6
+        );
+        JobSchedulingInfo jobSchedulingInfo = new JobSchedulingInfo("job-index", "job-id", jobParameter);
+        Instant now = Instant.now();
+        jobSchedulingInfo.setDescheduled(false);
+
+        Mockito.when(schedule.getNextExecutionTime(Mockito.any()))
+            .thenReturn(now.minus(10, ChronoUnit.MINUTES))
+            .thenReturn(now.plus(2, ChronoUnit.MINUTES));
+
+        Scheduler.ScheduledCancellable cancellable = Mockito.mock(Scheduler.ScheduledCancellable.class);
+        Mockito.when(this.threadPool.schedule(Mockito.any(), Mockito.any(), Mockito.anyString())).thenReturn(cancellable);
+
+        Assert.assertTrue(this.scheduler.reschedule(jobParameter, jobSchedulingInfo, null, dummyVersion, jitterLimit));
+        Assert.assertEquals(cancellable, jobSchedulingInfo.getScheduledCancellable());
+        Mockito.verify(this.threadPool).schedule(Mockito.any(), Mockito.any(), Mockito.anyString());
+    }
+
     public void testReschedule_jobDescheduled() {
         Schedule schedule = Mockito.mock(Schedule.class);
         ScheduledJobParameter jobParameter = buildScheduledJobParameter(
