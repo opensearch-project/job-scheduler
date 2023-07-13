@@ -18,7 +18,7 @@ import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.action.ActionListener;
 import org.opensearch.client.node.NodeClient;
-import org.opensearch.common.bytes.BytesArray;
+import org.opensearch.core.common.bytes.BytesArray;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.rest.request.GetJobDetailsRequest;
