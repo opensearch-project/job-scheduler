@@ -13,9 +13,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import com.google.protobuf.ByteString;
-import org.opensearch.common.bytes.BytesReference;
+import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.common.io.stream.BytesStreamOutput;
-import org.opensearch.common.io.stream.Writeable;
+import org.opensearch.core.common.io.stream.Writeable;
 import org.opensearch.extensions.action.ExtensionActionRequest;
 
 /**
