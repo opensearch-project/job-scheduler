@@ -23,7 +23,7 @@ import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
-import org.opensearch.rest.RestStatus;
+import org.opensearch.core.rest.RestStatus;
 import org.opensearch.test.rest.OpenSearchRestTestCase;
 
 import java.io.IOException;
