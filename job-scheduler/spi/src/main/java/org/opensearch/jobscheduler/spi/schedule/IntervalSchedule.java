@@ -12,8 +12,8 @@ import com.cronutils.utils.VisibleForTesting;
 import org.opensearch.common.Strings;
 import org.opensearch.common.SuppressForbidden;
 import org.opensearch.common.collect.Tuple;
-import org.opensearch.common.io.stream.StreamInput;
-import org.opensearch.common.io.stream.StreamOutput;
+import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.core.common.io.stream.StreamOutput;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.common.xcontent.XContentType;
 

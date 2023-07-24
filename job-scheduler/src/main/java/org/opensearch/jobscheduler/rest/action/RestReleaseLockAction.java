@@ -30,7 +30,7 @@ import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
 import static org.opensearch.rest.RestRequest.Method.PUT;
-import org.opensearch.rest.RestStatus;
+import org.opensearch.core.rest.RestStatus;
 
 public class RestReleaseLockAction extends BaseRestHandler {
 

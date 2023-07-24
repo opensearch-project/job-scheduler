@@ -38,7 +38,7 @@ import org.opensearch.index.engine.Engine;
 import org.opensearch.index.engine.VersionConflictEngineException;
 import org.opensearch.index.seqno.SequenceNumbers;
 import org.opensearch.index.shard.IndexingOperationListener;
-import org.opensearch.index.shard.ShardId;
+import org.opensearch.core.index.shard.ShardId;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 import org.opensearch.jobscheduler.model.JobDetails;

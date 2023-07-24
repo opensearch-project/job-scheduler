@@ -11,9 +11,9 @@ package org.opensearch.jobscheduler.spi;
 import java.io.IOException;
 import java.util.Locale;
 
-import org.opensearch.common.io.stream.StreamInput;
-import org.opensearch.common.io.stream.StreamOutput;
-import org.opensearch.common.io.stream.Writeable;
+import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.core.common.io.stream.Writeable;
 
 /**
  * Structure to represent scheduled job document version. JobScheduler use this to determine this job
