@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.common.bytes.BytesArray;
+import org.opensearch.core.common.bytes.BytesArray;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.XContentBuilder;
