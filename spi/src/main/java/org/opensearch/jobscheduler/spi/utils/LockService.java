@@ -236,17 +236,16 @@ public final class LockService {
                     exception -> {
                         if (exception instanceof VersionConflictEngineException) {
                             logger.debug("Lock is already created. {}", exception.getMessage());
+                            listener.onResponse(null);
+                            return;
                         }
-                        if (exception instanceof IOException) {
-                            logger.error("IOException occurred creating lock", exception);
-                        }
-                        listener.onResponse(null);
+                        listener.onFailure(exception);
                     }
                 )
             );
         } catch (IOException e) {
             logger.error("IOException occurred creating lock", e);
-            listener.onResponse(null);
+            listener.onFailure(e);
         }
     }
 
