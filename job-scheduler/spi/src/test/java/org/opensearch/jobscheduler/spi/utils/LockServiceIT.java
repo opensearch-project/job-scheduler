@@ -189,6 +189,28 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         latch.await(10L, TimeUnit.SECONDS);
     }
 
+    public void testAcquireLockWithLongIdFail() throws Exception {
+        String uniqSuffix = "_long_lock_id";
+        String lockID = randomAlphaOfLengthBetween(513, 1000);
+        CountDownLatch latch = new CountDownLatch(1);
+        LockService lockService = new LockService(client(), this.clusterService);
+        final JobExecutionContext context = new JobExecutionContext(
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
+        );
+
+        lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
+            fail("should throw an exception");
+        }, exception -> {
+            assertTrue(exception.getMessage().contains("too long"));
+            latch.countDown();
+        }));
+        latch.await(10L, TimeUnit.SECONDS);
+    }
+
     public void testLockReleasedAndAcquired() throws Exception {
         String uniqSuffix = "_lock_release+acquire";
         String lockID = randomAlphaOfLengthBetween(6, 15);
