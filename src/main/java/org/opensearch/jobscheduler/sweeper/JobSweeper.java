@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.sweeper;
 
+import org.opensearch.common.lifecycle.LifecycleListener;
 import org.opensearch.jobscheduler.JobSchedulerSettings;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
@@ -34,7 +35,6 @@ import org.opensearch.cluster.routing.Murmur3HashFunction;
 import org.opensearch.cluster.routing.ShardRouting;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.core.common.bytes.BytesReference;
-import org.opensearch.common.component.LifecycleListener;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.common.util.concurrent.OpenSearchExecutors;

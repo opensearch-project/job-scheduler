@@ -39,9 +39,9 @@ import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.xcontent.DeprecationHandler;
+import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.XContentParser;
-import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.test.rest.OpenSearchRestTestCase;
 
 public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
