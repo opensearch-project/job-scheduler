@@ -132,6 +132,7 @@ String baseName = "jobSchedulerBwcCluster"
 String bwcOpenSearchVersion = "2.10.0"
 String bwcPluginVersion = bwcOpenSearchVersion + ".0"
 String bwcFilePath = "src/test/resources/bwc/job-scheduler/"
+bwcOpenSearchVersion += "-SNAPSHOT"
 String bwcFileName = "opensearch-job-scheduler-" + bwcPluginVersion + ".zip"
 String bwcDownloadUrl = "https://aws.oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=org.opensearch.plugin&a=opensearch-job-scheduler&v=$bwcPluginVersion-SNAPSHOT&p=zip"
 
@@ -139,7 +140,7 @@ String bwcDownloadUrl = "https://aws.oss.sonatype.org/service/local/artifact/mav
     testClusters {
         "${baseName}$i" {
             testDistribution = "ARCHIVE"
-            versions = ["${bwcOpenSearchVersion}-SNAPSHOT", opensearch_version]
+            versions = [bwcOpenSearchVersion, opensearch_version]
             numberOfNodes = 3
             plugin(provider(new Callable<RegularFile>(){
                 @Override
