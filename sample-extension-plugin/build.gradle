@@ -139,7 +139,7 @@ String bwcDownloadUrl = "https://aws.oss.sonatype.org/service/local/artifact/mav
     testClusters {
         "${baseName}$i" {
             testDistribution = "ARCHIVE"
-            versions = [bwcOpenSearchVersion, opensearch_version]
+            versions = ["${bwcOpenSearchVersion}-SNAPSHOT", opensearch_version]
             numberOfNodes = 3
             plugin(provider(new Callable<RegularFile>(){
                 @Override
