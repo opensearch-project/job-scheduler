@@ -1,7 +1,7 @@
 # -*-perl-*-
 
 package.Opendistro-job-scheduler = {
-    interfaces = (opensearch_2.8.0);
+    interfaces = (opensearch_2.9.0);
 
     deploy = {
         generic = true;
@@ -14,15 +14,15 @@ package.Opendistro-job-scheduler = {
 
     build-system = aws-os-brazil-gradle-plugin-general;
     build-tools = {
-        opensearch_2.8.0 = {
-            AWSElasticsearchBuildConfig = opensearch_2.8.0;
+        opensearch_2.9.0 = {
+            AWSElasticsearchBuildConfig = opensearch_2.9.0;
             AWSElasticsearchBuildScripts = 4.1;
             BrazilPath = 1.1;
             JDK17=1.0;
             BrazilGradle = 7.x;
             JqPackage = 1.x;
             
-            OpenSearch = 2.8.0;
+            OpenSearch = 2.9.0;
         };
     };
 
@@ -31,7 +31,7 @@ package.Opendistro-job-scheduler = {
     # Use dependencies instead if you intend for these dependencies to
     # be exported to other packages that build against you.
     dependencies = {
-        opensearch_2.8.0 = {
+        opensearch_2.9.0 = {
         };
     };
 };
