@@ -40,3 +40,10 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: ${{ matrix.os }}-JDK${{ matrix.java }}-reports
+          path: |
+            ./build/reports/
