@@ -13,12 +13,12 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
 import com.cronutils.utils.VisibleForTesting;
-import org.opensearch.common.Strings;
 import org.opensearch.common.collect.Tuple;
+import org.opensearch.core.common.Strings;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.core.xcontent.MediaTypeRegistry;
 import org.opensearch.core.xcontent.XContentBuilder;
-import org.opensearch.common.xcontent.XContentType;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -181,7 +181,7 @@ public class CronSchedule implements Schedule {
 
     @Override
     public String toString() {
-        return Strings.toString(XContentType.JSON, this, false, true);
+        return Strings.toString(MediaTypeRegistry.JSON, this, false, true);
     }
 
     @Override
