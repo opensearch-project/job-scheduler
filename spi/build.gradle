@@ -49,7 +49,7 @@ dependencies {
     // slf4j is the runtime dependency of cron-utils
     // if cron-utils version gets bumped, pls check the slf4j version cron-utils depending on
     //  and bump if needed
-    implementation "com.cronutils:cron-utils:9.2.0"
+    implementation "com.cronutils:cron-utils:9.2.1"
     runtimeOnly "org.slf4j:slf4j-api:${slf4j_version_of_cronutils}"
 
     testImplementation "org.opensearch.test:framework:${opensearch_version}"
