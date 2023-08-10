@@ -11,6 +11,7 @@ This document contains a list of maintainers in this repo. See [opensearch-proje
 | Dan Widdis        | [dbwiddis](https://github.com/dbwiddis)                 | Amazon      |
 | Kaituo Li         | [kaituo](https://github.com/kaituo)                     | Amazon      |
 | Varun Jain        | [vibrantvarun](https://github.com/vibrantvarun)         | Amazon      |
+| Craig Perkins     | [cwperks](https://github.com/cwperks)                   | Amazon      |
 
 ## Emeritus Maintainers
 
