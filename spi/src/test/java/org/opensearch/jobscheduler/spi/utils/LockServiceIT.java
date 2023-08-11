@@ -11,7 +11,7 @@ package org.opensearch.jobscheduler.spi.utils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.mockito.Mockito;
-import org.opensearch.action.ActionListener;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.spi.JobDocVersion;

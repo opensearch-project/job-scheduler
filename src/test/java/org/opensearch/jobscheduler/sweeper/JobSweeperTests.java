@@ -20,7 +20,7 @@ import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.opensearch.Version;
-import org.opensearch.action.ActionFuture;
+import org.opensearch.common.action.ActionFuture;
 import org.opensearch.action.delete.DeleteResponse;
 import org.opensearch.client.Client;
 import org.opensearch.cluster.ClusterName;
