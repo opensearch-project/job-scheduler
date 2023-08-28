@@ -220,7 +220,7 @@ public final class LockService {
             listener.onResponse(null);
         } catch (Exception e) {
             logger.error(e);
-            listener.onFailure(e);
+            listener.onResponse(null);
         }
     }
 
