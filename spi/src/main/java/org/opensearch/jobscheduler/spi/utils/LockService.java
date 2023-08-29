@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.spi.utils;
 
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -78,25 +77,20 @@ public final class LockService {
 
     @VisibleForTesting
     void createLockIndex(ActionListener<Boolean> listener) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
-            if (lockIndexExist()) {
-                listener.onResponse(true);
-            } else {
-                final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(lockMapping());
-                client.admin()
-                    .indices()
-                    .create(request, ActionListener.wrap(response -> listener.onResponse(response.isAcknowledged()), exception -> {
-                        if (exception instanceof ResourceAlreadyExistsException
-                            || exception.getCause() instanceof ResourceAlreadyExistsException) {
-                            listener.onResponse(true);
-                        } else {
-                            listener.onFailure(exception);
-                        }
-                    }));
-            }
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
+        if (lockIndexExist()) {
+            listener.onResponse(true);
+        } else {
+            final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(lockMapping());
+            client.admin()
+                .indices()
+                .create(request, ActionListener.wrap(response -> listener.onResponse(response.isAcknowledged()), exception -> {
+                    if (exception instanceof ResourceAlreadyExistsException
+                        || exception.getCause() instanceof ResourceAlreadyExistsException) {
+                        listener.onResponse(true);
+                    } else {
+                        listener.onFailure(exception);
+                    }
+                }));
         }
     }
 
@@ -186,7 +180,7 @@ public final class LockService {
     }
 
     private void updateLock(final LockModel updateLock, ActionListener<LockModel> listener) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
+        try {
             UpdateRequest updateRequest = new UpdateRequest().index(LOCK_INDEX_NAME)
                 .id(updateLock.getLockId())
                 .setIfSeqNo(updateLock.getSeqNo())
@@ -218,14 +212,11 @@ public final class LockService {
         } catch (IOException e) {
             logger.error("IOException occurred updating lock.", e);
             listener.onResponse(null);
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
         }
     }
 
     private void createLock(final LockModel tempLock, ActionListener<LockModel> listener) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
+        try {
             final IndexRequest request = new IndexRequest(LOCK_INDEX_NAME).id(tempLock.getLockId())
                 .source(tempLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
@@ -248,37 +239,29 @@ public final class LockService {
         } catch (IOException e) {
             logger.error("IOException occurred creating lock", e);
             listener.onFailure(e);
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
         }
     }
 
     public void findLock(final String lockId, ActionListener<LockModel> listener) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
-            GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
-            client.get(getRequest, ActionListener.wrap(response -> {
-                if (!response.isExists()) {
+        GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
+        client.get(getRequest, ActionListener.wrap(response -> {
+            if (!response.isExists()) {
+                listener.onResponse(null);
+            } else {
+                try {
+                    XContentParser parser = XContentType.JSON.xContent()
+                        .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
+                    parser.nextToken();
+                    listener.onResponse(LockModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
+                } catch (IOException e) {
+                    logger.error("IOException occurred finding lock", e);
                     listener.onResponse(null);
-                } else {
-                    try {
-                        XContentParser parser = XContentType.JSON.xContent()
-                            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
-                        parser.nextToken();
-                        listener.onResponse(LockModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
-                    } catch (IOException e) {
-                        logger.error("IOException occurred finding lock", e);
-                        listener.onResponse(null);
-                    }
                 }
-            }, exception -> {
-                logger.error("Exception occurred finding lock", exception);
-                listener.onFailure(exception);
-            }));
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
-        }
+            }
+        }, exception -> {
+            logger.error("Exception occurred finding lock", exception);
+            listener.onFailure(exception);
+        }));
     }
 
     /**
@@ -310,24 +293,19 @@ public final class LockService {
      *                 or not the delete was successful
      */
     public void deleteLock(final String lockId, ActionListener<Boolean> listener) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
-            DeleteRequest deleteRequest = new DeleteRequest(LOCK_INDEX_NAME).id(lockId);
-            client.delete(deleteRequest, ActionListener.wrap(response -> {
-                listener.onResponse(
-                    response.getResult() == DocWriteResponse.Result.DELETED || response.getResult() == DocWriteResponse.Result.NOT_FOUND
-                );
-            }, exception -> {
-                if (exception instanceof IndexNotFoundException || exception.getCause() instanceof IndexNotFoundException) {
-                    logger.debug("Index is not found to delete lock. {}", exception.getMessage());
-                    listener.onResponse(true);
-                } else {
-                    listener.onFailure(exception);
-                }
-            }));
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
-        }
+        DeleteRequest deleteRequest = new DeleteRequest(LOCK_INDEX_NAME).id(lockId);
+        client.delete(deleteRequest, ActionListener.wrap(response -> {
+            listener.onResponse(
+                response.getResult() == DocWriteResponse.Result.DELETED || response.getResult() == DocWriteResponse.Result.NOT_FOUND
+            );
+        }, exception -> {
+            if (exception instanceof IndexNotFoundException || exception.getCause() instanceof IndexNotFoundException) {
+                logger.debug("Index is not found to delete lock. {}", exception.getMessage());
+                listener.onResponse(true);
+            } else {
+                listener.onFailure(exception);
+            }
+        }));
     }
 
     /**
