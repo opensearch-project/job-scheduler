@@ -44,7 +44,7 @@ import java.time.Instant;
 
 public final class LockService {
     private static final Logger logger = LogManager.getLogger(LockService.class);
-    private static final String LOCK_INDEX_NAME = ".opendistro-job-scheduler-lock";
+    public static final String LOCK_INDEX_NAME = ".opendistro-job-scheduler-lock";
 
     private final Client client;
     private final ClusterService clusterService;
