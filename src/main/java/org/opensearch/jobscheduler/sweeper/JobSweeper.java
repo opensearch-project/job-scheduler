@@ -389,7 +389,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         String searchAfter = startAfter == null ? "" : startAfter;
         while (searchAfter != null) {
             SearchRequest jobSearchRequest = new SearchRequest().indices(shardId.getIndexName())
-                .preference("_shards:" + shardId.id() + "|_primary")
+                .preference("_shards:" + shardId.id() + "|_primary_first")
                 .source(
                     new SearchSourceBuilder().version(true)
                         .seqNoAndPrimaryTerm(true)
