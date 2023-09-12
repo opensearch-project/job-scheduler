@@ -37,12 +37,10 @@ import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.env.Environment;
 import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
-import org.opensearch.indices.SystemIndexDescriptor;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.plugins.Plugin;
-import org.opensearch.plugins.SystemIndexPlugin;
 import org.opensearch.repositories.RepositoriesService;
 import org.opensearch.rest.RestController;
 import org.opensearch.script.ScriptService;
@@ -63,7 +61,7 @@ import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableList;
 
-public class JobSchedulerPlugin extends Plugin implements ActionPlugin, ExtensiblePlugin, SystemIndexPlugin {
+public class JobSchedulerPlugin extends Plugin implements ActionPlugin, ExtensiblePlugin {
 
     public static final String OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME = "open_distro_job_scheduler";
     public static final String JS_BASE_URI = "/_plugins/_job_scheduler";
@@ -81,13 +79,6 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     public JobSchedulerPlugin() {
         this.indicesToListen = new HashSet<>();
         this.indexToJobProviders = new HashMap<>();
-    }
-
-    @Override
-    public Collection<SystemIndexDescriptor> getSystemIndexDescriptors(Settings settings) {
-        return Collections.singletonList(
-            new SystemIndexDescriptor(LockService.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution")
-        );
     }
 
     @Override
