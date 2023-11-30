@@ -150,10 +150,10 @@
  org.elasticsearch:jna:5.5.0
  org.hamcrest:hamcrest:2.1
  org.hdrhistogram:HdrHistogram:2.1.12
- org.jacoco:org.jacoco.agent:0.8.8
- org.jacoco:org.jacoco.ant:0.8.8
- org.jacoco:org.jacoco.core:0.8.8
- org.jacoco:org.jacoco.report:0.8.8
+ org.jacoco:org.jacoco.agent:0.8.9
+ org.jacoco:org.jacoco.ant:0.8.9
+ org.jacoco:org.jacoco.core:0.8.9
+ org.jacoco:org.jacoco.report:0.8.9
  org.jdom:jdom2:2.0.6.1
  org.jetbrains:annotations:13.0
  org.jetbrains.kotlin:kotlin-stdlib:1.8.0
@@ -184,13 +184,12 @@
  org.opensearch.test:framework:2.12.0
  org.opensearch.test:logger-usage:2.12.0
  org.opensearch.test:telemetry:2.12.0
- org.ow2.asm:asm:9.2
  org.ow2.asm:asm:9.4
- org.ow2.asm:asm-analysis:9.2
- org.ow2.asm:asm-commons:9.2
+ org.ow2.asm:asm:9.5
  org.ow2.asm:asm-commons:9.4
- org.ow2.asm:asm-tree:9.2
+ org.ow2.asm:asm-commons:9.5
  org.ow2.asm:asm-tree:9.4
+ org.ow2.asm:asm-tree:9.5
  org.redline-rpm:redline:1.2.10
  org.slf4j:slf4j-api:1.7.36
  org.slf4j:slf4j-api:1.7.5
