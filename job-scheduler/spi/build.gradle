@@ -11,6 +11,7 @@ plugins {
     id 'jacoco'
     id 'maven-publish'
     id 'signing'
+    id "org.gradle.test-retry" version "1.5.8"
 }
 
 apply plugin: 'opensearch.java'
@@ -70,6 +71,10 @@ shadowJar {
 }
 
 test {
+    retry {
+        failOnPassedAfterRetry = false
+        maxRetries = 5
+    }
     doFirst {
         // reverse operation of https://github.com/elastic/elasticsearch/blob/7.6/buildSrc/src/main/groovy/org/elasticsearch/gradle/BuildPlugin.groovy#L736-L743
         // to fix the classpath for unit tests
