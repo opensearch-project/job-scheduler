@@ -161,7 +161,7 @@ configurations {
 dependencies {
     implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
     implementation group: 'com.google.guava', name: 'guava', version:'32.1.2-jre'
-    implementation group: 'com.google.guava', name: 'failureaccess', version:'1.0.1'
+    implementation group: 'com.google.guava', name: 'failureaccess', version:'1.0.2'
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
     //spotless
     implementation('com.google.googlejavaformat:google-java-format:1.17.0') {
