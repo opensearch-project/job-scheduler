@@ -1,0 +1,72 @@
+2024-02-04 06:31:15 INFO [AWSElasticsearchBuildConfig-opensearch_2.12.0/runtime] Rebuilding environment because it doesn't exist at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/AWSElasticsearchBuildConfig-opensearch_2.12.0/runtime
+2024-02-04 06:31:16 INFO [AWSElasticsearchBuildConfig-opensearch_2.12.0/runtime] Resolving dependencies
+2024-02-04 06:31:16 INFO [AWSElasticsearchBuildConfig-opensearch_2.12.0/runtime] Building symlink farm of 1 packages from package cache
+2024-02-04 06:31:16 INFO [AWSElasticsearchBuildConfig-opensearch_2.12.0/runtime] Caching runtime components of dependencies
+2024-02-04 06:31:16 INFO [AWSElasticsearchBuildConfig-opensearch_2.12.0/runtime] Successfully created environment at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/AWSElasticsearchBuildConfig-opensearch_2.12.0/runtime
+2024-02-04 06:31:16 INFO [AWSElasticsearchBuildScripts-4.1/runtime] Rebuilding environment because it doesn't exist at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/AWSElasticsearchBuildScripts-4.1/runtime
+2024-02-04 06:31:17 INFO [AWSElasticsearchBuildScripts-4.1/runtime] Resolving dependencies
+2024-02-04 06:31:17 INFO Caching AWSElasticsearchBuildScripts-4.1.321.0/AL2_x86_64/Catalog
+2024-02-04 06:31:17 INFO Caching AWSElasticsearchBuildScripts-4.1.321.0/AL2_x86_64/generic-flavor/src/Config
+2024-02-04 06:31:18 INFO [AWSElasticsearchBuildScripts-4.1/runtime] Building symlink farm of 23 packages from package cache
+2024-02-04 06:31:18 INFO [AWSElasticsearchBuildScripts-4.1/runtime] Caching runtime components of dependencies
+2024-02-04 06:31:19 INFO Caching AWSElasticsearchBuildScripts-4.1.321.0/AL2_x86_64/S3TOC
+2024-02-04 06:31:19 INFO Caching AWSElasticsearchBuildScripts-4.1.321.0/AL2_x86_64/DEV.STD.PTHREAD/build/elastic_repo_patches
+2024-02-04 06:31:19 INFO Caching AWSElasticsearchBuildScripts-4.1.321.0/AL2_x86_64/DEV.STD.PTHREAD/build/kibana_repo_patches
+2024-02-04 06:31:19 INFO Caching AWSElasticsearchBuildScripts-4.1.321.0/AL2_x86_64/DEV.STD.PTHREAD/build/bin
+2024-02-04 06:31:19 INFO [AWSElasticsearchBuildScripts-4.1/runtime] Successfully created environment at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/AWSElasticsearchBuildScripts-4.1/runtime
+2024-02-04 06:31:19 INFO [BrazilPath-1.1/runtime] Rebuilding environment because it doesn't exist at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/BrazilPath-1.1/runtime
+2024-02-04 06:31:20 INFO [BrazilPath-1.1/runtime] Resolving dependencies
+2024-02-04 06:31:21 INFO [BrazilPath-1.1/runtime] Building symlink farm of 22 packages from package cache
+2024-02-04 06:31:21 INFO [BrazilPath-1.1/runtime] Caching runtime components of dependencies
+2024-02-04 06:31:22 INFO [BrazilPath-1.1/runtime] Successfully created environment at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/BrazilPath-1.1/runtime
+2024-02-04 06:31:22 INFO [JDK17-1.0/runtime] Rebuilding environment because it doesn't exist at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/JDK17-1.0/runtime
+2024-02-04 06:31:22 INFO [JDK17-1.0/runtime] Resolving dependencies
+2024-02-04 06:31:23 INFO Caching JDK17-1.0.7151.0/AL2_x86_64/Catalog
+2024-02-04 06:31:23 INFO Caching JDK17-1.0.7151.0/AL2_x86_64/generic-flavor/src/Config
+2024-02-04 06:31:23 INFO [JDK17-1.0/runtime] Building symlink farm of 1 packages from package cache
+2024-02-04 06:31:23 INFO [JDK17-1.0/runtime] Caching runtime components of dependencies
+2024-02-04 06:31:23 INFO Caching JDK17-1.0.7151.0/AL2_x86_64/S3TOC
+2024-02-04 06:31:23 INFO Caching JDK17-1.0.7151.0/AL2_x86_64/DEV.STD.PTHREAD/build/jdk-17
+2024-02-04 06:31:30 INFO [JDK17-1.0/runtime] Successfully created environment at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/JDK17-1.0/runtime
+2024-02-04 06:31:30 INFO [BrazilGradle-7.x/runtime] Rebuilding environment because it doesn't exist at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/BrazilGradle-7.x/runtime
+2024-02-04 06:31:31 INFO [BrazilGradle-7.x/runtime] Resolving dependencies
+2024-02-04 06:31:32 INFO [BrazilGradle-7.x/runtime] Building symlink farm of 21 packages from package cache
+2024-02-04 06:31:32 INFO [BrazilGradle-7.x/runtime] Caching runtime components of dependencies
+2024-02-04 06:31:33 INFO [BrazilGradle-7.x/runtime] Successfully created environment at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/BrazilGradle-7.x/runtime
+2024-02-04 06:31:33 INFO [JqPackage-1.x/runtime] Rebuilding environment because it doesn't exist at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/JqPackage-1.x/runtime
+2024-02-04 06:31:33 INFO [JqPackage-1.x/runtime] Resolving dependencies
+2024-02-04 06:31:34 INFO [JqPackage-1.x/runtime] Building symlink farm of 1 packages from package cache
+2024-02-04 06:31:34 INFO [JqPackage-1.x/runtime] Caching runtime components of dependencies
+2024-02-04 06:31:34 INFO [JqPackage-1.x/runtime] Successfully created environment at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/JqPackage-1.x/runtime
+2024-02-04 06:31:34 INFO [OpenSearch-2.12.0/runtime] Rebuilding environment because it doesn't exist at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/OpenSearch-2.12.0/runtime
+2024-02-04 06:31:34 INFO [OpenSearch-2.12.0/runtime] Resolving dependencies
+2024-02-04 06:31:35 INFO Caching OpenSearch-2.12.0.4.0/AL2_x86_64/Catalog
+2024-02-04 06:31:35 INFO Caching OpenSearch-2.12.0.4.0/AL2_x86_64/generic-flavor/src/Config
+2024-02-04 06:31:35 INFO [OpenSearch-2.12.0/runtime] Building symlink farm of 1 packages from package cache
+2024-02-04 06:31:35 INFO [OpenSearch-2.12.0/runtime] Caching runtime components of dependencies
+2024-02-04 06:31:35 INFO Caching OpenSearch-2.12.0.4.0/AL2_x86_64/S3TOC
+2024-02-04 06:31:35 INFO Caching OpenSearch-2.12.0.4.0/AL2_x86_64/DEV.STD.PTHREAD/build/all
+2024-02-04 06:31:39 INFO Caching OpenSearch-2.12.0.4.0/AL2_x86_64/DEV.STD.PTHREAD/build/lib
+2024-02-04 06:31:40 INFO Caching OpenSearch-2.12.0.4.0/AL2_x86_64/DEV.STD.PTHREAD/build/plugins
+2024-02-04 06:31:43 INFO Caching OpenSearch-2.12.0.4.0/AL2_x86_64/DEV.STD.PTHREAD/build/bin
+2024-02-04 06:31:44 INFO Caching OpenSearch-2.12.0.4.0/AL2_x86_64/DEV.STD.PTHREAD/build/testJars
+2024-02-04 06:31:46 INFO Caching OpenSearch-2.12.0.4.0/AL2_x86_64/DEV.STD.PTHREAD/build/config
+2024-02-04 06:31:46 INFO Caching OpenSearch-2.12.0.4.0/AL2_x86_64/DEV.STD.PTHREAD/build/modules
+2024-02-04 06:31:47 INFO [OpenSearch-2.12.0/runtime] Successfully created environment at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/env/OpenSearch-2.12.0/runtime
+Running build command 'aws-os-brazil-gradle-plugin-general'
+2024-02-04 06:31:48 Reading transitive closure of all dependencies 'Config' file, this could take a while...
+2024-02-04 06:31:50 [configfarm for Opendistro-job-scheduler-opensearch_2.12.0_tool] Caching aws_es_build_config components of dependencies
+2024-02-04 06:31:50 [configfarm for Opendistro-job-scheduler-opensearch_2.12.0_tool] Symlinking 1 components of dependencies from package cache
+2024-02-04 06:31:50 [configfarm for Opendistro-job-scheduler-opensearch_2.12.0_tool] Successfully created configfarm at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/build/Opendistro-job-scheduler/Opendistro-job-scheduler-opensearch_2.12.0/AL2_x86_64/DEV.STD.PTHREAD/build/private/tmp/brazil-path/tool.configfarm.aws_es_build_config
+2024-02-04 06:31:52 Reading transitive closure of all dependencies 'Config' file, this could take a while...
+2024-02-04 06:31:55 Reading transitive closure of all dependencies 'Config' file, this could take a while...
+2024-02-04 06:31:55 Building symlink farm of 1 packages from package cache
+2024-02-04 06:31:55 Caching runtime components of dependencies
+2024-02-04 06:31:55 Successfully created environment at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.12.0-dev/build/Opendistro-job-scheduler/Opendistro-job-scheduler-opensearch_2.12.0/AL2_x86_64/DEV.STD.PTHREAD/build/private/tmp/brazil-path/[JDK17-1.0]run.runtimefarm
+2024-02-04 06:31:56 Reading transitive closure of all dependencies 'Config' file, this could take a while...
+sed: -e expression #1, char 13: unterminated `s' command
+2024-02-04 06:32:50 Reading transitive closure of all dependencies 'Config' file, this could take a while...
+2024-02-04 06:32:51 Caching OpenSearch-2.12.0.4.0/AL2_x86_64/generic-flavor
+rm: cannot remove ‘transforms-3’: Directory not empty
+BUILD FAILED
+*** command 'aws-os-brazil-gradle-plugin-general' with arguments 'update-qualified-offline-repo' exited with return code '1'
