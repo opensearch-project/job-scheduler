@@ -187,6 +187,10 @@ task integTest(type: RestIntegTestTask) {
     classpath = sourceSets.test.runtimeClasspath
 }
 tasks.named("check").configure { dependsOn(integTest) }
+tasks.publishNebulaPublicationToMavenLocal.dependsOn ':generatePomFileForPluginZipPublication'
+tasks.validateNebulaPom.dependsOn ':generatePomFileForPluginZipPublication'
+
+publishNebulaPublicationToMavenLocal.enabled = false
 
 integTest {
     if (project.hasProperty('excludeTests')) {
