@@ -15,3 +15,4 @@ Compatible with OpenSearch 2.12.0
 * Update `com.netflix.nebula.ospackage` from 11.5.0 to 11.6.0 ([#551](https://github.com/opensearch-project/job-scheduler/pull/551)).
 * Update `com.diffplug.spotless` from 6.22.0 to 6.25.0 ([#558](https://github.com/opensearch-project/job-scheduler/pull/558)).
 * Fix backport workflow ([#533](https://github.com/opensearch-project/job-scheduler/pull/533)).
+* Enable `publishPluginZipPublicationToMavenLocal` gradle task to publish job-scheduler plugin zip to maven local ([#584](https://github.com/opensearch-project/job-scheduler/pull/584)).
