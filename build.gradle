@@ -188,6 +188,8 @@ task integTest(type: RestIntegTestTask) {
 }
 tasks.named("check").configure { dependsOn(integTest) }
 
+tasks.generatePomFileForPluginZipPublication.dependsOn publishNebulaPublicationToMavenLocal
+
 integTest {
     if (project.hasProperty('excludeTests')) {
         project.properties['excludeTests']?.replaceAll('\\s', '')?.split('[,;]')?.each {
