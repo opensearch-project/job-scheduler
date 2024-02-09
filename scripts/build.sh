@@ -77,3 +77,4 @@ cp ./build/distributions/*.zip $OUTPUT/plugins
 ./gradlew publishPluginZipPublicationToZipStagingRepository -Dopensearch.version=$VERSION -Dbuild.snapshot=$SNAPSHOT -Dbuild.version_qualifier=$QUALIFIER
 mkdir -p $OUTPUT/maven/org/opensearch
 cp -r ./build/local-staging-repo/org/opensearch/. $OUTPUT/maven/org/opensearch
+cp -r ./build/local-staging-repo/org/opensearch/plugin/opensearch-job-scheduler ~/.m2/repository/org/opensearch/plugin/
