@@ -164,7 +164,7 @@ dependencies {
     implementation group: 'com.google.guava', name: 'failureaccess', version:'1.0.2'
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
     //spotless
-    implementation('com.google.googlejavaformat:google-java-format:1.19.2') {
+    implementation('com.google.googlejavaformat:google-java-format:1.21.0') {
         exclude group: 'com.google.guava'
     }
 }
