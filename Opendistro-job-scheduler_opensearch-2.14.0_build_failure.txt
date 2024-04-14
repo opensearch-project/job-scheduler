@@ -1,0 +1,4 @@
+2024-04-14 06:32:10 INFO [AWSElasticsearchBuildConfig-opensearch_2.14.0/runtime] Rebuilding environment because it doesn't exist at /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.14.0-dev/env/AWSElasticsearchBuildConfig-opensearch_2.14.0/runtime
+2024-04-14 06:32:11 INFO [AWSElasticsearchBuildConfig-opensearch_2.14.0/runtime] Resolving dependencies
+2024-04-14 06:32:11 SEVERE AWSElasticsearchBuildConfig-opensearch_2.14.0 does not exist in the version set AWSSearchServiceSwiftDataPlaneStaging/js-OS-2140-dev or workspace.
+Failed to bootstrap /local/Git-Sync-a9-swift/Opendistro-job-scheduler_opensearch-2.14.0-dev/env/AWSElasticsearchBuildConfig-opensearch_2.14.0/runtime: 
