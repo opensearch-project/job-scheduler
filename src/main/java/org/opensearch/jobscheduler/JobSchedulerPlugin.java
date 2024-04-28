@@ -69,7 +69,6 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     public static final String JS_BASE_URI = "/_plugins/_job_scheduler";
 
     private static final Logger log = LogManager.getLogger(JobSchedulerPlugin.class);
-
     private JobSweeper sweeper;
     private JobScheduler scheduler;
     private LockService lockService;
@@ -81,6 +80,14 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     public JobSchedulerPlugin() {
         this.indicesToListen = new HashSet<>();
         this.indexToJobProviders = new HashMap<>();
+    }
+
+    public Set<String> getIndicesToListen() {
+        return indicesToListen;
+    }
+
+    public Map<String, ScheduledJobProvider> getIndexToJobProviders() {
+        return indexToJobProviders;
     }
 
     @Override
