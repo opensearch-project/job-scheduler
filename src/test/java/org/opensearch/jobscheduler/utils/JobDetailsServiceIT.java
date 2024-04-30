@@ -9,6 +9,7 @@
 package org.opensearch.jobscheduler.utils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -371,7 +372,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         String content = "{\"test_field\":\"test\"}";
         JobDocVersion jobDocVersion = new JobDocVersion(1L, 1L, 1L);
         XContentParser parser = XContentType.JSON.xContent()
-            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, content.getBytes());
+            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, content.getBytes(StandardCharsets.UTF_8));
 
         // Create JobParameterRequest
         JobParameterRequest jobParamRequest = new JobParameterRequest("placeholder", parser, "id", jobDocVersion);
