@@ -129,7 +129,7 @@ testClusters.integTest {
 }
 
 String baseName = "jobSchedulerBwcCluster"
-String bwcOpenSearchVersion = "2.14.0"
+String bwcOpenSearchVersion = "2.15.0"
 String bwcPluginVersion = bwcOpenSearchVersion + ".0"
 String bwcFilePath = "src/test/resources/bwc/job-scheduler/"
 bwcOpenSearchVersion += "-SNAPSHOT"
