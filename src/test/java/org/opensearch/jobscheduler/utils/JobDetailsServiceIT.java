@@ -9,8 +9,10 @@
 package org.opensearch.jobscheduler.utils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -21,11 +23,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.Before;
 import org.mockito.Mockito;
-import org.opensearch.action.ActionListener;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.common.bytes.BytesReference;
-import org.opensearch.common.io.stream.BytesStreamInput;
+import org.opensearch.core.common.bytes.BytesReference;
+import org.opensearch.core.common.io.stream.BytesStreamInput;
 import org.opensearch.common.io.stream.BytesStreamOutput;
+import org.opensearch.core.common.io.stream.Writeable;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.XContentParser;
@@ -39,7 +42,6 @@ import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.request.ExtensionJobActionRequest;
-import org.opensearch.jobscheduler.transport.response.ExtensionJobActionResponse;
 import org.opensearch.jobscheduler.transport.request.JobParameterRequest;
 import org.opensearch.jobscheduler.transport.response.JobParameterResponse;
 import org.opensearch.jobscheduler.transport.request.JobRunnerRequest;
@@ -92,6 +94,51 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             2L,
             2.0
         );
+    }
+
+    /**
+     * Finds the index of the specified byte value within the given byte array
+     *
+     * @param bytes the byte array to process
+     * @param value the byte to identify index of
+     * @return the index of the byte value
+     */
+    private int indexOf(byte[] bytes, byte value) {
+        for (int offset = 0; offset < bytes.length; ++offset) {
+            if (bytes[offset] == value) {
+                return offset;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Trims off the fully qualified request class name bytes and null byte from the ExtensionActionRequest requestBytes
+     *
+     * @param requestBytes the request bytes of an ExtensionActionRequest
+     * @return the trimmed array of bytes
+     */
+    private byte[] trimRequestBytes(byte[] requestBytes) {
+        int pos = indexOf(requestBytes, ExtensionJobActionRequest.UNIT_SEPARATOR);
+        return Arrays.copyOfRange(requestBytes, pos + 1, requestBytes.length);
+    }
+
+    /**
+     * Takes in an object of type T that extends {@link Writeable} and converts the writeable fields to a byte array
+     *
+     * @param <T> a class that extends writeable
+     * @param actionParams the action parameters to be serialized
+     * @throws IOException if serialization fails
+     * @return the byte array of the parameters
+     */
+    private static <T extends Writeable> byte[] convertParamsToBytes(T actionParams) throws IOException {
+        // Write all to output stream
+        BytesStreamOutput out = new BytesStreamOutput();
+        actionParams.writeTo(out);
+        out.flush();
+
+        // convert bytes stream to byte array
+        return BytesReference.toBytes(out.bytes());
     }
 
     public void testGetJobDetailsSanity() throws ExecutionException, InterruptedException, TimeoutException {
@@ -180,13 +227,9 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             this.indicesToListen,
             this.indexToJobProviders
         );
-        jobDetailsService.deleteJobDetails(
-            expectedDocumentId,
-            ActionListener.wrap(
-                deleted -> { assertTrue("Failed to delete JobDetails.", deleted); },
-                exception -> { fail(exception.getMessage()); }
-            )
-        );
+        jobDetailsService.deleteJobDetails(expectedDocumentId, ActionListener.wrap(deleted -> {
+            assertTrue("Failed to delete JobDetails.", deleted);
+        }, exception -> { fail(exception.getMessage()); }));
     }
 
     public void testDeleteNonExistingJobDetails() throws ExecutionException, InterruptedException, TimeoutException {
@@ -198,13 +241,9 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         );
         jobDetailsService.createJobDetailsIndex(ActionListener.wrap(created -> {
             if (created) {
-                jobDetailsService.deleteJobDetails(
-                    expectedDocumentId,
-                    ActionListener.wrap(
-                        deleted -> { assertTrue("Failed to delete job details for documentId.", deleted); },
-                        exception -> fail(exception.getMessage())
-                    )
-                );
+                jobDetailsService.deleteJobDetails(expectedDocumentId, ActionListener.wrap(deleted -> {
+                    assertTrue("Failed to delete job details for documentId.", deleted);
+                }, exception -> fail(exception.getMessage())));
             } else {
                 fail("Failed to job details for extension");
             }
@@ -308,8 +347,11 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
                 actionRequest = new ExtensionActionRequest(in);
 
+                // Trim request class bytes from requestBytes
+                byte[] trimmedRequestBytes = trimRequestBytes(actionRequest.getRequestBytes().toByteArray());
+
                 // Test deserialization of action request params
-                JobRunnerRequest deserializedRequest = new JobRunnerRequest(actionRequest.getRequestBytes());
+                JobRunnerRequest deserializedRequest = new JobRunnerRequest(trimmedRequestBytes);
 
                 // Test deserialization of extension job parameter document Id
                 String deserializedDocumentId = deserializedRequest.getJobParameterDocumentId();
@@ -330,7 +372,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         String content = "{\"test_field\":\"test\"}";
         JobDocVersion jobDocVersion = new JobDocVersion(1L, 1L, 1L);
         XContentParser parser = XContentType.JSON.xContent()
-            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, content.getBytes());
+            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, content.getBytes(StandardCharsets.UTF_8));
 
         // Create JobParameterRequest
         JobParameterRequest jobParamRequest = new JobParameterRequest("placeholder", parser, "id", jobDocVersion);
@@ -343,8 +385,11 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             try (BytesStreamInput in = new BytesStreamInput(BytesReference.toBytes(out.bytes()))) {
                 actionRequest = new ExtensionActionRequest(in);
 
+                // Trim request class bytes from requestBytes
+                byte[] trimmedRequestBytes = trimRequestBytes(actionRequest.getRequestBytes().toByteArray());
+
                 // Test deserialization of action request params
-                JobParameterRequest deserializedRequest = new JobParameterRequest(actionRequest.getRequestBytes());
+                JobParameterRequest deserializedRequest = new JobParameterRequest(trimmedRequestBytes);
                 assertEquals(jobParamRequest.getId(), deserializedRequest.getId());
                 assertEquals(jobParamRequest.getJobSource(), deserializedRequest.getJobSource());
 
@@ -354,11 +399,11 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
         }
     }
 
-    public void testJobRunnerExtensionJobActionResponse() throws IOException {
+    public void testJobRunnerExtensionActionResponse() throws IOException {
 
         // Create JobRunnerResponse
         JobRunnerResponse jobRunnerResponse = new JobRunnerResponse(true);
-        ExtensionActionResponse actionResponse = new ExtensionJobActionResponse<JobRunnerResponse>(jobRunnerResponse);
+        ExtensionActionResponse actionResponse = new ExtensionActionResponse(convertParamsToBytes(jobRunnerResponse));
 
         // Test ExtensionActionResponse deserialization
         try (BytesStreamOutput out = new BytesStreamOutput()) {
@@ -376,11 +421,11 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     }
 
-    public void testJobParameterExtensionJobActionResponse() throws IOException {
+    public void testJobParameterExtensionActionResponse() throws IOException {
 
         // Create JobParameterResponse
         JobParameterResponse jobParameterResponse = new JobParameterResponse(this.extensionJobParameter);
-        ExtensionActionResponse actionResponse = new ExtensionJobActionResponse<JobParameterResponse>(jobParameterResponse);
+        ExtensionActionResponse actionResponse = new ExtensionActionResponse(convertParamsToBytes(jobParameterResponse));
 
         // Test ExtensionActionReseponse deserialization
         try (BytesStreamOutput out = new BytesStreamOutput()) {

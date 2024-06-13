@@ -16,7 +16,7 @@ import com.cronutils.utils.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.ResourceAlreadyExistsException;
-import org.opensearch.action.ActionListener;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.action.DocWriteResponse;
 import org.opensearch.action.admin.indices.create.CreateIndexRequest;
 import org.opensearch.action.delete.DeleteRequest;
@@ -45,7 +45,7 @@ import java.time.Instant;
 
 public final class LockService {
     private static final Logger logger = LogManager.getLogger(LockService.class);
-    private static final String LOCK_INDEX_NAME = ".opendistro-job-scheduler-lock";
+    public static final String LOCK_INDEX_NAME = ".opendistro-job-scheduler-lock";
 
     private final Client client;
     private final ClusterService clusterService;
@@ -238,19 +238,15 @@ public final class LockService {
                     exception -> {
                         if (exception instanceof VersionConflictEngineException) {
                             logger.debug("Lock is already created. {}", exception.getMessage());
+                            listener.onResponse(null);
+                            return;
                         }
-                        if (exception instanceof IOException) {
-                            logger.error("IOException occurred creating lock", exception);
-                        }
-                        listener.onResponse(null);
+                        listener.onFailure(exception);
                     }
                 )
             );
         } catch (IOException e) {
             logger.error("IOException occurred creating lock", e);
-            listener.onResponse(null);
-        } catch (Exception e) {
-            logger.error(e);
             listener.onFailure(e);
         }
     }

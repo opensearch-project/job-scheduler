@@ -9,10 +9,12 @@
 package org.opensearch.jobscheduler.transport.request;
 
 import java.io.IOException;
-import org.opensearch.common.bytes.BytesReference;
-import org.opensearch.common.io.stream.StreamInput;
-import org.opensearch.common.io.stream.StreamOutput;
-import org.opensearch.common.io.stream.Writeable;
+
+import org.opensearch.action.ActionRequest;
+import org.opensearch.action.ActionRequestValidationException;
+import org.opensearch.core.common.bytes.BytesReference;
+import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.core.common.io.stream.StreamOutput;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.core.xcontent.XContentParser;
@@ -21,7 +23,7 @@ import org.opensearch.jobscheduler.spi.JobDocVersion;
 /**
  * Request to extensions to parse a ScheduledJobParameter
  */
-public class JobParameterRequest implements Writeable {
+public class JobParameterRequest extends ActionRequest {
 
     /**
      * accessToken is the placeholder for the user Identity/access token to be used to perform validation prior to invoking the extension action
@@ -92,6 +94,11 @@ public class JobParameterRequest implements Writeable {
         out.writeBytesReference(this.jobSource);
         out.writeString(this.id);
         this.jobDocVersion.writeTo(out);
+    }
+
+    @Override
+    public ActionRequestValidationException validate() {
+        return null;
     }
 
     public String getAccessToken() {

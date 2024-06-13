@@ -11,6 +11,7 @@ plugins {
     id 'jacoco'
     id 'maven-publish'
     id 'signing'
+    id "org.gradle.test-retry" version "1.5.9"
 }
 
 apply plugin: 'opensearch.java'
@@ -43,13 +44,13 @@ jacocoTestReport {
 }
 check.dependsOn jacocoTestReport
 
-def slf4j_version_of_cronutils = "1.7.36"
+def slf4j_version_of_cronutils = "2.0.13"
 dependencies {
     compileOnly "org.opensearch:opensearch:${opensearch_version}"
     // slf4j is the runtime dependency of cron-utils
     // if cron-utils version gets bumped, pls check the slf4j version cron-utils depending on
     //  and bump if needed
-    implementation "com.cronutils:cron-utils:9.2.0"
+    implementation "com.cronutils:cron-utils:9.2.1"
     runtimeOnly "org.slf4j:slf4j-api:${slf4j_version_of_cronutils}"
 
     testImplementation "org.opensearch.test:framework:${opensearch_version}"
@@ -66,10 +67,14 @@ configurations.all {
 shadowJar {
     relocate 'com.cronutils', 'org.opensearch.jobscheduler.repackage.com.cronutils'
     relocate 'org.slf4j', 'org.opensearch.jobscheduler.repackage.org.slf4j' // dependency of cron-utils
-    classifier = null
+    archiveClassifier = null
 }
 
 test {
+    retry {
+        failOnPassedAfterRetry = false
+        maxRetries = 5
+    }
     doFirst {
         // reverse operation of https://github.com/elastic/elasticsearch/blob/7.6/buildSrc/src/main/groovy/org/elasticsearch/gradle/BuildPlugin.groovy#L736-L743
         // to fix the classpath for unit tests

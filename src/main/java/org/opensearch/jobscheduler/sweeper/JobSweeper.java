@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.sweeper;
 
+import org.opensearch.common.lifecycle.LifecycleListener;
 import org.opensearch.jobscheduler.JobSchedulerSettings;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
@@ -21,7 +22,7 @@ import org.opensearch.jobscheduler.utils.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.OpenSearchException;
-import org.opensearch.action.ActionListener;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.action.bulk.BackoffPolicy;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
@@ -33,8 +34,7 @@ import org.opensearch.cluster.routing.IndexShardRoutingTable;
 import org.opensearch.cluster.routing.Murmur3HashFunction;
 import org.opensearch.cluster.routing.ShardRouting;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.common.bytes.BytesReference;
-import org.opensearch.common.component.LifecycleListener;
+import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.common.util.concurrent.OpenSearchExecutors;
@@ -47,8 +47,8 @@ import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.index.engine.Engine;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.shard.IndexingOperationListener;
-import org.opensearch.index.shard.ShardId;
-import org.opensearch.rest.RestStatus;
+import org.opensearch.core.index.shard.ShardId;
+import org.opensearch.core.rest.RestStatus;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.search.sort.FieldSortBuilder;
@@ -389,7 +389,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         String searchAfter = startAfter == null ? "" : startAfter;
         while (searchAfter != null) {
             SearchRequest jobSearchRequest = new SearchRequest().indices(shardId.getIndexName())
-                .preference("_shards:" + shardId.id() + "|_only_local")
+                .preference("_shards:" + shardId.id() + "|_primary")
                 .source(
                     new SearchSourceBuilder().version(true)
                         .seqNoAndPrimaryTerm(true)

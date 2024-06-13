@@ -11,7 +11,7 @@ package org.opensearch.jobscheduler.spi.utils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.mockito.Mockito;
-import org.opensearch.action.ActionListener;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
@@ -81,7 +81,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
 
     @Before
     public void setup() {
-        // the test cluster is an external cluster instead of internal cluster in new test framework,
+        // the test cluster is an external cluster instead of internal cluster in new
+        // test framework,
         // thus the OpenSearchIntegTestCase.clusterService() will throw exception.
         this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(this.clusterService.state().routingTable().hasIndex(".opendistro-job-scheduler-lock"))
@@ -186,6 +187,28 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                 }, exception -> fail(exception.getMessage())));
             }, exception -> fail(exception.getMessage())));
         }, exception -> fail(exception.getMessage())));
+        latch.await(10L, TimeUnit.SECONDS);
+    }
+
+    public void testAcquireLockWithLongIdFail() throws Exception {
+        String uniqSuffix = "_long_lock_id";
+        String lockID = randomAlphaOfLengthBetween(513, 1000);
+        CountDownLatch latch = new CountDownLatch(1);
+        LockService lockService = new LockService(client(), this.clusterService);
+        final JobExecutionContext context = new JobExecutionContext(
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
+        );
+
+        lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
+            fail("should throw an exception");
+        }, exception -> {
+            assertTrue(exception.getMessage().contains("too long"));
+            latch.countDown();
+        }));
         latch.await(10L, TimeUnit.SECONDS);
     }
 
@@ -432,7 +455,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
 
         lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
             assertNotNull("Expected to successfully grab lock", lock);
-            // Set the time of LockService (the 'lockTime' of acquired locks) to a fixed time.
+            // Set the time of LockService (the 'lockTime' of acquired locks) to a fixed
+            // time.
             Instant now = Instant.now();
             lockService.setTime(now);
             lockService.renewLock(lock, ActionListener.wrap(renewedLock -> {

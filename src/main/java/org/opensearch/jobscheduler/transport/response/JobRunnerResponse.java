@@ -10,15 +10,15 @@ package org.opensearch.jobscheduler.transport.response;
 
 import java.io.IOException;
 
-import org.opensearch.common.io.stream.StreamInput;
-import org.opensearch.common.io.stream.StreamOutput;
-import org.opensearch.common.io.stream.Writeable;
+import org.opensearch.core.action.ActionResponse;
+import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.core.common.io.stream.StreamOutput;
 
 /**
  * Response from extensions indicating the status of the ScheduledJobRunner invocation
  *
  */
-public class JobRunnerResponse implements Writeable {
+public class JobRunnerResponse extends ActionResponse {
 
     /**
      * jobRunnerStatus indicates if the extension job runner has been executed

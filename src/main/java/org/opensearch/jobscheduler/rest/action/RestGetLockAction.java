@@ -10,7 +10,7 @@ package org.opensearch.jobscheduler.rest.action;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.action.ActionListener;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContentBuilder;
@@ -24,7 +24,7 @@ import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
-import org.opensearch.rest.RestStatus;
+import org.opensearch.core.rest.RestStatus;
 
 import java.io.IOException;
 import java.util.List;
@@ -35,7 +35,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import com.google.common.collect.ImmutableList;
-import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
+import static org.opensearch.core.xcontent.XContentParserUtils.ensureExpectedToken;
 import static org.opensearch.rest.RestRequest.Method.GET;
 
 import static org.opensearch.jobscheduler.spi.LockModel.GET_LOCK_ACTION;
@@ -76,15 +76,12 @@ public class RestGetLockAction extends BaseRestHandler {
 
         // Process acquire lock request
         CompletableFuture<LockModel> inProgressFuture = new CompletableFuture<>();
-        lockService.acquireLockWithId(
-            jobIndexName,
-            lockDurationSeconds,
-            jobId,
-            ActionListener.wrap(lockModel -> { inProgressFuture.complete(lockModel); }, exception -> {
-                logger.error("Could not acquire lock with ID : " + jobId, exception);
-                inProgressFuture.completeExceptionally(exception);
-            })
-        );
+        lockService.acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, ActionListener.wrap(lockModel -> {
+            inProgressFuture.complete(lockModel);
+        }, exception -> {
+            logger.error("Could not acquire lock with ID : " + jobId, exception);
+            inProgressFuture.completeExceptionally(exception);
+        }));
 
         try {
             inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);

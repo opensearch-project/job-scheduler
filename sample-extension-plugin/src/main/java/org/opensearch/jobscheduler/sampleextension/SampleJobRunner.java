@@ -17,7 +17,7 @@ import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.action.ActionListener;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.cluster.routing.ShardRouting;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.plugins.Plugin;
@@ -123,10 +123,9 @@ public class SampleJobRunner implements ScheduledJobRunner {
 
                     lockService.release(
                         lock,
-                        ActionListener.wrap(
-                            released -> { log.info("Released lock for job {}", jobParameter.getName()); },
-                            exception -> { throw new IllegalStateException("Failed to release lock."); }
-                        )
+                        ActionListener.wrap(released -> { log.info("Released lock for job {}", jobParameter.getName()); }, exception -> {
+                            throw new IllegalStateException("Failed to release lock.");
+                        })
                     );
                 }, exception -> { throw new IllegalStateException("Failed to acquire lock."); }));
             }

@@ -16,7 +16,7 @@ import java.io.InputStreamReader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.ResourceAlreadyExistsException;
-import org.opensearch.action.ActionListener;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.action.DocWriteResponse;
 import org.opensearch.action.admin.indices.create.CreateIndexRequest;
 import org.opensearch.action.delete.DeleteRequest;
@@ -31,9 +31,6 @@ import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.extensions.action.ExtensionProxyAction;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
-import org.opensearch.common.bytes.BytesReference;
-import org.opensearch.common.io.stream.BytesStreamOutput;
-import org.opensearch.common.io.stream.Writeable;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.index.engine.DocumentMissingException;
@@ -41,7 +38,7 @@ import org.opensearch.index.engine.Engine;
 import org.opensearch.index.engine.VersionConflictEngineException;
 import org.opensearch.index.seqno.SequenceNumbers;
 import org.opensearch.index.shard.IndexingOperationListener;
-import org.opensearch.index.shard.ShardId;
+import org.opensearch.core.index.shard.ShardId;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 import org.opensearch.jobscheduler.model.JobDetails;
@@ -72,7 +69,7 @@ public class JobDetailsService implements IndexingOperationListener {
     public static final String JOB_DETAILS_INDEX_NAME = ".opensearch-job-scheduler-job-details";
     private static final String PLUGINS_JOB_DETAILS_MAPPING_FILE = "/mappings/opensearch_job_scheduler_job_details.json";
 
-    public static Long TIME_OUT_FOR_REQUEST = 10L;
+    public static Long TIME_OUT_FOR_REQUEST = 15L;
     private final Client client;
     private final ClusterService clusterService;
     private Set<String> indicesToListen;
@@ -501,24 +498,6 @@ public class JobDetailsService implements IndexingOperationListener {
             logger.error("IOException occurred updating job details for documentId " + documentId, e);
             listener.onResponse(null);
         }
-    }
-
-    /**
-     * Takes in an object of type T that extends {@link Writeable} and converts the writeable fields to a byte array
-     *
-     * @param <T> a class that extends writeable
-     * @param actionParams the action parameters to be serialized
-     * @throws IOException if serialization fails
-     * @return the byte array of the parameters
-     */
-    public static <T extends Writeable> byte[] convertParamsToBytes(T actionParams) throws IOException {
-        // Write all to output stream
-        BytesStreamOutput out = new BytesStreamOutput();
-        actionParams.writeTo(out);
-        out.flush();
-
-        // convert bytes stream to byte array
-        return BytesReference.toBytes(out.bytes());
     }
 
     private String jobDetailsMapping() {

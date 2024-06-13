@@ -17,7 +17,7 @@ import org.opensearch.core.xcontent.XContentParser;
 import java.io.IOException;
 import java.util.Objects;
 
-import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
+import static org.opensearch.core.xcontent.XContentParserUtils.ensureExpectedToken;
 
 /**
  * This model class stores the job details of the extension.
@@ -95,7 +95,6 @@ public class JobDetails implements ToXContentObject {
         String extensionUniqueId = null;
 
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.currentToken(), parser);
-
         while (parser.nextToken() != XContentParser.Token.END_OBJECT) {
             String fieldName = parser.currentName();
             parser.nextToken();

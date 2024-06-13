@@ -1,18 +1,15 @@
-name: Backport
+name: Releases
+
 on:
-  pull_request_target:
-    types:
-      - closed
-      - labeled
+  push:
+    tags:
+      - '*'
 
 jobs:
-  backport:
-    if: github.event.pull_request.merged == true
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
-    name: Backport
     steps:
       - name: GitHub App token
         id: github_app_token
@@ -21,10 +18,11 @@ jobs:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
           installation_id: 22958780
-
-      - name: Backport
-        uses: VachaShah/backport@v2.2.0
+      - name: Get tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
+      - uses: actions/checkout@v4
+      - uses: ncipollo/release-action@v1
         with:
           github_token: ${{ steps.github_app_token.outputs.token }}
-          head_template: backport/backport-<%= number %>-to-<%= base %>
-          failure_labels: backport-failed
+          bodyFile: release-notes/opensearch.job-scheduler.release-notes-${{steps.tag.outputs.tag}}.md

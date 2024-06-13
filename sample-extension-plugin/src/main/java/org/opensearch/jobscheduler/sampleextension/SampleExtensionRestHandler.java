@@ -10,7 +10,7 @@ package org.opensearch.jobscheduler.sampleextension;
 
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
-import org.opensearch.action.ActionListener;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.delete.DeleteResponse;
 import org.opensearch.action.index.IndexRequest;
@@ -21,7 +21,7 @@ import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.rest.RestResponse;
-import org.opensearch.rest.RestStatus;
+import org.opensearch.core.rest.RestStatus;
 
 import java.io.IOException;
 import java.time.Instant;
