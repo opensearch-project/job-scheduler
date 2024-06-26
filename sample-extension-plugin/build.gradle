@@ -6,6 +6,7 @@
 apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-rest-test'
+apply plugin: 'opensearch.pluginzip'
 
 import org.opensearch.gradle.test.RestIntegTestTask
 import org.opensearch.gradle.testclusters.StandaloneRestIntegTestTask
@@ -21,10 +22,23 @@ opensearchplugin {
     extendedPlugins = ['opensearch-job-scheduler']
 }
 
+configurations {
+    opensearchPlugin
+}
+
 ext {
     projectSubstitutions = [:]
     licenseFile = rootProject.file('LICENSE.txt')
     noticeFile = rootProject.file('NOTICE.txt')
+    opensearch_version = System.getProperty("opensearch.version", "3.0.0-SNAPSHOT")
+    isSnapshot = "true" == System.getProperty("build.snapshot", "true")
+    // 2.2.0-SNAPSHOT -> 2.2.0.0-SNAPSHOT
+    version_tokens = opensearch_version.tokenize('-')
+    opensearch_build = version_tokens[0] + '.0'
+    if (isSnapshot) {
+        opensearch_build += "-SNAPSHOT"
+    }
+    security_plugin_version = System.getProperty("security.version", opensearch_build)
 }
 
 repositories {
@@ -110,6 +124,64 @@ integTest.getClusters().forEach{c -> {
     c.plugin(project.getObjects().fileProperty().value(bundle.getArchiveFile()))
 }}
 
+ext.resolvePluginFile = { pluginId ->
+    return new Callable<RegularFile>() {
+        @Override
+        RegularFile call() throws Exception {
+            return new RegularFile() {
+                @Override
+                File getAsFile() {
+                    return configurations.opensearchPlugin.resolvedConfiguration.resolvedArtifacts
+                            .find { ResolvedArtifact f ->
+                                f.name.startsWith(pluginId)
+                            }
+                            .file
+                }
+            }
+        }
+    }
+}
+def securityPluginFile = resolvePluginFile("opensearch-security")
+
+// === Setup security test ===
+// This flag indicates the existence of security plugin
+def securityEnabled = System.getProperty("security", "false") == "true" || System.getProperty("https", "false") == "true"
+afterEvaluate {
+    testClusters.integTest.nodes.each { node ->
+        def plugins = node.plugins
+        def firstPlugin = plugins.get(0)
+        if (firstPlugin.provider == project.bundlePlugin.archiveFile) {
+            plugins.remove(0)
+            plugins.add(firstPlugin)
+        }
+
+        if (securityEnabled) {
+            node.extraConfigFile("kirk.pem", file("src/test/resources/security/kirk.pem"))
+            node.extraConfigFile("kirk-key.pem", file("src/test/resources/security/kirk-key.pem"))
+            node.extraConfigFile("esnode.pem", file("src/test/resources/security/esnode.pem"))
+            node.extraConfigFile("esnode-key.pem", file("src/test/resources/security/esnode-key.pem"))
+            node.extraConfigFile("root-ca.pem", file("src/test/resources/security/root-ca.pem"))
+            node.setting("plugins.security.ssl.transport.pemcert_filepath", "esnode.pem")
+            node.setting("plugins.security.ssl.transport.pemkey_filepath", "esnode-key.pem")
+            node.setting("plugins.security.ssl.transport.pemtrustedcas_filepath", "root-ca.pem")
+            node.setting("plugins.security.ssl.transport.enforce_hostname_verification", "false")
+            node.setting("plugins.security.ssl.http.enabled", "true")
+            node.setting("plugins.security.ssl.http.pemcert_filepath", "esnode.pem")
+            node.setting("plugins.security.ssl.http.pemkey_filepath", "esnode-key.pem")
+            node.setting("plugins.security.ssl.http.pemtrustedcas_filepath", "root-ca.pem")
+            node.setting("plugins.security.allow_unsafe_democertificates", "true")
+            node.setting("plugins.security.allow_default_init_securityindex", "true")
+            node.setting("plugins.security.authcz.admin_dn", "\n - CN=kirk,OU=client,O=client,L=test,C=de")
+            node.setting("plugins.security.audit.type", "internal_opensearch")
+            node.setting("plugins.security.enable_snapshot_restore_privilege", "true")
+            node.setting("plugins.security.check_snapshot_restore_write_privileges", "true")
+            node.setting("plugins.security.restapi.roles_enabled", "[\"all_access\", \"security_rest_api_access\"]")
+            node.setting("plugins.security.system_indices.enabled", "true")
+            // node.setting("plugins.security.system_indices.indices", "[\".opendistro-ism-config\"]")
+        }
+    }
+}
+
 testClusters.integTest {
     testDistribution = 'INTEG_TEST'
 
@@ -125,6 +197,10 @@ testClusters.integTest {
             debugPort += 1
         }
     }
+    if (securityEnabled) {
+        plugin(provider(securityPluginFile))
+    }
+
     setting 'path.repo', repo.absolutePath
 }
 
@@ -161,6 +237,9 @@ String bwcDownloadUrl = "https://aws.oss.sonatype.org/service/local/artifact/mav
                     }
                 }
             }))
+            if (securityEnabled) {
+                plugin(provider(securityPluginFile))
+            }
             setting 'path.repo', "${buildDir}/cluster/shared/repo/${baseName}"
             setting 'http.content_type.required', 'true'
         }
@@ -293,6 +372,10 @@ run {
         }
     }
     useCluster testClusters.integTest
+}
+
+dependencies {
+    opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
 
 // As of ES 7.7 the sample-extension-plugin is being added to the list of plugins for the testCluster during build before
