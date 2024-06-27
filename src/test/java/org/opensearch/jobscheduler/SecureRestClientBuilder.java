@@ -1,8 +1,11 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
  */
-
 package org.opensearch.jobscheduler;
 
 import java.io.IOException;
@@ -104,10 +107,9 @@ public class SecureRestClientBuilder {
         builder.setRequestConfigCallback(new RestClientBuilder.RequestConfigCallback() {
             @Override
             public RequestConfig.Builder customizeRequestConfig(RequestConfig.Builder requestConfigBuilder) {
-                return requestConfigBuilder
-                        .setConnectTimeout(Timeout.ofMilliseconds(defaultConnectTimeOutMSecs))
-                        .setResponseTimeout(Timeout.ofMilliseconds(defaultSoTimeoutMSecs))
-                        .setConnectionRequestTimeout(Timeout.ofMilliseconds(defaultConnRequestTimeoutMSecs));
+                return requestConfigBuilder.setConnectTimeout(Timeout.ofMilliseconds(defaultConnectTimeOutMSecs))
+                    .setResponseTimeout(Timeout.ofMilliseconds(defaultSoTimeoutMSecs))
+                    .setConnectionRequestTimeout(Timeout.ofMilliseconds(defaultConnRequestTimeoutMSecs));
             }
         });
 
@@ -122,23 +124,21 @@ public class SecureRestClientBuilder {
             @Override
             public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
                 if (sslContext != null) {
-                    TlsStrategy tlsStrategy = ClientTlsStrategyBuilder
-                            .create()
-                            .setSslContext(sslContext)
-                            // See please https://issues.apache.org/jira/browse/HTTPCLIENT-2219
-                            .setTlsDetailsFactory(new Factory<SSLEngine, TlsDetails>() {
-                                @Override
-                                public TlsDetails create(final SSLEngine sslEngine) {
-                                    return new TlsDetails(sslEngine.getSession(), sslEngine.getApplicationProtocol());
-                                }
-                            })
-                            .build();
-                    PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder
-                            .create()
-                            .setTlsStrategy(tlsStrategy)
-                            .setMaxConnPerRoute(defaultMaxConnPerRoute)
-                            .setMaxConnTotal(defaultMaxConnTotal)
-                            .build();
+                    TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create()
+                        .setSslContext(sslContext)
+                        // See please https://issues.apache.org/jira/browse/HTTPCLIENT-2219
+                        .setTlsDetailsFactory(new Factory<SSLEngine, TlsDetails>() {
+                            @Override
+                            public TlsDetails create(final SSLEngine sslEngine) {
+                                return new TlsDetails(sslEngine.getSession(), sslEngine.getApplicationProtocol());
+                            }
+                        })
+                        .build();
+                    PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
+                        .setTlsStrategy(tlsStrategy)
+                        .setMaxConnPerRoute(defaultMaxConnPerRoute)
+                        .setMaxConnTotal(defaultMaxConnTotal)
+                        .build();
                     httpClientBuilder.setConnectionManager(connectionManager);
                 }
                 if (credentialsProvider != null) {
@@ -174,8 +174,7 @@ public class SecureRestClientBuilder {
     }
 
     private CredentialsProvider createCredsProvider() {
-        if (Strings.isNullOrEmpty(user) || Strings.isNullOrEmpty(passwd))
-            return null;
+        if (Strings.isNullOrEmpty(user) || Strings.isNullOrEmpty(passwd)) return null;
 
         final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(new AuthScope(null, -1), new UsernamePasswordCredentials(user, passwd.toCharArray()));
@@ -199,12 +198,12 @@ public class SecureRestClientBuilder {
 
         if (!Files.isReadable(Paths.get(path))) {
             throw new OpenSearchException(
-                    "Unable to read "
-                            + path
-                            + " ("
-                            + Paths.get(path)
-                            + "). Please make sure this files exists and is readable regarding to permissions. Property: "
-                            + originalFile
+                "Unable to read "
+                    + path
+                    + " ("
+                    + Paths.get(path)
+                    + "). Please make sure this files exists and is readable regarding to permissions. Property: "
+                    + originalFile
             );
         }
         if ("".equals(path)) {
