@@ -11,7 +11,7 @@ plugins {
     id 'jacoco'
     id 'maven-publish'
     id 'signing'
-    id "org.gradle.test-retry" version "1.5.9"
+    id "org.gradle.test-retry" version "1.5.10"
 }
 
 apply plugin: 'opensearch.java'
