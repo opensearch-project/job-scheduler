@@ -1,6 +1,6 @@
-## Version 2.14.0.0
+## Version 2.15.0.0
 
-Compatible with OpenSearch 2.14.0
+Compatible with OpenSearch 2.15.0
 
 ### Maintenance
 * Increment version to 2.15.0 ([#626](https://github.com/opensearch-project/job-scheduler/pull/626)).
