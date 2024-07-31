@@ -30,6 +30,7 @@ import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.extensions.action.ExtensionProxyAction;
+import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.index.IndexNotFoundException;
@@ -293,7 +294,10 @@ public class JobDetailsService implements IndexingOperationListener {
         if (jobDetailsIndexExist()) {
             listener.onResponse(true);
         } else {
-            CreateIndexRequest request = new CreateIndexRequest(JOB_DETAILS_INDEX_NAME).mapping(jobDetailsMapping());
+            CreateIndexRequest request = new CreateIndexRequest(JOB_DETAILS_INDEX_NAME).mapping(
+                jobDetailsMapping(),
+                (MediaType) XContentType.JSON
+            );
             client.admin()
                 .indices()
                 .create(request, ActionListener.wrap(response -> listener.onResponse(response.isAcknowledged()), exception -> {
