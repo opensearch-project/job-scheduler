@@ -26,6 +26,7 @@ import org.opensearch.action.update.UpdateRequest;
 import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
+import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.common.xcontent.XContentFactory;
@@ -82,7 +83,10 @@ public final class LockService {
             if (lockIndexExist()) {
                 listener.onResponse(true);
             } else {
-                final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(lockMapping());
+                final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(
+                    lockMapping(),
+                    (MediaType) XContentType.JSON
+                );
                 client.admin()
                     .indices()
                     .create(request, ActionListener.wrap(response -> listener.onResponse(response.isAcknowledged()), exception -> {
