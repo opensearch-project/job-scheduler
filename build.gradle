@@ -165,7 +165,7 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
     //spotless
-    implementation('com.google.googlejavaformat:google-java-format:1.22.0') {
+    implementation('com.google.googlejavaformat:google-java-format:1.23.0') {
         exclude group: 'com.google.guava'
     }
 }
