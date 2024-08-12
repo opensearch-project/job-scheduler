@@ -44,7 +44,7 @@ jacocoTestReport {
 }
 check.dependsOn jacocoTestReport
 
-def slf4j_version_of_cronutils = "2.0.13"
+def slf4j_version_of_cronutils = "2.0.16"
 dependencies {
     compileOnly "org.opensearch:opensearch:${opensearch_version}"
     // slf4j is the runtime dependency of cron-utils
