@@ -45,8 +45,6 @@ public class TrustStore {
         }
         CertificateFactory fact = CertificateFactory.getInstance(certType);
 
-
-
         try (InputStream is = Files.newInputStream(PathUtils.get(file))) {
             Collection<? extends Certificate> certs = fact.generateCertificates(is);
             X509Certificate[] x509Certs = new X509Certificate[certs.size()];
