@@ -11,7 +11,7 @@ plugins {
     id 'jacoco'
     id 'maven-publish'
     id 'signing'
-    id "org.gradle.test-retry" version "1.5.9"
+    id "org.gradle.test-retry" version "1.5.10"
 }
 
 apply plugin: 'opensearch.java'
@@ -44,7 +44,7 @@ jacocoTestReport {
 }
 check.dependsOn jacocoTestReport
 
-def slf4j_version_of_cronutils = "2.0.13"
+def slf4j_version_of_cronutils = "2.0.16"
 dependencies {
     compileOnly "org.opensearch:opensearch:${opensearch_version}"
     // slf4j is the runtime dependency of cron-utils
