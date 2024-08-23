@@ -8,7 +8,10 @@
  */
 package org.opensearch.jobscheduler;
 
-import java.io.FileInputStream;
+import org.opensearch.common.io.PathUtils;
+
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -41,7 +44,10 @@ public class TrustStore {
             return null;
         }
         CertificateFactory fact = CertificateFactory.getInstance(certType);
-        try (FileInputStream is = new FileInputStream(file)) {
+
+
+
+        try (InputStream is = Files.newInputStream(PathUtils.get(file))) {
             Collection<? extends Certificate> certs = fact.generateCertificates(is);
             X509Certificate[] x509Certs = new X509Certificate[certs.size()];
             int i = 0;

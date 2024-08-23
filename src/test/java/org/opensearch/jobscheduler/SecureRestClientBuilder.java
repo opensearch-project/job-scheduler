@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.ArrayList;
@@ -43,6 +42,7 @@ import org.apache.logging.log4j.Logger;
 import org.opensearch.OpenSearchException;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
+import org.opensearch.common.io.PathUtils;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.core.common.Strings;
 
@@ -192,16 +192,16 @@ public class SecureRestClientBuilder {
             throw new OpenSearchException("Empty file path for " + originalFile);
         }
 
-        if (Files.isDirectory(Paths.get(path), LinkOption.NOFOLLOW_LINKS)) {
+        if (Files.isDirectory(PathUtils.get(path), LinkOption.NOFOLLOW_LINKS)) {
             throw new OpenSearchException("Is a directory: " + path + " Expected a file for " + originalFile);
         }
 
-        if (!Files.isReadable(Paths.get(path))) {
+        if (!Files.isReadable(PathUtils.get(path))) {
             throw new OpenSearchException(
                 "Unable to read "
                     + path
                     + " ("
-                    + Paths.get(path)
+                    + PathUtils.get(path)
                     + "). Please make sure this files exists and is readable regarding to permissions. Property: "
                     + originalFile
             );
@@ -228,7 +228,7 @@ public class SecureRestClientBuilder {
             return null;
         }
         String keyStorePath = resolve(keyStoreFile, configPath);
-        try (InputStream is = Files.newInputStream(Paths.get(keyStorePath))) {
+        try (InputStream is = Files.newInputStream(PathUtils.get(keyStorePath))) {
             keyStore.load(is, passwd.toCharArray());
         }
         return keyStore;
