@@ -377,19 +377,3 @@ run {
 dependencies {
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
-
-// As of ES 7.7 the sample-extension-plugin is being added to the list of plugins for the testCluster during build before
-// the job-scheduler plugin is causing build failures.
-// The job-scheduler zip is added explicitly above but the sample-extension-plugin is added implicitly at some time during evaluation.
-// Will need to do a deep dive to find out exactly what task adds the sample-extension-plugin and add job-scheduler there but a temporary hack is to
-// reorder the plugins list after evaluation but prior to task execution when the plugins are installed.
-afterEvaluate {
-    testClusters.javaRestTest.nodes.each { node ->
-        def nodePlugins = node.plugins
-        def firstPlugin = nodePlugins.get(0)
-        if (firstPlugin.provider == project.bundlePlugin.archiveFile) {
-            nodePlugins.remove(0)
-            nodePlugins.add(firstPlugin)
-        }
-    }
-}
