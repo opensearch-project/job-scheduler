@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.sampleextension;
 
-import org.opensearch.common.settings.Setting;
 import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
@@ -56,14 +55,6 @@ public class SampleExtensionPlugin extends Plugin implements ActionPlugin, JobSc
     private static final Logger log = LogManager.getLogger(SampleExtensionPlugin.class);
 
     static final String JOB_INDEX_NAME = ".scheduler_sample_extension";
-
-    @Override
-    public List<Setting<?>> getSettings() {
-        return List.of(
-            Setting.simpleString("username", Setting.Property.NodeScope, Setting.Property.Filtered),
-            Setting.simpleString("password", Setting.Property.NodeScope, Setting.Property.Filtered)
-        );
-    }
 
     @Override
     public Collection<Object> createComponents(
