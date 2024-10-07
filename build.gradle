@@ -33,7 +33,7 @@ buildscript {
 }
 
 plugins {
-    id 'com.netflix.nebula.ospackage' version "11.9.1"
+    id 'com.netflix.nebula.ospackage' version "11.10.0"
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
 }
@@ -93,8 +93,8 @@ allprojects {
     apply from: "$rootDir/build-tools/repositories.gradle"
 
     plugins.withId('java') {
-        targetCompatibility = JavaVersion.VERSION_11
-        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_21
     }
 }
 
@@ -178,7 +178,7 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
     //spotless
-    implementation('com.google.googlejavaformat:google-java-format:1.23.0') {
+    implementation('com.google.googlejavaformat:google-java-format:1.24.0') {
         exclude group: 'com.google.guava'
     }
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
