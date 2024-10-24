@@ -9,15 +9,19 @@
 package org.opensearch.jobscheduler;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLEngine;
-import org.apache.hc.client5.http.auth.AuthScope;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
-import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
@@ -35,6 +39,8 @@ import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
+import org.opensearch.client.WarningFailureException;
+import org.opensearch.common.io.PathUtils;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.common.util.concurrent.ThreadContext;
@@ -45,9 +51,6 @@ import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.test.rest.OpenSearchRestTestCase;
 
 public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
-
-    private static String localhostName = "localhost";
-    private static int port = 9200;
 
     protected boolean isHttps() {
         boolean isHttps = Optional.ofNullable(System.getProperty("https")).map("true"::equalsIgnoreCase).orElse(false);
@@ -68,7 +71,14 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
 
     @Override
     protected Settings restAdminSettings() {
-        return Settings.builder().put("strictDeprecationMode", false).put("http.port", 9200).build();
+        return Settings.builder()
+            .put("http.port", 9200)
+            .put("plugins.security.ssl.http.enabled", isHttps())
+            .put("plugins.security.ssl.http.pemcert_filepath", "sample.pem")
+            .put("plugins.security.ssl.http.keystore_filepath", "test-kirk.jks")
+            .put("plugins.security.ssl.http.keystore_password", "changeit")
+            .build();
+        // return Settings.builder().put("strictDeprecationMode", false).put("http.port", 9200).build();
     }
 
     @Override
@@ -76,9 +86,21 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
         boolean strictDeprecationMode = settings.getAsBoolean("strictDeprecationMode", true);
         RestClientBuilder builder = RestClient.builder(hosts);
         if (isHttps()) {
-            configureHttpsClient(builder, settings);
-            builder.setStrictDeprecationMode(strictDeprecationMode);
-            return builder.build();
+            String keystore = settings.get("plugins.security.ssl.http.keystore_filepath");
+            if (Objects.nonNull(keystore)) {
+                URI uri = null;
+                try {
+                    uri = this.getClass().getClassLoader().getResource("security/sample.pem").toURI();
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+                Path configPath = PathUtils.get(uri).getParent().toAbsolutePath();
+                return new SecureRestClientBuilder(settings, configPath, hosts).build();
+            } else {
+                configureHttpsClient(builder, settings);
+                builder.setStrictDeprecationMode(strictDeprecationMode);
+                return builder.build();
+            }
         } else {
             configureClient(builder, settings);
             builder.setStrictDeprecationMode(strictDeprecationMode);
@@ -111,14 +133,23 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
             for (Map<String, Object> index : parserList) {
                 String indexName = (String) index.get("index");
                 if (indexName != null && !".opendistro_security".equals(indexName)) {
-                    adminClient().performRequest(new Request("DELETE", "/" + indexName));
+                    try {
+                        adminClient().performRequest(new Request("DELETE", "/" + indexName));
+                    } catch (WarningFailureException ignore) {}
                 }
             }
         }
     }
 
     protected static void configureHttpsClient(RestClientBuilder builder, Settings settings) throws IOException {
-        Map<String, String> headers = ThreadContext.buildDefaultHeaders(settings);
+        Map<String, String> headers = new HashMap<>(ThreadContext.buildDefaultHeaders(settings));
+        String userName = Optional.ofNullable(System.getProperty("user")).orElseThrow(() -> new RuntimeException("user name is missing"));
+        String password = Optional.ofNullable(System.getProperty("password"))
+            .orElseThrow(() -> new RuntimeException("password is missing"));
+        headers.put(
+            "Authorization",
+            "Basic " + Base64.getEncoder().encodeToString((userName + ":" + password).getBytes(StandardCharsets.UTF_8))
+        );
         Header[] defaultHeaders = new Header[headers.size()];
         int i = 0;
         for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -126,15 +157,6 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
         }
         builder.setDefaultHeaders(defaultHeaders);
         builder.setHttpClientConfigCallback(httpClientBuilder -> {
-            String userName = Optional.ofNullable(System.getProperty("user"))
-                .orElseThrow(() -> new RuntimeException("user name is missing"));
-            String password = Optional.ofNullable(System.getProperty("password"))
-                .orElseThrow(() -> new RuntimeException("password is missing"));
-            BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(
-                new AuthScope(new HttpHost(localhostName, port)),
-                new UsernamePasswordCredentials(userName, password.toCharArray())
-            );
             try {
                 final TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create()
                     .setSslContext(SSLContextBuilder.create().loadTrustMaterial(null, (chains, authType) -> true).build())
@@ -153,7 +175,7 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
                     .setTlsStrategy(tlsStrategy)
                     .build();
 
-                return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider).setConnectionManager(connectionManager);
+                return httpClientBuilder.setConnectionManager(connectionManager);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
