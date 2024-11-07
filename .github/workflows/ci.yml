@@ -47,18 +47,37 @@ jobs:
           chown -R 1000:1000 `pwd`
           su `id -un 1000` -c "./gradlew build && ./gradlew publishToMavenLocal"
 
+      - name: Save Reports
+        id: linux-save-reports
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ github.workspace }}/build/reports/
+          key: ${{ github.sha }}-linux-reports-${{ matrix.java }}
+
+  upload-linux-artifacts:
+    needs: build-job-scheduler-linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [21, 23]
+    if: always()
+    steps:
+      - uses: actions/cache/restore@v4
+        id: linux-restore-reports
+        with:
+          path: ${{ github.workspace }}/build/reports/
+          key: ${{ github.sha }}-linux-reports-${{ matrix.java }}
+
       - name: Upload Coverage Report
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: linux-JDK${{ matrix.java }}-reports
-          path: |
-            ./build/reports/
-
+          path: ${{ github.workspace }}/build/reports/
 
   build-job-scheduler-MacOS:
     strategy:
@@ -127,14 +146,34 @@ jobs:
         run: |
           ./gradlew.bat publishToMavenLocal
 
+      - name: Save Reports
+        id: windows-save-reports
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ github.workspace }}/build/reports/
+          key: ${{ github.sha }}-windows-reports-${{ matrix.java }}
+
+  upload-windows-artifacts:
+    needs: build-job-scheduler-Windows
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        java: [21, 23]
+    if: always()
+    steps:
+      - uses: actions/cache/restore@v4
+        id: windows-restore-reports
+        with:
+          path: ${{ github.workspace }}/build/reports/
+          key: ${{ github.sha }}-windows-reports-${{ matrix.java }}
+
       - name: Upload Coverage Report
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: windows-JDK${{ matrix.java }}-reports
-          path: |
-            ./build/reports/
+          path: ${{ github.workspace }}/build/reports/
