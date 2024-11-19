@@ -46,7 +46,7 @@ jobs:
           su `id -un 1000` -c "./gradlew build && ./gradlew publishToMavenLocal"
 
       - name: Upload Coverage Report
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -86,7 +86,7 @@ jobs:
           ./gradlew publishToMavenLocal
 
       - name: Upload Coverage Report
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -126,7 +126,7 @@ jobs:
           ./gradlew.bat publishToMavenLocal
 
       - name: Upload Coverage Report
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
