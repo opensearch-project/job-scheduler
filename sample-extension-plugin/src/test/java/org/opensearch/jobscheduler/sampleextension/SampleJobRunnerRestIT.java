@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-public class SampleJobRunnerIT extends SampleExtensionIntegTestCase {
+public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
     public void testJobCreateWithCorrectParams() throws IOException {
         SampleJobParameter jobParameter = new SampleJobParameter();
