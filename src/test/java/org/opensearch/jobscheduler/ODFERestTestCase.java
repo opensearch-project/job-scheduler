@@ -9,9 +9,13 @@
 package org.opensearch.jobscheduler;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.Header;
@@ -28,6 +32,8 @@ import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
+import org.opensearch.client.WarningFailureException;
+import org.opensearch.common.io.PathUtils;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.common.util.concurrent.ThreadContext;
@@ -38,9 +44,6 @@ import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.test.rest.OpenSearchRestTestCase;
 
 public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
-
-    private static String localhostName = "localhost";
-    private static int port = 9200;
 
     protected boolean isHttps() {
         boolean isHttps = Optional.ofNullable(System.getProperty("https")).map("true"::equalsIgnoreCase).orElse(false);
@@ -61,7 +64,14 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
 
     @Override
     protected Settings restAdminSettings() {
-        return Settings.builder().put("strictDeprecationMode", false).put("http.port", 9200).build();
+        return Settings.builder()
+            .put("http.port", 9200)
+            .put("plugins.security.ssl.http.enabled", isHttps())
+            .put("plugins.security.ssl.http.pemcert_filepath", "sample.pem")
+            .put("plugins.security.ssl.http.keystore_filepath", "test-kirk.jks")
+            .put("plugins.security.ssl.http.keystore_password", "changeit")
+            .build();
+        // return Settings.builder().put("strictDeprecationMode", false).put("http.port", 9200).build();
     }
 
     @Override
@@ -69,9 +79,21 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
         boolean strictDeprecationMode = settings.getAsBoolean("strictDeprecationMode", true);
         RestClientBuilder builder = RestClient.builder(hosts);
         if (isHttps()) {
-            configureHttpsClient(builder, settings);
-            builder.setStrictDeprecationMode(strictDeprecationMode);
-            return builder.build();
+            String keystore = settings.get("plugins.security.ssl.http.keystore_filepath");
+            if (Objects.nonNull(keystore)) {
+                URI uri = null;
+                try {
+                    uri = this.getClass().getClassLoader().getResource("security/sample.pem").toURI();
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+                Path configPath = PathUtils.get(uri).getParent().toAbsolutePath();
+                return new SecureRestClientBuilder(settings, configPath, hosts).build();
+            } else {
+                configureHttpsClient(builder, settings);
+                builder.setStrictDeprecationMode(strictDeprecationMode);
+                return builder.build();
+            }
         } else {
             configureClient(builder, settings);
             builder.setStrictDeprecationMode(strictDeprecationMode);
@@ -104,30 +126,25 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
             for (Map<String, Object> index : parserList) {
                 String indexName = (String) index.get("index");
                 if (indexName != null && !".opendistro_security".equals(indexName)) {
-                    adminClient().performRequest(new Request("DELETE", "/" + indexName));
+                    try {
+                        adminClient().performRequest(new Request("DELETE", "/" + indexName));
+                    } catch (WarningFailureException ignore) {}
                 }
             }
         }
     }
 
     protected static void configureHttpsClient(RestClientBuilder builder, Settings settings) throws IOException {
-        Map<String, String> headers = ThreadContext.buildDefaultHeaders(settings);
-        Header[] defaultHeaders = new Header[headers.size()];
-        int i = 0;
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            defaultHeaders[i++] = new BasicHeader(entry.getKey(), entry.getValue());
-        }
-        builder.setDefaultHeaders(defaultHeaders);
+        // Similar to client configuration with OpenSearch:
+        // https://github.com/opensearch-project/OpenSearch/blob/2.11.1/test/framework/src/main/java/org/opensearch/test/rest/OpenSearchRestTestCase.java#L841-L863
+        // except we set the user name and password
         builder.setHttpClientConfigCallback(httpClientBuilder -> {
             String userName = Optional.ofNullable(System.getProperty("user"))
                 .orElseThrow(() -> new RuntimeException("user name is missing"));
             String password = Optional.ofNullable(System.getProperty("password"))
                 .orElseThrow(() -> new RuntimeException("password is missing"));
             CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(
-                new AuthScope(new HttpHost(localhostName, port)),
-                new UsernamePasswordCredentials(userName, password)
-            );
+            credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(userName, password));
             try {
                 return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
                     // disable the certificate since our testing cluster just uses the default security configuration
@@ -137,7 +154,13 @@ public abstract class ODFERestTestCase extends OpenSearchRestTestCase {
                 throw new RuntimeException(e);
             }
         });
-
+        Map<String, String> headers = ThreadContext.buildDefaultHeaders(settings);
+        Header[] defaultHeaders = new Header[headers.size()];
+        int i = 0;
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            defaultHeaders[i++] = new BasicHeader(entry.getKey(), entry.getValue());
+        }
+        builder.setDefaultHeaders(defaultHeaders);
         final String socketTimeoutString = settings.get(CLIENT_SOCKET_TIMEOUT);
         final TimeValue socketTimeout = TimeValue.parseTimeValue(
             socketTimeoutString == null ? "60s" : socketTimeoutString,
