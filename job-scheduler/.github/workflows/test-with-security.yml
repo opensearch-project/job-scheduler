@@ -1,4 +1,4 @@
-name: BWC Test Workflow
+name: Integ tests with Security
 # This workflow is triggered on pull requests and pushes to main or an OpenSearch release branch
 on:
   pull_request:

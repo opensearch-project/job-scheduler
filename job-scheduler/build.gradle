@@ -33,6 +33,7 @@ buildscript {
 }
 
 plugins {
+    id "de.undercouch.download" version "5.3.0"
     id 'com.netflix.nebula.ospackage' version "11.10.1"
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
@@ -49,6 +50,18 @@ ext {
     projectSubstitutions = [:]
     licenseFile = rootProject.file('LICENSE.txt')
     noticeFile = rootProject.file('NOTICE')
+
+    ['esnode.pem', 'esnode-key.pem', 'kirk.pem', 'kirk-key.pem', 'root-ca.pem', 'sample.pem', 'test-kirk.jks'].forEach { file ->
+        File local = getLayout().getBuildDirectory().file(file).get().getAsFile()
+        download.run {
+            src "https://raw.githubusercontent.com/opensearch-project/security/refs/heads/main/bwc-test/src/test/resources/security/" + file
+            dest local
+            overwrite false
+        }
+        processResources {
+            from(local)
+        }
+    }
 }
 
 licenseHeaders.enabled = true
@@ -276,11 +289,11 @@ afterEvaluate {
         }
 
         if (securityEnabled) {
-            node.extraConfigFile("kirk.pem", file("src/test/resources/security/kirk.pem"))
-            node.extraConfigFile("kirk-key.pem", file("src/test/resources/security/kirk-key.pem"))
-            node.extraConfigFile("esnode.pem", file("src/test/resources/security/esnode.pem"))
-            node.extraConfigFile("esnode-key.pem", file("src/test/resources/security/esnode-key.pem"))
-            node.extraConfigFile("root-ca.pem", file("src/test/resources/security/root-ca.pem"))
+            node.extraConfigFile("kirk.pem", file("build/resources/main/kirk.pem"))
+            node.extraConfigFile("kirk-key.pem", file("build/resources/main/kirk-key.pem"))
+            node.extraConfigFile("esnode.pem", file("build/resources/main/esnode.pem"))
+            node.extraConfigFile("esnode-key.pem", file("build/resources/main/esnode-key.pem"))
+            node.extraConfigFile("root-ca.pem", file("build/resources/main/root-ca.pem"))
             node.setting("network.bind_host", "127.0.0.1")
             node.setting("network.publish_host", "127.0.0.1")
             node.setting("plugins.security.ssl.transport.pemcert_filepath", "esnode.pem")
