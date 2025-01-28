@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.spi.utils;
 
+import org.opensearch.action.support.WriteRequest;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -223,6 +224,7 @@ public final class LockService {
         try {
             final IndexRequest request = new IndexRequest(LOCK_INDEX_NAME).id(tempLock.getLockId())
                 .source(tempLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
                 .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
                 .create(true);
