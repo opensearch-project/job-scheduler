@@ -71,6 +71,8 @@
  com.trilead:trilead-ssh2:1.0.0-build220
  de.regnis.q.sequence:sequence-library:1.0.3
  de.thetaphi:forbiddenapis:3.8
+ de.undercouch.download:de.undercouch.download.gradle.plugin:5.6.0
+ de.undercouch:gradle-download-task:5.6.0
  dev.equo.ide:solstice:1.7.4
  dev.equo.ide:solstice:1.7.5
  io.projectreactor:reactor-core:3.5.20
