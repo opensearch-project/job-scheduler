@@ -14,6 +14,7 @@ import org.opensearch.common.settings.Settings;
 import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.IndexScopedSettings;
 import org.opensearch.common.settings.SettingsFilter;
+import org.opensearch.identity.PluginSubject;
 import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
@@ -38,9 +39,11 @@ import org.opensearch.env.Environment;
 import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
 import org.opensearch.indices.SystemIndexDescriptor;
+import org.opensearch.jobscheduler.transport.RunAsSubjectClient;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
+import org.opensearch.plugins.IdentityAwarePlugin;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.plugins.SystemIndexPlugin;
 import org.opensearch.repositories.RepositoriesService;
@@ -63,7 +66,7 @@ import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableList;
 
-public class JobSchedulerPlugin extends Plugin implements ActionPlugin, ExtensiblePlugin, SystemIndexPlugin {
+public class JobSchedulerPlugin extends Plugin implements ActionPlugin, ExtensiblePlugin, SystemIndexPlugin, IdentityAwarePlugin {
 
     public static final String OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME = "open_distro_job_scheduler";
     public static final String JS_BASE_URI = "/_plugins/_job_scheduler";
@@ -74,6 +77,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private LockService lockService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
+    private RunAsSubjectClient pluginClient;
 
     private JobDetailsService jobDetailsService;
 
@@ -111,7 +115,8 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
-        this.lockService = new LockService(client, clusterService);
+        this.pluginClient = new RunAsSubjectClient(client);
+        this.lockService = new LockService(pluginClient, clusterService);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
@@ -248,6 +253,13 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         RestGetLockAction restGetLockAction = new RestGetLockAction(lockService);
         RestReleaseLockAction restReleaseLockAction = new RestReleaseLockAction(lockService);
         return ImmutableList.of(restGetJobDetailsAction, restGetLockAction, restReleaseLockAction);
+    }
+
+    @Override
+    public void assignSubject(PluginSubject pluginSubject) {
+        if (this.pluginClient != null) {
+            this.pluginClient.setSubject(pluginSubject);
+        }
     }
 
 }
