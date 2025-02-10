@@ -9,7 +9,6 @@
 package org.opensearch.jobscheduler.sampleextension;
 
 import org.opensearch.action.index.IndexRequest;
-import org.opensearch.client.Client;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -22,6 +21,7 @@ import org.opensearch.cluster.routing.ShardRouting;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.threadpool.ThreadPool;
+import org.opensearch.transport.client.Client;
 
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +32,7 @@ import java.util.UUID;
  * The job runner should be a singleton class if it uses OpenSearch client or other objects passed
  * from OpenSearch. Because when registering the job runner to JobScheduler plugin, OpenSearch has
  * not invoke plugins' createComponents() method. That is saying the plugin is not completely initalized,
- * and the OpenSearch {@link org.opensearch.client.Client}, {@link ClusterService} and other objects
+ * and the OpenSearch {@link Client}, {@link ClusterService} and other objects
  * are not available to plugin and this job runner.
  *
  * So we have to move this job runner intialization to {@link Plugin} createComponents() method, and using

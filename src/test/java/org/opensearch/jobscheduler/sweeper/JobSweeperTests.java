@@ -21,7 +21,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.opensearch.Version;
 import org.opensearch.action.delete.DeleteResponse;
-import org.opensearch.client.Client;
 import org.opensearch.cluster.ClusterName;
 import org.opensearch.cluster.ClusterState;
 import org.opensearch.cluster.OpenSearchAllocationTestCase;
@@ -53,6 +52,7 @@ import org.opensearch.threadpool.ThreadPool;
 import org.junit.Before;
 import org.mockito.Mockito;
 import org.mockito.stubbing.OngoingStubbing;
+import org.opensearch.transport.client.Client;
 
 import java.io.IOException;
 import java.nio.charset.Charset;

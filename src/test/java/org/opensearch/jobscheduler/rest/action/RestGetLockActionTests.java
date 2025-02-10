@@ -17,7 +17,6 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.mockito.Mockito;
-import org.opensearch.client.node.NodeClient;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.core.common.bytes.BytesArray;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
@@ -36,6 +35,7 @@ import org.opensearch.test.OpenSearchTestCase;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.test.rest.FakeRestChannel;
 import org.opensearch.test.rest.FakeRestRequest;
+import org.opensearch.transport.client.node.NodeClient;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class RestGetLockActionTests extends OpenSearchTestCase {
