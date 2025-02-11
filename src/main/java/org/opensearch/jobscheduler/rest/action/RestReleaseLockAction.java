@@ -20,7 +20,6 @@ import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.core.action.ActionListener;
-import org.opensearch.client.node.NodeClient;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.spi.LockModel;
@@ -31,6 +30,7 @@ import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
 import static org.opensearch.rest.RestRequest.Method.PUT;
 import org.opensearch.core.rest.RestStatus;
+import org.opensearch.transport.client.node.NodeClient;
 
 public class RestReleaseLockAction extends BaseRestHandler {
 

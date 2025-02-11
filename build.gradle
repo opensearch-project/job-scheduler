@@ -15,6 +15,9 @@ buildscript {
         // 2.2.0-SNAPSHOT -> 2.2.0.0-SNAPSHOT
         version_tokens = opensearch_version.tokenize('-')
         opensearch_build = version_tokens[0] + '.0'
+        if (buildVersionQualifier) {
+            opensearch_build += "-${buildVersionQualifier}"
+        }
         if (isSnapshot) {
             opensearch_build += "-SNAPSHOT"
         }
