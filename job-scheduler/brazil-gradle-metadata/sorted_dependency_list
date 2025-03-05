@@ -12,7 +12,9 @@
  com.diffplug.spotless:spotless-lib-extra:2.36.0
  com.diffplug.spotless:spotless-plugin-gradle:6.16.0
  com.ethlo.time:itu:1.7.0
+ com.fasterxml.jackson.core:jackson-annotations:2.15.3
  com.fasterxml.jackson.core:jackson-annotations:2.18.2
+ com.fasterxml.jackson.core:jackson-core:2.15.3
  com.fasterxml.jackson.core:jackson-core:2.18.2
  com.fasterxml.jackson.core:jackson-databind:2.15.3
  com.fasterxml.jackson.core:jackson-databind:2.18.2
@@ -20,7 +22,7 @@
  com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.18.2
  com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.3
  com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.2
- com.fasterxml.jackson:jackson-bom:2.18.2
+ com.fasterxml.jackson:jackson-bom:2.15.3
  com.github.johnrengelman:shadow:8.1.1
  com.github.luben:zstd-jni:1.5.5-5
  com.github.spotbugs:spotbugs-annotations:4.0.2
@@ -216,4 +218,3 @@
  org.vafer:jdependency:2.8.0
  org.yaml:snakeyaml:2.1
  org.yaml:snakeyaml:2.2
- org.yaml:snakeyaml:2.3
