@@ -197,7 +197,7 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
     //spotless
-    implementation('com.google.googlejavaformat:google-java-format:1.25.2') {
+    implementation('com.google.googlejavaformat:google-java-format:1.26.0') {
         exclude group: 'com.google.guava'
     }
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
