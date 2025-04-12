@@ -6,6 +6,7 @@
 apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-rest-test'
+apply plugin: 'opensearch.java-agent'
 
 import org.opensearch.gradle.test.RestIntegTestTask
 import org.opensearch.gradle.testclusters.StandaloneRestIntegTestTask
@@ -33,16 +34,8 @@ repositories {
     maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
 }
 
-configurations {
-    agent
-}
-
 dependencies {
     compileOnly project(path: ":${rootProject.name}-spi", configuration: 'shadow')
-
-    agent "org.opensearch:opensearch-agent-bootstrap:${opensearch_version}"
-    agent "org.opensearch:opensearch-agent:${opensearch_version}"
-    agent "net.bytebuddy:byte-buddy:1.17.5"
 }
 
 def es_tmp_dir = rootProject.file('build/private/es_tmp').absoluteFile
@@ -177,16 +170,10 @@ String bwcDownloadUrl = "https://aws.oss.sonatype.org/service/local/artifact/mav
 
 List<Provider<RegularFile>> plugins = []
 
-task prepareAgent(type: Copy) {
-    from(configurations.agent)
-    into "$buildDir/agent"
-}
-
 // Ensure the artifact for the current project version is available to be used for the bwc tests
 task prepareBwcTests {
     dependsOn bundle
     dependsOn rootBundle
-    dependsOn prepareAgent
     doLast {
         plugins = [
                 rootProject.getObjects().fileProperty().value(rootBundle.getArchiveFile()),
@@ -208,8 +195,6 @@ task prepareBwcTests {
         systemProperty 'tests.plugin_bwc_version', bwcPluginVersion
         nonInputProperties.systemProperty('tests.rest.cluster', "${-> testClusters."${baseName}$i".allHttpSocketURI.join(",")}")
         nonInputProperties.systemProperty('tests.clustername', "${-> testClusters."${baseName}$i".getName()}")
-
-        jvmArgs += ["-javaagent:" + project.layout.buildDirectory.file("agent/opensearch-agent-${opensearch_version}.jar").get()]
     }
 }
 
@@ -230,8 +215,6 @@ task "${baseName}#mixedClusterTask"(type: StandaloneRestIntegTestTask) {
     systemProperty 'tests.plugin_bwc_version', bwcPluginVersion
     nonInputProperties.systemProperty('tests.rest.cluster', "${-> testClusters."${baseName}0".allHttpSocketURI.join(",")}")
     nonInputProperties.systemProperty('tests.clustername', "${-> testClusters."${baseName}0".getName()}")
-
-    jvmArgs += ["-javaagent:" + project.layout.buildDirectory.file("agent/opensearch-agent-${opensearch_version}.jar").get()]
 }
 
 // Upgrade the second node to new OpenSearch version with upgraded plugin version after the first node is upgraded.
@@ -251,8 +234,6 @@ task "${baseName}#twoThirdsUpgradedClusterTask"(type: StandaloneRestIntegTestTas
     systemProperty 'tests.plugin_bwc_version', bwcPluginVersion
     nonInputProperties.systemProperty('tests.rest.cluster', "${-> testClusters."${baseName}0".allHttpSocketURI.join(",")}")
     nonInputProperties.systemProperty('tests.clustername', "${-> testClusters."${baseName}0".getName()}")
-
-    jvmArgs += ["-javaagent:" + project.layout.buildDirectory.file("agent/opensearch-agent-${opensearch_version}.jar").get()]
 }
 
 // Upgrade the third node to new OpenSearch version with upgraded plugin version after the second node is upgraded.
@@ -273,8 +254,6 @@ task "${baseName}#rollingUpgradeClusterTask"(type: StandaloneRestIntegTestTask) 
     systemProperty 'tests.plugin_bwc_version', bwcPluginVersion
     nonInputProperties.systemProperty('tests.rest.cluster', "${-> testClusters."${baseName}0".allHttpSocketURI.join(",")}")
     nonInputProperties.systemProperty('tests.clustername', "${-> testClusters."${baseName}0".getName()}")
-
-    jvmArgs += ["-javaagent:" + project.layout.buildDirectory.file("agent/opensearch-agent-${opensearch_version}.jar").get()]
 }
 
 // Upgrade all the nodes of the old cluster to new OpenSearch version with upgraded plugin version
@@ -292,8 +271,6 @@ task "${baseName}#fullRestartClusterTask"(type: StandaloneRestIntegTestTask) {
     systemProperty 'tests.plugin_bwc_version', bwcPluginVersion
     nonInputProperties.systemProperty('tests.rest.cluster', "${-> testClusters."${baseName}1".allHttpSocketURI.join(",")}")
     nonInputProperties.systemProperty('tests.clustername', "${-> testClusters."${baseName}1".getName()}")
-
-    jvmArgs += ["-javaagent:" + project.layout.buildDirectory.file("agent/opensearch-agent-${opensearch_version}.jar").get()]
 }
 
 // A bwc test suite which runs all the bwc tasks combined
