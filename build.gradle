@@ -46,6 +46,7 @@ apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-rest-test'
 apply plugin: 'opensearch.pluginzip'
+apply plugin: 'opensearch.java-agent'
 apply from: 'build-tools/opensearchplugin-coverage.gradle'
 apply from: 'gradle/formatting.gradle'
 
@@ -87,7 +88,6 @@ opensearchplugin {
 }
 
 configurations {
-    agent
     opensearchPlugin
 }
 
@@ -202,10 +202,6 @@ dependencies {
         exclude group: 'com.google.guava'
     }
 
-    agent "org.opensearch:opensearch-agent-bootstrap:${opensearch_version}"
-    agent "org.opensearch:opensearch-agent:${opensearch_version}"
-    agent "net.bytebuddy:byte-buddy:${versions.bytebuddy}"
-
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
 
@@ -220,16 +216,6 @@ def _numNodes = findProperty('numNodes') as Integer ?: 1
 
 def opensearch_tmp_dir = rootProject.file('build/private/opensearch_tmp').absoluteFile
 opensearch_tmp_dir.mkdirs()
-
-task prepareAgent(type: Copy) {
-    from(configurations.agent)
-    into "$buildDir/agent"
-}
-
-tasks.test {
-    dependsOn prepareAgent
-    jvmArgs += ["-javaagent:" + project.layout.buildDirectory.file("agent/opensearch-agent-${opensearch_version}.jar").get()]
-}
 
 task integTest(type: RestIntegTestTask) {
     description = "Run tests against a cluster"
@@ -246,7 +232,6 @@ integTest {
             exclude "${it}"
         }
     }
-    dependsOn "prepareAgent"
     systemProperty 'tests.security.manager', 'false'
     systemProperty 'java.io.tmpdir', es_tmp_dir.absolutePath
 
@@ -273,8 +258,6 @@ integTest {
     if (System.getProperty("test.debug") != null) {
         jvmArgs '-agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=8000'
     }
-
-    jvmArgs += ["-javaagent:" + project.layout.buildDirectory.file("agent/opensearch-agent-${opensearch_version}.jar").get()]
 }
 Zip bundle = (Zip) project.getTasks().getByName("bundlePlugin");
 integTest.dependsOn(bundle)
