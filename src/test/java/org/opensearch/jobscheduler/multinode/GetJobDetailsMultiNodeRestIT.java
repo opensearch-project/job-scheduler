@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.multinode;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.opensearch.client.Response;
 import org.opensearch.jobscheduler.ODFERestTestCase;
@@ -37,7 +36,7 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
             client(),
             "PUT",
             TestHelpers.GET_JOB_DETAILS_BASE_URI,
-            ImmutableMap.of(),
+            Map.of(),
             TestHelpers.toHttpEntity(initialRequestBody),
             null
         );
@@ -50,7 +49,7 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
                 client(),
                 "PUT",
                 TestHelpers.GET_JOB_DETAILS_BASE_URI,
-                ImmutableMap.of(GetJobDetailsRequest.DOCUMENT_ID, expectedDocumentId),
+                Map.of(GetJobDetailsRequest.DOCUMENT_ID, expectedDocumentId),
                 TestHelpers.toHttpEntity(updatedRequestBody),
                 null
             );

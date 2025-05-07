@@ -61,8 +61,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.function.Supplier;
 
-import com.google.common.collect.ImmutableList;
-
 public class JobSchedulerPlugin extends Plugin implements ActionPlugin, ExtensiblePlugin, SystemIndexPlugin {
 
     public static final String OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME = "open_distro_job_scheduler";
@@ -247,7 +245,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         RestGetJobDetailsAction restGetJobDetailsAction = new RestGetJobDetailsAction(jobDetailsService);
         RestGetLockAction restGetLockAction = new RestGetLockAction(lockService);
         RestReleaseLockAction restReleaseLockAction = new RestReleaseLockAction(lockService);
-        return ImmutableList.of(restGetJobDetailsAction, restGetLockAction, restReleaseLockAction);
+        return List.of(restGetJobDetailsAction, restGetLockAction, restReleaseLockAction);
     }
 
 }

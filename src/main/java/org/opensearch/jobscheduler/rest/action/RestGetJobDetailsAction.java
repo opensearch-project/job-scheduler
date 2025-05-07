@@ -32,7 +32,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.google.common.collect.ImmutableList;
 import org.opensearch.transport.client.node.NodeClient;
 
 import static org.opensearch.core.xcontent.XContentParserUtils.ensureExpectedToken;
@@ -60,7 +59,7 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return ImmutableList.of(
+        return List.of(
             // New Job Details Entry Request
             new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_job_details")),
             // Update Job Details Entry Request
