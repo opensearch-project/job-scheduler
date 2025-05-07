@@ -183,22 +183,10 @@ repositories {
     maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
 }
 
-configurations {
-    all {
-        resolutionStrategy {
-            force 'com.google.guava:guava:32.1.3-jre'
-        }
-    }
-}
-
 dependencies {
     implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
-    //spotless
-    implementation('com.google.googlejavaformat:google-java-format:1.26.0') {
-        exclude group: 'com.google.guava'
-    }
 
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
