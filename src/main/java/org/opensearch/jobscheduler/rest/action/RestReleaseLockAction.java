@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.rest.action;
 
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
@@ -50,7 +49,7 @@ public class RestReleaseLockAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return ImmutableList.of(
+        return List.of(
             new Route(PUT, String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock", LockModel.LOCK_ID))
         );
     }
