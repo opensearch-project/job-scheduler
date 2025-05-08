@@ -33,7 +33,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import com.google.common.collect.ImmutableList;
 import org.opensearch.transport.client.node.NodeClient;
 
 import static org.opensearch.core.xcontent.XContentParserUtils.ensureExpectedToken;
@@ -60,7 +59,7 @@ public class RestGetLockAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return ImmutableList.of(new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_lock")));
+        return List.of(new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_lock")));
     }
 
     @VisibleForTesting
