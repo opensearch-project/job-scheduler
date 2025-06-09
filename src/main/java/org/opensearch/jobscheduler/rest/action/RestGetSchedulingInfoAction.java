@@ -10,12 +10,11 @@ package org.opensearch.jobscheduler.rest.action;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.model.JobDetails;
-import org.opensearch.jobscheduler.rest.request.GetAllJobInfoRequest;
+import org.opensearch.jobscheduler.rest.request.GetSchedulingInfoRequest;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.RestRequest;
@@ -36,15 +35,16 @@ import static org.opensearch.rest.RestRequest.Method.GET;
 /**
  * This class consists of the REST handler to GET job details from extensions.
  */
-public class RestGetAllJobInfoAction extends BaseRestHandler {
+public class RestGetSchedulingInfoAction extends BaseRestHandler {
 
     public static final String GET_ALL_JOB_INFO_ACTION = "get_all_job_info_action";
 
-    private final Logger logger = LogManager.getLogger(RestGetAllJobInfoAction.class);
+    private final Logger logger = LogManager.getLogger(RestGetSchedulingInfoAction.class);
 
     private final JobDetailsService jobDetailsService;
 
-    public RestGetAllJobInfoAction(final JobDetailsService jobDetailsService) {
+
+    public RestGetSchedulingInfoAction(final JobDetailsService jobDetailsService) {
         this.jobDetailsService = jobDetailsService;
     }
 
@@ -64,8 +64,8 @@ public class RestGetAllJobInfoAction extends BaseRestHandler {
         XContentParser parser = restRequest.contentParser();
         ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
-        GetAllJobInfoRequest getAllJobInfoRequest = GetAllJobInfoRequest.parse(parser);
-        boolean activeJobsOnly = getAllJobInfoRequest.isActiveJobsOnly();
+        GetSchedulingInfoRequest getSchedulingInfoRequest = GetSchedulingInfoRequest.parse(parser);
+        boolean activeJobsOnly = getSchedulingInfoRequest.isActiveJobsOnly();
 
         CompletableFuture<Map<String, JobDetails>> inProgressFuture = new CompletableFuture<>();
         

@@ -17,19 +17,19 @@ import org.opensearch.core.xcontent.XContentParserUtils;
 
 import java.io.IOException;
 
-public class GetAllJobInfoRequest extends ActionRequest {
+public class GetSchedulingInfoRequest extends ActionRequest {
 
     private boolean activeJobsOnly;
     
     public static final String ACTIVE_JOBS_ONLY = "active_jobs_only";
     //public static final String ALL_SCHEDULED_JOBS = "all_scheduled_jobs";
 
-    public GetAllJobInfoRequest(StreamInput in) throws IOException {
+    public GetSchedulingInfoRequest(StreamInput in) throws IOException {
         super(in);
         this.activeJobsOnly = in.readBoolean();
     }
 
-    public GetAllJobInfoRequest(boolean activeJobsOnly) {
+    public GetSchedulingInfoRequest(boolean activeJobsOnly) {
         super();
         this.activeJobsOnly = activeJobsOnly;
     }
@@ -53,7 +53,7 @@ public class GetAllJobInfoRequest extends ActionRequest {
         return null;
     }
 
-    public static GetAllJobInfoRequest parse(XContentParser parser) throws IOException {
+    public static GetSchedulingInfoRequest parse(XContentParser parser) throws IOException {
         boolean activeJobsOnly = true; // Default to all schedule jobs
 
         XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.currentToken(), parser);
@@ -70,7 +70,7 @@ public class GetAllJobInfoRequest extends ActionRequest {
                     break;
             }
         }
-        return new GetAllJobInfoRequest(activeJobsOnly);
+        return new GetSchedulingInfoRequest(activeJobsOnly);
     }
 
 }
