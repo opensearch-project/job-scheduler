@@ -11,11 +11,11 @@ package org.opensearch.jobscheduler.rest.action;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.core.xcontent.XContentBuilder;
-import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-import org.opensearch.jobscheduler.model.JobDetails;
-import org.opensearch.jobscheduler.rest.request.GetSchedulingInfoRequest;
-import org.opensearch.jobscheduler.utils.JobDetailsService;
+import org.opensearch.jobscheduler.scheduler.JobScheduler;
+import org.opensearch.jobscheduler.scheduler.ScheduledJobInfo;
+import org.opensearch.jobscheduler.scheduler.JobSchedulingInfo;
+import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.core.rest.RestStatus;
@@ -23,102 +23,95 @@ import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.transport.client.node.NodeClient;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
-import static org.opensearch.core.xcontent.XContentParserUtils.ensureExpectedToken;
 import static org.opensearch.rest.RestRequest.Method.GET;
 
 /**
- * This class consists of the REST handler to GET job details from extensions.
+ * REST handler to get all scheduled job information
  */
 public class RestGetSchedulingInfoAction extends BaseRestHandler {
 
-    public static final String GET_ALL_JOB_INFO_ACTION = "get_all_job_info_action";
-
+    public static final String GET_SCHEDULING_INFO_ACTION = "get_scheduling_info_action";
     private final Logger logger = LogManager.getLogger(RestGetSchedulingInfoAction.class);
+    private final JobScheduler jobScheduler;
 
-    private final JobDetailsService jobDetailsService;
-
-
-    public RestGetSchedulingInfoAction(final JobDetailsService jobDetailsService) {
-        this.jobDetailsService = jobDetailsService;
+    public RestGetSchedulingInfoAction(final JobScheduler jobScheduler) {
+        this.jobScheduler = jobScheduler;
     }
 
     @Override
-    public String getName() { return GET_ALL_JOB_INFO_ACTION; }
+    public String getName() {
+        return GET_SCHEDULING_INFO_ACTION;
+    }
 
     @Override
     public List<Route> routes() {
         return List.of(
-            // Get All Job Info Request
-            new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs"))
+            new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_scheduling_info"))
         );
     }
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
-        XContentParser parser = restRequest.contentParser();
-        ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
-
-        GetSchedulingInfoRequest getSchedulingInfoRequest = GetSchedulingInfoRequest.parse(parser);
-        boolean activeJobsOnly = getSchedulingInfoRequest.isActiveJobsOnly();
-
-        CompletableFuture<Map<String, JobDetails>> inProgressFuture = new CompletableFuture<>();
-        
-        Map<String, JobDetails> allJobDetails = JobDetailsService.getIndexToJobDetails();
-        
-        // Filter jobs if activeJobsOnly is true
-        inProgressFuture.complete(allJobDetails);
-
-        try {
-            inProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            logger.error("Get All Job Info timed out ", e);
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else if (e.getCause() instanceof Error) {
-                throw (Error) e.getCause();
-            } else {
-                throw new RuntimeException(e.getCause());
-            }
-        }
-
         return channel -> {
-            Map<String, JobDetails> jobDetailsMap = null;
-            try {
-                jobDetailsMap = inProgressFuture.get();
-            } catch (Exception e) {
-                logger.error("Exception occurred in get all job info ", e);
-            }
-
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
             BytesRestResponse bytesRestResponse;
-            
+
             try {
                 builder.startObject();
-                builder.field("total_jobs", jobDetailsMap != null ? jobDetailsMap.size() : 0);
-                
-                if (jobDetailsMap != null && !jobDetailsMap.isEmpty()) {
-                    builder.startArray("jobs");
-                    for (Map.Entry<String, JobDetails> entry : jobDetailsMap.entrySet()) {
+
+                ScheduledJobInfo scheduledJobInfo = jobScheduler.getScheduledJobInfo();
+                int totalJobs = 0;
+
+                builder.startArray("jobs");
+
+                for (Map.Entry<String, Map<String, JobSchedulingInfo>> indexEntry : scheduledJobInfo.jobInfoMap.entrySet()) {
+                    String indexName = indexEntry.getKey();
+                    Map<String, JobSchedulingInfo> jobs = indexEntry.getValue();
+
+                    for (Map.Entry<String, JobSchedulingInfo> jobEntry : jobs.entrySet()) {
+                        String jobId = jobEntry.getKey();
+                        JobSchedulingInfo jobInfo = jobEntry.getValue();
+                        ScheduledJobParameter jobParameter = jobInfo.getJobParameter();
+
                         builder.startObject();
-                        builder.field("id", entry.getKey());
-                        JobDetails jobDetails = entry.getValue();
-                        builder.field("job_index", jobDetails.getJobIndex());
-                        builder.field("job_type", jobDetails.getJobType());
-                        builder.field("extension_unique_id", jobDetails.getExtensionUniqueId());
+                        builder.field("job_id", jobId);
+                        builder.field("index_name", indexName);
+                        builder.field("name", jobParameter.getName());
+                        builder.field("enabled", jobParameter.isEnabled());
+                        builder.field("schedule", jobParameter.getSchedule().toString());
+
+                        Instant lastExecutionTime = jobInfo.getActualPreviousExecutionTime();
+                        if (lastExecutionTime != null) {
+                            builder.field("last_execution_time", lastExecutionTime.toEpochMilli());
+                        }
+
+                        Instant nextExecutionTime = jobInfo.getExpectedExecutionTime();
+                        if (nextExecutionTime != null) {
+                            builder.field("next_execution_time", nextExecutionTime.toEpochMilli());
+                        }
+
                         builder.endObject();
+                        totalJobs++;
                     }
-                    builder.endArray();
                 }
-                
+
+                builder.endArray();
+                builder.field("total_jobs", totalJobs);
                 builder.endObject();
+
                 bytesRestResponse = new BytesRestResponse(restStatus, builder);
+            } catch (Exception e) {
+                logger.error("Failed to get scheduling info", e);
+                builder.startObject();
+                builder.field("error", e.getMessage());
+                builder.endObject();
+                bytesRestResponse = new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, builder);
             } finally {
                 builder.close();
             }
