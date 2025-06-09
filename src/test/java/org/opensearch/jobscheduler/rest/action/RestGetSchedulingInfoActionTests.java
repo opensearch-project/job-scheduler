@@ -20,7 +20,7 @@ import org.opensearch.core.common.bytes.BytesArray;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.rest.request.GetSchedulingInfoRequest;
-import org.opensearch.jobscheduler.utils.JobDetailsService;
+import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.test.OpenSearchTestCase;
@@ -32,16 +32,16 @@ import org.opensearch.transport.client.node.NodeClient;
 public class RestGetSchedulingInfoActionTests extends OpenSearchTestCase {
 
     private RestGetSchedulingInfoAction action;
-    private JobDetailsService jobDetailsService;
-    private String getAllJobInfoPath;
+    private JobScheduler jobScheduler;
+    private String getAllScheduledJobs;
     private String requestBody;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        this.jobDetailsService = Mockito.mock(JobDetailsService.class);
-        this.action = new RestGetSchedulingInfoAction(jobDetailsService);
-        this.getAllJobInfoPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs");
+        this.jobScheduler = Mockito.mock(JobScheduler.class);
+        this.action = new RestGetSchedulingInfoAction(jobScheduler);
+        this.getAllScheduledJobs = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs");
         
         // Create request body with activeJobsOnly parameter
         this.requestBody = "{\"" + GetSchedulingInfoRequest.ACTIVE_JOBS_ONLY + "\":true}";
@@ -49,13 +49,13 @@ public class RestGetSchedulingInfoActionTests extends OpenSearchTestCase {
 
     public void testGetName() {
         String name = action.getName();
-        assertEquals(RestGetSchedulingInfoAction.GET_ALL_JOB_INFO_ACTION, name);
+        assertEquals(RestGetSchedulingInfoAction.GET_SCHEDULING_INFO_ACTION, name);
     }
 
     public void testRoutes() {
         List<RestHandler.Route> routes = action.routes();
         assertEquals(1, routes.size());
-        assertEquals(getAllJobInfoPath, routes.get(0).getPath());
+        assertEquals(getAllScheduledJobs, routes.get(0).getPath());
         assertEquals(RestRequest.Method.GET, routes.get(0).getMethod());
     }
 
@@ -63,7 +63,7 @@ public class RestGetSchedulingInfoActionTests extends OpenSearchTestCase {
         // Create fake request
         FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry())
             .withMethod(RestRequest.Method.GET)
-            .withPath(getAllJobInfoPath)
+            .withPath(getAllScheduledJobs)
             .withParams(new HashMap<>())
             .withContent(new BytesArray(requestBody), XContentType.JSON)
             .build();
