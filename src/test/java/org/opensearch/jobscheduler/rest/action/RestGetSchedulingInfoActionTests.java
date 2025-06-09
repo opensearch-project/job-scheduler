@@ -13,17 +13,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.core.common.bytes.BytesArray;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-import org.opensearch.jobscheduler.model.JobDetails;
-import org.opensearch.jobscheduler.rest.request.GetAllJobInfoRequest;
+import org.opensearch.jobscheduler.rest.request.GetSchedulingInfoRequest;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.rest.RestRequest;
@@ -33,9 +29,9 @@ import org.opensearch.test.rest.FakeRestRequest;
 import org.opensearch.transport.client.node.NodeClient;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
-public class RestGetAllJobInfoActionTests extends OpenSearchTestCase {
+public class RestGetSchedulingInfoActionTests extends OpenSearchTestCase {
 
-    private RestGetAllJobInfoAction action;
+    private RestGetSchedulingInfoAction action;
     private JobDetailsService jobDetailsService;
     private String getAllJobInfoPath;
     private String requestBody;
@@ -44,16 +40,16 @@ public class RestGetAllJobInfoActionTests extends OpenSearchTestCase {
     public void setUp() throws Exception {
         super.setUp();
         this.jobDetailsService = Mockito.mock(JobDetailsService.class);
-        this.action = new RestGetAllJobInfoAction(jobDetailsService);
+        this.action = new RestGetSchedulingInfoAction(jobDetailsService);
         this.getAllJobInfoPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs");
         
         // Create request body with activeJobsOnly parameter
-        this.requestBody = "{\"" + GetAllJobInfoRequest.ACTIVE_JOBS_ONLY + "\":true}";
+        this.requestBody = "{\"" + GetSchedulingInfoRequest.ACTIVE_JOBS_ONLY + "\":true}";
     }
 
     public void testGetName() {
         String name = action.getName();
-        assertEquals(RestGetAllJobInfoAction.GET_ALL_JOB_INFO_ACTION, name);
+        assertEquals(RestGetSchedulingInfoAction.GET_ALL_JOB_INFO_ACTION, name);
     }
 
     public void testRoutes() {
