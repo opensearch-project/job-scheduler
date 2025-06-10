@@ -55,7 +55,7 @@ public class JobScheduler {
     }
 
     @VisibleForTesting
-    ScheduledJobInfo getScheduledJobInfo() {
+    public ScheduledJobInfo getScheduledJobInfo() {
         return this.scheduledJobInfo;
     }
 

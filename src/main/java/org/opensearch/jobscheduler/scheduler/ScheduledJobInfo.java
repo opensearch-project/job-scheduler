@@ -48,6 +48,10 @@ public class ScheduledJobInfo {
         this.jobInfoMap.get(indexName).put(jobId, jobInfo);
     }
 
+    public Map<String, Map<String, JobSchedulingInfo>> getJobInfoMap() {
+        return  Map.copyOf(jobInfoMap);
+    }
+
     public JobSchedulingInfo removeJob(String indexName, String jobId) {
         if (this.jobInfoMap.containsKey(indexName)) {
             return this.jobInfoMap.get(indexName).remove(jobId);

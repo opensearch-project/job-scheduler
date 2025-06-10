@@ -41,7 +41,7 @@ public class RestGetSchedulingInfoActionTests extends OpenSearchTestCase {
         super.setUp();
         this.jobScheduler = Mockito.mock(JobScheduler.class);
         this.action = new RestGetSchedulingInfoAction(jobScheduler);
-        this.getAllScheduledJobs = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs");
+        this.getAllScheduledJobs = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs_scheduling_info");
         
         // Create request body with activeJobsOnly parameter
         this.requestBody = "{\"" + GetSchedulingInfoRequest.ACTIVE_JOBS_ONLY + "\":true}";
