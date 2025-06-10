@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
+import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.scheduler.ScheduledJobInfo;
 import org.opensearch.jobscheduler.scheduler.JobSchedulingInfo;
@@ -51,7 +52,7 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
     @Override
     public List<Route> routes() {
         return List.of(
-            new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_scheduling_info"))
+            new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs_scheduling_info"))
         );
     }
 
@@ -66,11 +67,13 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
                 builder.startObject();
 
                 ScheduledJobInfo scheduledJobInfo = jobScheduler.getScheduledJobInfo();
+
+
                 int totalJobs = 0;
 
                 builder.startArray("jobs");
 
-                for (Map.Entry<String, Map<String, JobSchedulingInfo>> indexEntry : scheduledJobInfo.jobInfoMap.entrySet()) {
+                for (Map.Entry<String, Map<String, JobSchedulingInfo>> indexEntry : scheduledJobInfo.getJobInfoMap().entrySet()) {
                     String indexName = indexEntry.getKey();
                     Map<String, JobSchedulingInfo> jobs = indexEntry.getValue();
 
@@ -84,18 +87,41 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
                         builder.field("index_name", indexName);
                         builder.field("name", jobParameter.getName());
                         builder.field("enabled", jobParameter.isEnabled());
-                        builder.field("schedule", jobParameter.getSchedule().toString());
+                        builder.field("enabled_time", jobParameter.getEnabledTime());
+                        builder.field("descheduled", jobInfo.isDescheduled());
+                        builder.field("last_update_time", jobParameter.getLastUpdateTime().toEpochMilli());
+
 
                         Instant lastExecutionTime = jobInfo.getActualPreviousExecutionTime();
                         if (lastExecutionTime != null) {
                             builder.field("last_execution_time", lastExecutionTime.toEpochMilli());
                         }
-
+                        Instant expectedPreviousExecutionTime = jobInfo.getExpectedPreviousExecutionTime();
+                        if (expectedPreviousExecutionTime != null) {
+                            builder.field("last_expected_execution_time", expectedPreviousExecutionTime.toEpochMilli());
+                        }
                         Instant nextExecutionTime = jobInfo.getExpectedExecutionTime();
                         if (nextExecutionTime != null) {
-                            builder.field("next_execution_time", nextExecutionTime.toEpochMilli());
+                            builder.field("next__expected_execution_time", nextExecutionTime.toEpochMilli());
                         }
-
+                        if (lastExecutionTime != null) {
+                            builder.field("on_time", jobParameter.getSchedule().runningOnTime(lastExecutionTime));
+                        }
+                        builder.field("schedule", jobParameter.getSchedule().toString());
+                        builder.field("schedule_next_time_to_execute", jobParameter.getSchedule().nextTimeToExecute());
+                        builder.field("schedule_delay", jobParameter.getSchedule().getDelay());
+                        Double jitter = jobParameter.getJitter();
+                        if (jitter != null) {
+                            builder.field("jitter", jitter);
+                        } else {
+                            builder.field("jitter", "none");
+                        }
+                        Long lock_duration  = jobParameter.getLockDurationSeconds();
+                        if (lock_duration != null) {
+                            builder.field("lock_duration", lock_duration);
+                        } else {
+                            builder.field("lock_duration", "no_lock");
+                        }
                         builder.endObject();
                         totalJobs++;
                     }
