@@ -42,9 +42,17 @@ public class RestGetSchedulingInfoActionTests extends OpenSearchTestCase {
         this.jobScheduler = Mockito.mock(JobScheduler.class);
         this.action = new RestGetSchedulingInfoAction(jobScheduler);
         this.getAllScheduledJobs = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs_scheduling_info");
-        
+
         // Create request body with activeJobsOnly parameter
         this.requestBody = "{\"" + GetSchedulingInfoRequest.ACTIVE_JOBS_ONLY + "\":true}";
+    }
+
+    public void testRunAll() throws IOException {
+        testGetName();
+        ;
+        testRoutes();
+        testPrepareRequest();
+
     }
 
     public void testGetName() {
@@ -61,18 +69,17 @@ public class RestGetSchedulingInfoActionTests extends OpenSearchTestCase {
 
     public void testPrepareRequest() throws IOException {
         // Create fake request
-        FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry())
-            .withMethod(RestRequest.Method.GET)
+        FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.GET)
             .withPath(getAllScheduledJobs)
             .withParams(new HashMap<>())
             .withContent(new BytesArray(requestBody), XContentType.JSON)
             .build();
-        
+
         final FakeRestChannel channel = new FakeRestChannel(request, true, 0);
-        
+
         // Execute the prepareRequest method
         action.prepareRequest(request, Mockito.mock(NodeClient.class));
-        
+
         // Since the actual response is handled asynchronously, we can only verify
         // that the method doesn't throw exceptions
         assertEquals(channel.responses().get(), 0);

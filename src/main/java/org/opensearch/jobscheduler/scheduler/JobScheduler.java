@@ -59,7 +59,6 @@ public class JobScheduler {
         return this.scheduledJobInfo;
     }
 
-
     public Set<String> getScheduledJobIds(String indexName) {
         return this.scheduledJobInfo.getJobsByIndex(indexName).keySet();
     }
