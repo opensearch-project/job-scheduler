@@ -12,7 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
-import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.scheduler.ScheduledJobInfo;
 import org.opensearch.jobscheduler.scheduler.JobSchedulingInfo;
@@ -51,9 +50,7 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return List.of(
-            new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs_scheduling_info"))
-        );
+        return List.of(new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs_scheduling_info")));
     }
 
     @Override
@@ -67,7 +64,6 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
                 builder.startObject();
 
                 ScheduledJobInfo scheduledJobInfo = jobScheduler.getScheduledJobInfo();
-
 
                 int totalJobs = 0;
 
@@ -90,7 +86,6 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
                         builder.field("enabled_time", jobParameter.getEnabledTime());
                         builder.field("descheduled", jobInfo.isDescheduled());
                         builder.field("last_update_time", jobParameter.getLastUpdateTime().toEpochMilli());
-
 
                         Instant lastExecutionTime = jobInfo.getActualPreviousExecutionTime();
                         if (lastExecutionTime != null) {
@@ -116,7 +111,7 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
                         } else {
                             builder.field("jitter", "none");
                         }
-                        Long lock_duration  = jobParameter.getLockDurationSeconds();
+                        Long lock_duration = jobParameter.getLockDurationSeconds();
                         if (lock_duration != null) {
                             builder.field("lock_duration", lock_duration);
                         } else {

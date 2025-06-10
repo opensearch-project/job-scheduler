@@ -20,9 +20,9 @@ import java.io.IOException;
 public class GetSchedulingInfoRequest extends ActionRequest {
 
     private boolean activeJobsOnly;
-    
+
     public static final String ACTIVE_JOBS_ONLY = "active_jobs_only";
-    //public static final String ALL_SCHEDULED_JOBS = "all_scheduled_jobs";
+    // public static final String ALL_SCHEDULED_JOBS = "all_scheduled_jobs";
 
     public GetSchedulingInfoRequest(StreamInput in) throws IOException {
         super(in);

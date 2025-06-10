@@ -49,7 +49,7 @@ public class ScheduledJobInfo {
     }
 
     public Map<String, Map<String, JobSchedulingInfo>> getJobInfoMap() {
-        return  Map.copyOf(jobInfoMap);
+        return Map.copyOf(jobInfoMap);
     }
 
     public JobSchedulingInfo removeJob(String indexName, String jobId) {

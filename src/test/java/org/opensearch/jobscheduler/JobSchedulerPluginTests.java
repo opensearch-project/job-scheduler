@@ -167,7 +167,7 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
                 instanceOf(RestGetJobDetailsAction.class),
                 instanceOf(RestGetLockAction.class),
                 instanceOf(RestReleaseLockAction.class),
-                    instanceOf(RestGetSchedulingInfoAction.class)
+                instanceOf(RestGetSchedulingInfoAction.class)
             )
         );
     }
