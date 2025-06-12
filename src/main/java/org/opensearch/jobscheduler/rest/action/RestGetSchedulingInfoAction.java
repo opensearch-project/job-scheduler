@@ -50,7 +50,7 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return List.of(new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_jobs_scheduling_info")));
+        return List.of(new Route(GET, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_job_scheduling_info")));
     }
 
     @Override
@@ -97,7 +97,7 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
                         }
                         Instant nextExecutionTime = jobInfo.getExpectedExecutionTime();
                         if (nextExecutionTime != null) {
-                            builder.field("next__expected_execution_time", nextExecutionTime.toEpochMilli());
+                            builder.field("next_expected_execution_time", nextExecutionTime.toEpochMilli());
                         }
                         if (lastExecutionTime != null) {
                             builder.field("on_time", jobParameter.getSchedule().runningOnTime(lastExecutionTime));
