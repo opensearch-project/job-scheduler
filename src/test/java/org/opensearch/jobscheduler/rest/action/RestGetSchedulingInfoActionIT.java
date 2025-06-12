@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.notNullValue;
  */
 public class RestGetSchedulingInfoActionIT extends OpenSearchRestTestCase {
 
-    private static final String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/_jobs_scheduling_info";
+    private static final String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/_job_scheduling_info";
 
     private ThreadPool threadPool;
 
