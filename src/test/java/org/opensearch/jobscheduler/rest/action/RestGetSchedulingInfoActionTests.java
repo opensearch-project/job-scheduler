@@ -13,12 +13,14 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.core.common.bytes.BytesArray;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
+import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.rest.request.GetSchedulingInfoRequest;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.rest.RestHandler;
@@ -35,22 +37,18 @@ public class RestGetSchedulingInfoActionTests extends OpenSearchTestCase {
     private JobScheduler jobScheduler;
     private String getAllScheduledJobs;
     private String requestBody;
+    private Map<String, ScheduledJobProvider> indexToJobProviders;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
         this.jobScheduler = Mockito.mock(JobScheduler.class);
-        this.action = new RestGetSchedulingInfoAction(jobScheduler);
+        this.indexToJobProviders = Mockito.mock(Map.class);
+        this.action = new RestGetSchedulingInfoAction(jobScheduler, indexToJobProviders);
         this.getAllScheduledJobs = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_job_scheduling_info");
 
         // Create request body with activeJobsOnly parameter
         this.requestBody = "{\"" + GetSchedulingInfoRequest.ACTIVE_JOBS_ONLY + "\":true}";
-    }
-
-    public void testRunAll() throws IOException {
-        testGetName();
-        testRoutes();
-        testPrepareRequest();
     }
 
     public void testGetName() {

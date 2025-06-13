@@ -54,7 +54,7 @@ public class GetSchedulingInfoRequest extends ActionRequest {
     }
 
     public static GetSchedulingInfoRequest parse(XContentParser parser) throws IOException {
-        boolean activeJobsOnly = true; // Default to all schedule jobs
+        boolean activeJobsOnly = false; // Default to all schedule jobs
 
         XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.currentToken(), parser);
         while (parser.nextToken() != XContentParser.Token.END_OBJECT) {

@@ -12,10 +12,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
+import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.scheduler.ScheduledJobInfo;
 import org.opensearch.jobscheduler.scheduler.JobSchedulingInfo;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
+import org.opensearch.jobscheduler.spi.schedule.Schedule;
+import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
+import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.core.rest.RestStatus;
@@ -38,9 +42,11 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
     public static final String GET_SCHEDULING_INFO_ACTION = "get_scheduling_info_action";
     private final Logger logger = LogManager.getLogger(RestGetSchedulingInfoAction.class);
     private final JobScheduler jobScheduler;
+    private Map<String, ScheduledJobProvider> indexToJobProviders;
 
-    public RestGetSchedulingInfoAction(final JobScheduler jobScheduler) {
+    public RestGetSchedulingInfoAction(final JobScheduler jobScheduler, Map<String, ScheduledJobProvider> indexToJobProviders) {
         this.jobScheduler = jobScheduler;
+        this.indexToJobProviders = indexToJobProviders;
     }
 
     @Override
@@ -71,6 +77,7 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
 
                 for (Map.Entry<String, Map<String, JobSchedulingInfo>> indexEntry : scheduledJobInfo.getJobInfoMap().entrySet()) {
                     String indexName = indexEntry.getKey();
+                    String jobtype = indexToJobProviders.get(indexName).getJobType();
                     Map<String, JobSchedulingInfo> jobs = indexEntry.getValue();
 
                     for (Map.Entry<String, JobSchedulingInfo> jobEntry : jobs.entrySet()) {
@@ -79,32 +86,59 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
                         ScheduledJobParameter jobParameter = jobInfo.getJobParameter();
 
                         builder.startObject();
+                        builder.field("job_type", jobtype);
                         builder.field("job_id", jobId);
                         builder.field("index_name", indexName);
                         builder.field("name", jobParameter.getName());
                         builder.field("enabled", jobParameter.isEnabled());
                         builder.field("enabled_time", jobParameter.getEnabledTime());
                         builder.field("descheduled", jobInfo.isDescheduled());
-                        builder.field("last_update_time", jobParameter.getLastUpdateTime().toEpochMilli());
+                        builder.field("last_update_time", jobParameter.getLastUpdateTime());
 
                         Instant lastExecutionTime = jobInfo.getActualPreviousExecutionTime();
                         if (lastExecutionTime != null) {
-                            builder.field("last_execution_time", lastExecutionTime.toEpochMilli());
+                            builder.field("last_execution_time", lastExecutionTime);
                         }
                         Instant expectedPreviousExecutionTime = jobInfo.getExpectedPreviousExecutionTime();
                         if (expectedPreviousExecutionTime != null) {
-                            builder.field("last_expected_execution_time", expectedPreviousExecutionTime.toEpochMilli());
+                            builder.field("last_expected_execution_time", expectedPreviousExecutionTime);
                         }
                         Instant nextExecutionTime = jobInfo.getExpectedExecutionTime();
                         if (nextExecutionTime != null) {
-                            builder.field("next_expected_execution_time", nextExecutionTime.toEpochMilli());
+                            builder.field("next_expected_execution_time", nextExecutionTime);
                         }
                         if (lastExecutionTime != null) {
                             builder.field("on_time", jobParameter.getSchedule().runningOnTime(lastExecutionTime));
                         }
-                        builder.field("schedule", jobParameter.getSchedule().toString());
-                        builder.field("schedule_next_time_to_execute", jobParameter.getSchedule().nextTimeToExecute());
-                        builder.field("schedule_delay", jobParameter.getSchedule().getDelay());
+
+                        // Break down schedule into its components
+                        Schedule schedule = jobParameter.getSchedule();
+
+                        // builder.field("next_time_to_execute", schedule.nextTimeToExecute());
+                        Instant now = Instant.now();
+                        builder.field("next_time_to_execute", now.plus(schedule.nextTimeToExecute()));
+                        builder.field("delay", schedule.getDelay());
+
+                        builder.startObject("schedule");
+
+                        // Handle different schedule types
+                        if (schedule instanceof IntervalSchedule) {
+                            IntervalSchedule intervalSchedule = (IntervalSchedule) schedule;
+                            builder.field("type", "interval");
+                            builder.field("start_time", intervalSchedule.getStartTime());
+                            builder.field("interval", intervalSchedule.getInterval());
+                            builder.field("unit", intervalSchedule.getUnit().toString());
+                        } else if (schedule instanceof CronSchedule) {
+                            CronSchedule cronSchedule = (CronSchedule) schedule;
+                            builder.field("type", "cron");
+                            builder.field("expression", cronSchedule.getCronExpression());
+                            builder.field("timezone", cronSchedule.getTimeZone().getId());
+                        } else {
+                            builder.field("type", "unknown");
+                            builder.field("raw_schedule", schedule.toString());
+                        }
+                        builder.endObject();
+
                         Double jitter = jobParameter.getJitter();
                         if (jitter != null) {
                             builder.field("jitter", jitter);
