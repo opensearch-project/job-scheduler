@@ -246,7 +246,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         RestGetJobDetailsAction restGetJobDetailsAction = new RestGetJobDetailsAction(jobDetailsService);
         RestGetLockAction restGetLockAction = new RestGetLockAction(lockService);
         RestReleaseLockAction restReleaseLockAction = new RestReleaseLockAction(lockService);
-        RestGetSchedulingInfoAction restGetSchedulingInfoAction = new RestGetSchedulingInfoAction(scheduler);
+        RestGetSchedulingInfoAction restGetSchedulingInfoAction = new RestGetSchedulingInfoAction(scheduler, indexToJobProviders);
         return List.of(restGetJobDetailsAction, restGetLockAction, restReleaseLockAction, restGetSchedulingInfoAction);
     }
 
