@@ -95,33 +95,30 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
                         builder.field("descheduled", jobInfo.isDescheduled());
                         builder.field("last_update_time", jobParameter.getLastUpdateTime());
 
-                        Instant lastExecutionTime = jobInfo.getActualPreviousExecutionTime();
-                        if (lastExecutionTime != null) {
-                            builder.field("last_execution_time", lastExecutionTime);
+                        if (jobInfo.getActualPreviousExecutionTime() != null) {
+                            builder.field("last_execution_time", jobInfo.getActualPreviousExecutionTime());
                         }
-                        Instant expectedPreviousExecutionTime = jobInfo.getExpectedPreviousExecutionTime();
-                        if (expectedPreviousExecutionTime != null) {
-                            builder.field("last_expected_execution_time", expectedPreviousExecutionTime);
+                        if (jobInfo.getExpectedPreviousExecutionTime() != null) {
+                            builder.field("last_expected_execution_time", jobInfo.getExpectedPreviousExecutionTime());
                         }
-                        Instant nextExecutionTime = jobInfo.getExpectedExecutionTime();
-                        if (nextExecutionTime != null) {
-                            builder.field("next_expected_execution_time", nextExecutionTime);
+                        if (jobInfo.getExpectedExecutionTime() != null) {
+                            builder.field("next_expected_execution_time", jobInfo.getExpectedExecutionTime());
                         }
-                        if (lastExecutionTime != null) {
-                            builder.field("on_time", jobParameter.getSchedule().runningOnTime(lastExecutionTime));
+                        if (jobInfo.getActualPreviousExecutionTime() != null) {
+                            builder.field("on_time", jobParameter.getSchedule().runningOnTime(jobInfo.getActualPreviousExecutionTime()));
                         }
 
-                        // Break down schedule into its components
                         Schedule schedule = jobParameter.getSchedule();
-
-                        // builder.field("next_time_to_execute", schedule.nextTimeToExecute());
                         Instant now = Instant.now();
                         builder.field("next_time_to_execute", now.plus(schedule.nextTimeToExecute()));
-                        builder.field("delay", schedule.getDelay());
+
+                        if (schedule.getDelay() != null) {
+                            builder.field("delay", schedule.getDelay());
+                        } else {
+                            builder.field("delay", "none");
+                        }
 
                         builder.startObject("schedule");
-
-                        // Handle different schedule types
                         if (schedule instanceof IntervalSchedule) {
                             IntervalSchedule intervalSchedule = (IntervalSchedule) schedule;
                             builder.field("type", "interval");
@@ -139,15 +136,14 @@ public class RestGetSchedulingInfoAction extends BaseRestHandler {
                         }
                         builder.endObject();
 
-                        Double jitter = jobParameter.getJitter();
-                        if (jitter != null) {
-                            builder.field("jitter", jitter);
+                        if (jobParameter.getJitter() != null) {
+                            builder.field("jitter", jobParameter.getJitter());
                         } else {
                             builder.field("jitter", "none");
                         }
-                        Long lock_duration = jobParameter.getLockDurationSeconds();
-                        if (lock_duration != null) {
-                            builder.field("lock_duration", lock_duration);
+
+                        if (jobParameter.getLockDurationSeconds() != null) {
+                            builder.field("lock_duration", jobParameter.getLockDurationSeconds());
                         } else {
                             builder.field("lock_duration", "no_lock");
                         }
