@@ -8,16 +8,21 @@
  */
 package org.opensearch.jobscheduler;
 
+import org.opensearch.action.ActionRequest;
 import org.opensearch.cluster.node.DiscoveryNodes;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.IndexScopedSettings;
 import org.opensearch.common.settings.SettingsFilter;
+import org.opensearch.core.action.ActionResponse;
 import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
+import org.opensearch.jobscheduler.rest.action.RestGetScheduledInfoAction;
 import org.opensearch.jobscheduler.rest.action.RestGetSchedulingInfoAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
+import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
+import org.opensearch.jobscheduler.transport.action.TransportGetScheduledInfoAction;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
@@ -126,7 +131,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         clusterService.addListener(this.sweeper);
         clusterService.addLifecycleListener(this.sweeper);
 
-        return List.of(this.lockService);
+        return List.of(this.lockService, this.scheduler);
     }
 
     @Override
@@ -247,7 +252,21 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         RestGetLockAction restGetLockAction = new RestGetLockAction(lockService);
         RestReleaseLockAction restReleaseLockAction = new RestReleaseLockAction(lockService);
         RestGetSchedulingInfoAction restGetSchedulingInfoAction = new RestGetSchedulingInfoAction(scheduler, indexToJobProviders);
-        return List.of(restGetJobDetailsAction, restGetLockAction, restReleaseLockAction, restGetSchedulingInfoAction);
+        RestGetScheduledInfoAction restGetScheduledInfoAction = new RestGetScheduledInfoAction();
+        return List.of(
+            restGetJobDetailsAction,
+            restGetLockAction,
+            restReleaseLockAction,
+            restGetSchedulingInfoAction,
+            restGetScheduledInfoAction
+        );
+    }
+
+    @Override
+    public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
+        List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> actions = new ArrayList<>(1);
+        actions.add(new ActionHandler<>(GetScheduledInfoAction.INSTANCE, TransportGetScheduledInfoAction.class));
+        return actions;
     }
 
 }
