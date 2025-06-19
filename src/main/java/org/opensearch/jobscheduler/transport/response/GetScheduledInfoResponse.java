@@ -19,6 +19,8 @@ import org.opensearch.core.xcontent.XContentBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 public class GetScheduledInfoResponse extends BaseNodesResponse<GetScheduledInfoNodeResponse> implements ToXContent {
@@ -43,12 +45,34 @@ public class GetScheduledInfoResponse extends BaseNodesResponse<GetScheduledInfo
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        boolean byNode = params.paramAsBoolean("by_node", false);
+        int totalJobs = 0;
+
         builder.startObject();
-        builder.startArray("nodes");
-        for (GetScheduledInfoNodeResponse nodeResponse : getNodes()) {
-            nodeResponse.toXContent(builder, params);
+
+        if (byNode) {
+            builder.startArray("nodes");
+            for (GetScheduledInfoNodeResponse nodeResponse : getNodes()) {
+                nodeResponse.toXContent(builder, params);
+                totalJobs++;
+            }
+            builder.endArray();
+        } else {
+            builder.startArray("jobs");
+            Set<Object> uniqueJobs = new HashSet<>();
+            for (GetScheduledInfoNodeResponse nodeResponse : getNodes()) {
+                Object jobs = nodeResponse.getScheduledJobInfo().get("jobs");
+                if (jobs instanceof List) {
+                    for (Object job : (List<?>) jobs) {
+                        if (uniqueJobs.add(job)) {
+                            builder.value(job);
+                            totalJobs++;
+                        }
+                    }
+                }
+            }
+            builder.endArray();
         }
-        builder.endArray();
 
         builder.startArray("failures");
         for (FailedNodeException failure : failures()) {
@@ -58,6 +82,7 @@ public class GetScheduledInfoResponse extends BaseNodesResponse<GetScheduledInfo
             builder.endObject();
         }
         builder.endArray();
+        builder.field("total_jobs", totalJobs);
         builder.endObject();
         return builder;
     }
