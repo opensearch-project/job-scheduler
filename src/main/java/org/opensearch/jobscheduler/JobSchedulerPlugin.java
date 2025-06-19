@@ -19,7 +19,6 @@ import org.opensearch.core.action.ActionResponse;
 import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestGetScheduledInfoAction;
-import org.opensearch.jobscheduler.rest.action.RestGetSchedulingInfoAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
 import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetScheduledInfoAction;
@@ -251,15 +250,8 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         RestGetJobDetailsAction restGetJobDetailsAction = new RestGetJobDetailsAction(jobDetailsService);
         RestGetLockAction restGetLockAction = new RestGetLockAction(lockService);
         RestReleaseLockAction restReleaseLockAction = new RestReleaseLockAction(lockService);
-        RestGetSchedulingInfoAction restGetSchedulingInfoAction = new RestGetSchedulingInfoAction(scheduler, indexToJobProviders);
         RestGetScheduledInfoAction restGetScheduledInfoAction = new RestGetScheduledInfoAction();
-        return List.of(
-            restGetJobDetailsAction,
-            restGetLockAction,
-            restReleaseLockAction,
-            restGetSchedulingInfoAction,
-            restGetScheduledInfoAction
-        );
+        return List.of(restGetJobDetailsAction, restGetLockAction, restReleaseLockAction, restGetScheduledInfoAction);
     }
 
     @Override
