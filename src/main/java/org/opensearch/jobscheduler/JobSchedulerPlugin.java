@@ -131,7 +131,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         clusterService.addListener(this.sweeper);
         clusterService.addLifecycleListener(this.sweeper);
 
-        return List.of(this.lockService, this.scheduler);
+        return List.of(this.lockService, this.scheduler, this.jobDetailsService);
     }
 
     @Override
