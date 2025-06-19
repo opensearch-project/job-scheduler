@@ -17,12 +17,15 @@ import java.io.IOException;
 
 public class GetScheduledInfoRequest extends BaseNodesRequest<GetScheduledInfoRequest> {
 
+    private boolean byNode = false;
+
     public GetScheduledInfoRequest() {
         super((new String[0]));
     }
 
     public GetScheduledInfoRequest(StreamInput in) throws IOException {
         super(in);
+        this.byNode = in.readBoolean();
     }
 
     public GetScheduledInfoRequest(String... nodeIds) {
@@ -33,8 +36,17 @@ public class GetScheduledInfoRequest extends BaseNodesRequest<GetScheduledInfoRe
         super(nodes);
     }
 
+    public boolean isByNode() {
+        return byNode;
+    }
+
+    public void setByNode(boolean byNode) {
+        this.byNode = byNode;
+    }
+
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
+        out.writeBoolean(byNode);
     }
 }

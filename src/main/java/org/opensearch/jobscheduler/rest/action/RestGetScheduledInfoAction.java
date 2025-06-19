@@ -42,6 +42,7 @@ public class RestGetScheduledInfoAction extends BaseRestHandler {
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
         GetScheduledInfoRequest getScheduledInfoRequest = new GetScheduledInfoRequest();
+        getScheduledInfoRequest.setByNode(request.paramAsBoolean("by_node", false));
 
         return channel -> client.execute(GetScheduledInfoAction.INSTANCE, getScheduledInfoRequest, new RestBuilderListener<>(channel) {
             @Override

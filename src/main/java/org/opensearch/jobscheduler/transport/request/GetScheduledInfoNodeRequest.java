@@ -17,21 +17,34 @@ import java.io.IOException;
 
 public class GetScheduledInfoNodeRequest extends ActionRequest {
 
+    private boolean byNode = false;
+
     public GetScheduledInfoNodeRequest() {
         super();
     }
 
     public GetScheduledInfoNodeRequest(StreamInput in) throws IOException {
         super(in);
+        this.byNode = in.readBoolean();
     }
 
     public GetScheduledInfoNodeRequest(GetScheduledInfoRequest request) {
         super();
+        this.byNode = request.isByNode();
+    }
+
+    public boolean isByNode() {
+        return byNode;
+    }
+
+    public void setByNode(boolean byNode) {
+        this.byNode = byNode;
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
+        out.writeBoolean(byNode);
     }
 
     @Override
