@@ -12,7 +12,7 @@ import org.opensearch.action.ActionType;
 import org.opensearch.jobscheduler.transport.response.GetScheduledInfoResponse;
 
 public class GetScheduledInfoAction extends ActionType<GetScheduledInfoResponse> {
-    public static final String NAME = "cluster:admin/opensearch/_job_scheduler/_info";
+    public static final String NAME = "cluster:admin/opensearch/_job_scheduler/info";
     public static final GetScheduledInfoAction INSTANCE = new GetScheduledInfoAction();
 
     private GetScheduledInfoAction() {

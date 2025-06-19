@@ -14,11 +14,13 @@ import org.opensearch.action.support.nodes.TransportNodesAction;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.scheduler.JobSchedulingInfo;
 import org.opensearch.jobscheduler.scheduler.ScheduledJobInfo;
 import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
+import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.transport.TransportService;
 import org.opensearch.jobscheduler.transport.request.GetScheduledInfoRequest;
@@ -28,6 +30,7 @@ import org.opensearch.jobscheduler.transport.response.GetScheduledInfoNodeRespon
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +41,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
     GetScheduledInfoNodeResponse> {
 
     private final JobScheduler jobScheduler;
+    private final JobDetailsService jobDetailsService;
 
     @Inject
     public TransportGetScheduledInfoAction(
@@ -45,7 +49,8 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
         ClusterService clusterService,
         TransportService transportService,
         ActionFilters actionFilters,
-        JobScheduler jobScheduler
+        JobScheduler jobScheduler,
+        JobDetailsService jobDetailsService
     ) {
         super(
             GetScheduledInfoAction.NAME,
@@ -59,6 +64,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
             GetScheduledInfoNodeResponse.class
         );
         this.jobScheduler = jobScheduler;
+        this.jobDetailsService = jobDetailsService;
     }
 
     @Override
@@ -84,6 +90,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
     protected GetScheduledInfoNodeResponse nodeOperation(GetScheduledInfoNodeRequest request) {
         GetScheduledInfoNodeResponse response = new GetScheduledInfoNodeResponse(clusterService.localNode());
         Map<String, Object> scheduledJobInfo = new HashMap<>();
+        Map<String, ScheduledJobProvider> indexToJobProvider = jobDetailsService.getIndexToJobProviders();
 
         try {
             // Create a list to hold all job details
@@ -105,17 +112,14 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
 
                                 if (jobInfo == null) continue;
 
-                                Map<String, Object> jobDetails = new HashMap<>();
+                                Map<String, Object> jobDetails = new LinkedHashMap<>();
 
                                 // Get job provider type if available
                                 String jobType = "unknown";
-                                /*try {
-                                    if (jobScheduler.getJobProviderByIndex(indexName) != null) {
-                                    jobType = jobScheduler.getJobProviderByIndex(indexName).getJobType();
-                                    }
-                                } catch (Exception e) {
-                                    // Fallback to unknown if job provider not found
-                                }*/
+
+                                if (indexToJobProvider.get(indexName).getJobType() != null) {
+                                    jobType = indexToJobProvider.get(indexName).getJobType();
+                                }
 
                                 // Add job details
                                 jobDetails.put("job_type", jobType);
@@ -125,9 +129,30 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 // Add job parameter details
                                 if (jobInfo.getJobParameter() != null) {
                                     jobDetails.put("name", jobInfo.getJobParameter().getName());
+                                    jobDetails.put("descheduled", jobInfo.isDescheduled());
                                     jobDetails.put("enabled", jobInfo.getJobParameter().isEnabled());
                                     jobDetails.put("enabled_time", jobInfo.getJobParameter().getEnabledTime().toString());
                                     jobDetails.put("last_update_time", jobInfo.getJobParameter().getLastUpdateTime().toString());
+                                    // Add execution information
+
+                                    if (jobInfo.getActualPreviousExecutionTime() != null) {
+                                        jobDetails.put("last_execution_time", jobInfo.getActualPreviousExecutionTime());
+                                    }
+                                    if (jobInfo.getExpectedPreviousExecutionTime() != null) {
+                                        jobDetails.put("last_expected_execution_time", jobInfo.getExpectedPreviousExecutionTime());
+                                    }
+
+                                    // Add next execution time
+                                    if (jobInfo.getExpectedExecutionTime() != null) {
+                                        jobDetails.put("next_expected_execution_time", jobInfo.getExpectedExecutionTime().toString());
+                                    }
+
+                                    // Add next time to execute
+                                    java.time.Instant now = java.time.Instant.now();
+                                    jobDetails.put(
+                                        "next_time_to_execute",
+                                        (now.plus(jobInfo.getJobParameter().getSchedule().nextTimeToExecute()).toString())
+                                    );
 
                                     // Add schedule information
                                     if (jobInfo.getJobParameter().getSchedule() != null) {
@@ -158,29 +183,10 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                                 ? jobInfo.getJobParameter().getSchedule().getDelay()
                                                 : "none"
                                         );
-
-                                        try {
-                                            // Add next execution time
-                                            if (jobInfo.getExpectedExecutionTime() != null) {
-                                                jobDetails.put(
-                                                    "next_expected_execution_time",
-                                                    jobInfo.getExpectedExecutionTime().toString()
-                                                );
-                                            }
-
-                                            // Add next time to execute
-                                            java.time.Instant now = java.time.Instant.now();
-                                            jobDetails.put(
-                                                "next_time_to_execute",
-                                                (now.plus(jobInfo.getJobParameter().getSchedule().nextTimeToExecute()).toString())
-                                            );
-                                        } catch (Exception e) {
-                                            // Skip time calculations if they fail
-                                        }
                                     }
 
                                     // Add jitter and lock duration
-                                    /*jobDetails.put(
+                                    jobDetails.put(
                                         "jitter",
                                         jobInfo.getJobParameter().getJitter() != null ? jobInfo.getJobParameter().getJitter() : "none"
                                     );
@@ -189,16 +195,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                         jobInfo.getJobParameter().getLockDurationSeconds() != null
                                             ? jobInfo.getJobParameter().getLockDurationSeconds()
                                             : "no_lock"
-                                    );*/
-                                }
-
-                                // Add execution information
-                                jobDetails.put("descheduled", jobInfo.isDescheduled());
-                                if (jobInfo.getActualPreviousExecutionTime() != null) {
-                                    jobDetails.put("last_execution_time", jobInfo.getActualPreviousExecutionTime());
-                                }
-                                if (jobInfo.getExpectedPreviousExecutionTime() != null) {
-                                    jobDetails.put("last_expected_execution_time", jobInfo.getExpectedPreviousExecutionTime());
+                                    );
                                 }
 
                                 jobs.add(jobDetails);
