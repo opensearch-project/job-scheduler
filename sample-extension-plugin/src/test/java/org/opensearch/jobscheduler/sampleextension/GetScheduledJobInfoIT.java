@@ -21,7 +21,7 @@ import java.util.Map;
 public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
 
     @Before
-    public void setupJobs() throws IOException {
+    public void setupJobs() throws IOException, InterruptedException {
         SampleJobParameter jobParam1 = new SampleJobParameter(
             "test-job-1",
             "Test Job 1",
@@ -62,6 +62,10 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         createWatcherJob("test-job-2", jobParam2);
         createWatcherJob("test-job-3", jobParam3);
         createWatcherJob("test-job-4", jobParam4);
+        // Refresh indices to ensure all jobs are available
+        makeRequest(client(), "POST", "/_refresh", Collections.emptyMap(), null);
+
+        Thread.sleep(1000);
     }
 
     public void testGetScheduledJobInfoEntireCluster() throws IOException {
