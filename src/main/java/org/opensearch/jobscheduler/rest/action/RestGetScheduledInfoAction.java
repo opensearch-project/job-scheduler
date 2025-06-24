@@ -50,7 +50,7 @@ public class RestGetScheduledInfoAction extends BaseRestHandler {
                 org.opensearch.jobscheduler.transport.response.GetScheduledInfoResponse response,
                 XContentBuilder builder
             ) throws Exception {
-                // Don't wrap in an additional object since response.toXContent already does that
+                // No additional wrapper
                 response.toXContent(builder, request);
                 return new BytesRestResponse(RestStatus.OK, builder);
             }
