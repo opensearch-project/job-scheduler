@@ -9,6 +9,7 @@
 package org.opensearch.jobscheduler.multinode;
 
 import java.util.Map;
+
 import org.opensearch.client.Response;
 import org.opensearch.jobscheduler.ODFERestTestCase;
 import org.opensearch.jobscheduler.TestHelpers;
@@ -30,7 +31,6 @@ public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
      * @throws Exception
      */
     public void testGetJobDetailsRestAPI() throws Exception {
-
         // Send intial request
         Response response = TestHelpers.makeRequest(
             client(),

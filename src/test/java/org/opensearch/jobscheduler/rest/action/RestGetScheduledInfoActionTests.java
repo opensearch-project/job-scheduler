@@ -79,7 +79,7 @@ public class RestGetScheduledInfoActionTests extends OpenSearchTestCase {
         // Execute the prepareRequest method
         action.prepareRequest(request, mockClient);
 
-        // Since we're mocking the response, we just verify no exceptions were thrown
+        // Ensure no errors thrown
         assertEquals(0, channel.responses().get());
         assertEquals(0, channel.errors().get());
     }

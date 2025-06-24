@@ -27,12 +27,11 @@ import org.opensearch.test.OpenSearchIntegTestCase;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 3, minNumDataNodes = 3)
+@OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetScheduledInfoMultiNodeTransportIT extends OpenSearchIntegTestCase {
 
     @Override
@@ -60,26 +59,8 @@ public class GetScheduledInfoMultiNodeTransportIT extends OpenSearchIntegTestCas
 
         Assert.assertTrue(pluginInfos.stream().anyMatch(pluginInfo -> pluginInfo.getName().equals("opensearch-job-scheduler")));
 
-        // Create test job
-        /*try {
-            client().index(
-                new IndexRequest(".test-jobs").id("job1")
-                    .source(
-                        XContentFactory.jsonBuilder()
-                            .startObject()
-                            .field("name", "test-job")
-                            .field("enabled", true)
-                            .field("schedule", new IntervalSchedule(Instant.now(), 5, ChronoUnit.MINUTES))
-                            .endObject()
-                    )
-            ).actionGet();
-        } catch (IOException e) {}*/
-
-        // Test GetScheduledInfo Transport request
         GetScheduledInfoRequest request = new GetScheduledInfoRequest();
         GetScheduledInfoResponse response = client().execute(GetScheduledInfoAction.INSTANCE, request).actionGet();
-
-        Map<String, Map<String, Object>> nodesMap = response.getScheduledJobInfoByNode();
 
         assertNotNull(response);
         assertEquals(2, response.getNodes().size());
