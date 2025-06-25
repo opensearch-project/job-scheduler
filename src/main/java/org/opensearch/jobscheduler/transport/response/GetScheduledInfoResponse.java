@@ -54,7 +54,7 @@ public class GetScheduledInfoResponse extends BaseNodesResponse<GetScheduledInfo
             builder.startArray("nodes");
             for (GetScheduledInfoNodeResponse nodeResponse : getNodes()) {
                 nodeResponse.toXContent(builder, params);
-                totalJobs++;
+                totalJobs = totalJobs + (int) nodeResponse.getScheduledJobInfo().get("total_jobs");
             }
             builder.endArray();
         } else {

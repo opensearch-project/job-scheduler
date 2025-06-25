@@ -22,7 +22,7 @@ import org.opensearch.test.OpenSearchIntegTestCase;
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetScheduledInfoActionMultiNodeRestIT extends ODFERestTestCase {
 
-    private static final String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/info";
+    private static final String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs";
 
     public void testGetScheduledInfoRestAPI() throws Exception {
         // Check cluster health first

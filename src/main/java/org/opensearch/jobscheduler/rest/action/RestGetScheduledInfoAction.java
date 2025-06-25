@@ -36,7 +36,7 @@ public class RestGetScheduledInfoAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return List.of(new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/info"));
+        return List.of(new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/jobs"));
     }
 
     @Override

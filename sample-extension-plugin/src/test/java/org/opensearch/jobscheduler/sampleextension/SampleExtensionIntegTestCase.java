@@ -37,6 +37,7 @@ import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.common.xcontent.json.JsonXContent;
+import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.test.rest.OpenSearchRestTestCase;
@@ -48,6 +49,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Collections;
@@ -261,7 +263,11 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         params.put("id", jobId);
         params.put("job_name", jobParameter.getName());
         params.put("index", jobParameter.getIndexToWatch());
-        params.put("interval", String.valueOf(((IntervalSchedule) jobParameter.getSchedule()).getInterval()));
+        if (jobParameter.getSchedule() instanceof IntervalSchedule) {
+            params.put("interval", String.valueOf(((IntervalSchedule) jobParameter.getSchedule()).getInterval()));
+        } else if (jobParameter.getSchedule() instanceof CronSchedule) {
+            params.put("cron", ((CronSchedule) jobParameter.getSchedule()).getCronExpression());
+        }
         params.put("lock_duration_seconds", String.valueOf(jobParameter.getLockDurationSeconds()));
         return params;
     }
@@ -297,13 +303,23 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         jobParameter.setIndexToWatch(jobSource.get("index_name_to_watch").toString());
 
         Map<String, Object> jobSchedule = (Map<String, Object>) jobSource.get("schedule");
-        jobParameter.setSchedule(
-            new IntervalSchedule(
-                Instant.ofEpochMilli(Long.parseLong(((Map<String, Object>) jobSchedule.get("interval")).get("start_time").toString())),
-                Integer.parseInt(((Map<String, Object>) jobSchedule.get("interval")).get("period").toString()),
-                ChronoUnit.MINUTES
-            )
-        );
+        if (jobSchedule.containsKey("cron")) {
+            jobParameter.setSchedule(
+                new CronSchedule(
+                    ((Map<String, Object>) jobSchedule.get("cron")).get("expression").toString(),
+                    ZoneId.of(((Map<String, Object>) jobSchedule.get("cron")).get("timezone").toString())
+                )
+            );
+        } else {
+            jobParameter.setSchedule(
+                new IntervalSchedule(
+                    Instant.ofEpochMilli(Long.parseLong(((Map<String, Object>) jobSchedule.get("interval")).get("start_time").toString())),
+                    Integer.parseInt(((Map<String, Object>) jobSchedule.get("interval")).get("period").toString()),
+                    ChronoUnit.MINUTES
+                )
+
+            );
+        }
         jobParameter.setLockDurationSeconds(Long.parseLong(jobSource.get("lock_duration_seconds").toString()));
         return jobParameter;
     }

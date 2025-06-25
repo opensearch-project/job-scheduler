@@ -43,7 +43,7 @@ public class RestGetScheduledInfoActionTests extends OpenSearchTestCase {
     public void setUp() throws Exception {
         super.setUp();
         this.action = new RestGetScheduledInfoAction();
-        this.getScheduledInfoPath = JobSchedulerPlugin.JS_BASE_URI + "/info";
+        this.getScheduledInfoPath = JobSchedulerPlugin.JS_BASE_URI + "/api/jobs";
     }
 
     public void testGetName() {
