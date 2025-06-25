@@ -8,6 +8,8 @@
  */
 package org.opensearch.jobscheduler.transport.action;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opensearch.action.FailedNodeException;
 import org.opensearch.action.support.ActionFilters;
 import org.opensearch.action.support.nodes.TransportNodesAction;
@@ -33,6 +35,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 public class TransportGetScheduledInfoAction extends TransportNodesAction<
     GetScheduledInfoRequest,
@@ -40,6 +43,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
     GetScheduledInfoNodeRequest,
     GetScheduledInfoNodeResponse> {
 
+    private static final Logger log = LogManager.getLogger(JobScheduler.class);
     private final JobScheduler jobScheduler;
     private final JobDetailsService jobDetailsService;
 
@@ -94,7 +98,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
 
         try {
             // Create a list to hold all job details
-            List<Map<String, Object>> jobs = new java.util.ArrayList<>();
+            List<Map<String, Object>> jobs = new ArrayList<>();
 
             // Get scheduled job information from the job scheduler
             if (jobScheduler != null) {
@@ -110,16 +114,14 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 String jobId = jobEntry.getKey();
                                 JobSchedulingInfo jobInfo = jobEntry.getValue();
 
-                                if (jobInfo == null) continue;
+                                if (jobInfo == null) {
+                                    log.debug("JobInfo {} does not exist.", jobId);
+                                    continue;
+                                }
 
                                 Map<String, Object> jobDetails = new LinkedHashMap<>();
 
-                                // Get job provider type if available
-                                String jobType = "unknown";
-
-                                if (indexToJobProvider.get(indexName).getJobType() != null) {
-                                    jobType = indexToJobProvider.get(indexName).getJobType();
-                                }
+                                String jobType = indexToJobProvider.get(indexName).getJobType();
 
                                 // Add job details
                                 jobDetails.put("job_type", jobType);
@@ -127,76 +129,76 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 jobDetails.put("index_name", indexName);
 
                                 // Add job parameter details
-                                if (jobInfo.getJobParameter() != null) {
-                                    jobDetails.put("name", jobInfo.getJobParameter().getName());
-                                    jobDetails.put("descheduled", jobInfo.isDescheduled());
-                                    jobDetails.put("enabled", jobInfo.getJobParameter().isEnabled());
-                                    jobDetails.put("enabled_time", jobInfo.getJobParameter().getEnabledTime().toString());
-                                    jobDetails.put("last_update_time", jobInfo.getJobParameter().getLastUpdateTime().toString());
-                                    // Add execution information
 
-                                    if (jobInfo.getActualPreviousExecutionTime() != null) {
-                                        jobDetails.put("last_execution_time", jobInfo.getActualPreviousExecutionTime());
-                                    }
-                                    if (jobInfo.getExpectedPreviousExecutionTime() != null) {
-                                        jobDetails.put("last_expected_execution_time", jobInfo.getExpectedPreviousExecutionTime());
+                                jobDetails.put("name", jobInfo.getJobParameter().getName());
+                                jobDetails.put("descheduled", jobInfo.isDescheduled());
+                                jobDetails.put("enabled", jobInfo.getJobParameter().isEnabled());
+                                jobDetails.put("enabled_time", jobInfo.getJobParameter().getEnabledTime().toString());
+                                jobDetails.put("last_update_time", jobInfo.getJobParameter().getLastUpdateTime().toString());
+                                // Add execution information
+
+                                if (jobInfo.getActualPreviousExecutionTime() != null) {
+                                    jobDetails.put("last_execution_time", jobInfo.getActualPreviousExecutionTime());
+                                } else {
+                                    jobDetails.put("last_execution_time", "none");
+                                }
+                                if (jobInfo.getExpectedPreviousExecutionTime() != null) {
+                                    jobDetails.put("last_expected_execution_time", jobInfo.getExpectedPreviousExecutionTime());
+                                } else {
+                                    jobDetails.put("last_expected_execution_time", "none");
+                                }
+
+                                // Add next execution time
+                                if (jobInfo.getExpectedExecutionTime() != null) {
+                                    jobDetails.put("next_expected_execution_time", jobInfo.getExpectedExecutionTime().toString());
+                                } else {
+                                    jobDetails.put("next_expected_execution_time", "none");
+                                }
+
+                                // Add schedule information
+                                if (jobInfo.getJobParameter().getSchedule() == null) {
+                                    log.debug("Schedule for job {} does not exist.", jobId);
+                                } else {
+                                    Map<String, Object> scheduleMap = new HashMap<>();
+
+                                    // Set schedule type
+                                    if (jobInfo.getJobParameter().getSchedule() instanceof IntervalSchedule) {
+                                        scheduleMap.put("type", "interval");
+                                        IntervalSchedule intervalSchedule = (IntervalSchedule) jobInfo.getJobParameter().getSchedule();
+                                        scheduleMap.put("start_time", intervalSchedule.getStartTime().toString());
+                                        scheduleMap.put("interval", intervalSchedule.getInterval());
+                                        scheduleMap.put("unit", intervalSchedule.getUnit().toString());
+                                    } else if (jobInfo.getJobParameter().getSchedule() instanceof CronSchedule) {
+                                        scheduleMap.put("type", "cron");
+                                        CronSchedule cronSchedule = (CronSchedule) jobInfo.getJobParameter().getSchedule();
+                                        scheduleMap.put("expression", cronSchedule.getCronExpression());
+                                        scheduleMap.put("timezone", cronSchedule.getTimeZone().getId());
+                                    } else {
+                                        scheduleMap.put("type", "unknown");
                                     }
 
-                                    // Add next execution time
-                                    if (jobInfo.getExpectedExecutionTime() != null) {
-                                        jobDetails.put("next_expected_execution_time", jobInfo.getExpectedExecutionTime().toString());
-                                    }
+                                    jobDetails.put("schedule", scheduleMap);
 
-                                    // Add next time to execute
-                                    java.time.Instant now = java.time.Instant.now();
+                                    // Add delay information
                                     jobDetails.put(
-                                        "next_time_to_execute",
-                                        (now.plus(jobInfo.getJobParameter().getSchedule().nextTimeToExecute()).toString())
-                                    );
-
-                                    // Add schedule information
-                                    if (jobInfo.getJobParameter().getSchedule() != null) {
-                                        Map<String, Object> scheduleMap = new HashMap<>();
-
-                                        // Set schedule type
-                                        if (jobInfo.getJobParameter().getSchedule() instanceof IntervalSchedule) {
-                                            scheduleMap.put("type", "interval");
-                                            IntervalSchedule intervalSchedule = (IntervalSchedule) jobInfo.getJobParameter().getSchedule();
-                                            scheduleMap.put("start_time", intervalSchedule.getStartTime().toString());
-                                            scheduleMap.put("interval", intervalSchedule.getInterval());
-                                            scheduleMap.put("unit", intervalSchedule.getUnit().toString());
-                                        } else if (jobInfo.getJobParameter().getSchedule() instanceof CronSchedule) {
-                                            scheduleMap.put("type", "cron");
-                                            CronSchedule cronSchedule = (CronSchedule) jobInfo.getJobParameter().getSchedule();
-                                            scheduleMap.put("expression", cronSchedule.getCronExpression());
-                                            scheduleMap.put("timezone", cronSchedule.getTimeZone().getId());
-                                        } else {
-                                            scheduleMap.put("type", "unknown");
-                                        }
-
-                                        jobDetails.put("schedule", scheduleMap);
-
-                                        // Add delay information
-                                        jobDetails.put(
-                                            "delay",
-                                            jobInfo.getJobParameter().getSchedule().getDelay() != null
-                                                ? jobInfo.getJobParameter().getSchedule().getDelay()
-                                                : "none"
-                                        );
-                                    }
-
-                                    // Add jitter and lock duration
-                                    jobDetails.put(
-                                        "jitter",
-                                        jobInfo.getJobParameter().getJitter() != null ? jobInfo.getJobParameter().getJitter() : "none"
-                                    );
-                                    jobDetails.put(
-                                        "lock_duration",
-                                        jobInfo.getJobParameter().getLockDurationSeconds() != null
-                                            ? jobInfo.getJobParameter().getLockDurationSeconds()
-                                            : "no_lock"
+                                        "delay",
+                                        jobInfo.getJobParameter().getSchedule().getDelay() != null
+                                            ? jobInfo.getJobParameter().getSchedule().getDelay()
+                                            : "none"
                                     );
                                 }
+
+                                // Add jitter and lock duration
+                                jobDetails.put(
+                                    "jitter",
+                                    jobInfo.getJobParameter().getJitter() != null ? jobInfo.getJobParameter().getJitter() : "none"
+                                );
+                                jobDetails.put(
+                                    "lock_duration",
+                                    jobInfo.getJobParameter().getLockDurationSeconds() != null
+                                        ? jobInfo.getJobParameter().getLockDurationSeconds()
+                                        : "no_lock"
+                                );
 
                                 jobs.add(jobDetails);
                             }

@@ -9,16 +9,14 @@
 package org.opensearch.jobscheduler.multinode;
 
 import org.junit.Assert;
-import org.opensearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.opensearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.opensearch.action.admin.cluster.node.info.NodeInfo;
 import org.opensearch.action.admin.cluster.node.info.NodesInfoRequest;
 import org.opensearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.opensearch.action.admin.cluster.node.info.PluginsAndModules;
-import org.opensearch.cluster.health.ClusterHealthStatus;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
 import org.opensearch.jobscheduler.transport.request.GetScheduledInfoRequest;
+import org.opensearch.jobscheduler.transport.response.GetScheduledInfoNodeResponse;
 import org.opensearch.jobscheduler.transport.response.GetScheduledInfoResponse;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.plugins.PluginInfo;
@@ -41,11 +39,6 @@ public class GetScheduledInfoMultiNodeTransportIT extends OpenSearchIntegTestCas
 
     public void testGetScheduledInfoAction() {
 
-        // Verify CLuster Health
-        ClusterHealthRequest clusterHealthRequest = new ClusterHealthRequest();
-        ClusterHealthResponse clusterHealthResponse = client().admin().cluster().health(clusterHealthRequest).actionGet();
-        Assert.assertEquals(ClusterHealthStatus.GREEN, clusterHealthResponse.getStatus());
-
         // Add Job Scheduler Plugin
         NodesInfoRequest nodesInfoRequest = new NodesInfoRequest();
         nodesInfoRequest.addMetric(NodesInfoRequest.Metric.PLUGINS.metricName());
@@ -64,5 +57,15 @@ public class GetScheduledInfoMultiNodeTransportIT extends OpenSearchIntegTestCas
 
         assertNotNull(response);
         assertEquals(2, response.getNodes().size());
+
+        // Count total jobs across all nodes
+        int totalJobs = 0;
+        for (GetScheduledInfoNodeResponse nodeResponse : response.getNodes()) {
+            Object totalJobsObj = nodeResponse.getScheduledJobInfo().get("total_jobs");
+            if (totalJobsObj instanceof Integer) {
+                totalJobs += (Integer) totalJobsObj;
+            }
+        }
+        assertEquals(0, totalJobs);
     }
 }
