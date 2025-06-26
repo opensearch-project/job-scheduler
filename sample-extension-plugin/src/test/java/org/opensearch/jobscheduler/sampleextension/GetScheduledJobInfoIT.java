@@ -114,6 +114,9 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
             assertNotNull("enabled_time should not be null", job.get("enabled_time"));
             assertNotNull("last_update_time should not be null", job.get("last_update_time"));
             assertNotNull("schedule should not be null", job.get("schedule"));
+            assertTrue(job.get("lock_duration") instanceof Integer);
+            assertEquals("none", job.get("jitter"));
+            assertEquals("none", job.get("delay"));
 
             // Validate schedule object
             @SuppressWarnings("unchecked")
@@ -172,7 +175,9 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
                     assertNotNull("enabled_time should not be null", job.get("enabled_time"));
                     assertNotNull("last_update_time should not be null", job.get("last_update_time"));
                     assertNotNull("schedule should not be null", job.get("schedule"));
-
+                    assertTrue(job.get("lock_duration") instanceof Integer);
+                    assertEquals("none", job.get("jitter"));
+                    assertEquals("none", job.get("delay"));
                     // Validate schedule object
                     @SuppressWarnings("unchecked")
                     Map<String, Object> schedule = (Map<String, Object>) job.get("schedule");
