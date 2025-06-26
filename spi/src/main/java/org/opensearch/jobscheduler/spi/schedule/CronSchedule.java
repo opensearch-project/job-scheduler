@@ -34,7 +34,7 @@ import java.util.Optional;
  * UnixCron {@link Schedule} implementation. Refer to https://en.wikipedia.org/wiki/Cron for cron syntax.
  */
 public class CronSchedule implements Schedule {
-    static final String CRON_FIELD = "cron";
+    public static final String CRON_FIELD = "cron";
     static final String EXPRESSION_FIELD = "expression";
     static final String TIMEZONE_FIELD = "timezone";
 
