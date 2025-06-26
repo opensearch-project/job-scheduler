@@ -50,7 +50,6 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
         String initialLockId = validateResponseAndGetLockId(initialGetLockResponse);
         assertEquals(TestHelpers.generateExpectedLockId(initialJobIndexName, initialJobId), initialLockId);
-
         // Submit 10 requests to generate new lock models for different job indexes
         for (int i = 0; i < 10; i++) {
             String expectedLockId = TestHelpers.generateExpectedLockId(String.valueOf(i), String.valueOf(i));
