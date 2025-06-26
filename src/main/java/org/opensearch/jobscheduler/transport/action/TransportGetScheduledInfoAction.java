@@ -162,15 +162,13 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                     Map<String, Object> scheduleMap = new HashMap<>();
 
                                     // Set schedule type
-                                    if (jobInfo.getJobParameter().getSchedule() instanceof IntervalSchedule) {
-                                        scheduleMap.put("type", "interval");
-                                        IntervalSchedule intervalSchedule = (IntervalSchedule) jobInfo.getJobParameter().getSchedule();
+                                    if (jobInfo.getJobParameter().getSchedule() instanceof IntervalSchedule intervalSchedule) {
+                                        scheduleMap.put("type", IntervalSchedule.INTERVAL_FIELD);
                                         scheduleMap.put("start_time", intervalSchedule.getStartTime().toString());
                                         scheduleMap.put("interval", intervalSchedule.getInterval());
                                         scheduleMap.put("unit", intervalSchedule.getUnit().toString());
-                                    } else if (jobInfo.getJobParameter().getSchedule() instanceof CronSchedule) {
-                                        scheduleMap.put("type", "cron");
-                                        CronSchedule cronSchedule = (CronSchedule) jobInfo.getJobParameter().getSchedule();
+                                    } else if (jobInfo.getJobParameter().getSchedule() instanceof CronSchedule cronSchedule) {
+                                        scheduleMap.put("type", CronSchedule.CRON_FIELD);
                                         scheduleMap.put("expression", cronSchedule.getCronExpression());
                                         scheduleMap.put("timezone", cronSchedule.getTimeZone().getId());
                                     } else {
