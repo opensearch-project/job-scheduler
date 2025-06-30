@@ -17,10 +17,10 @@ import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContentBuilder;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.List;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GetScheduledInfoResponse extends BaseNodesResponse<GetScheduledInfoNodeResponse> implements ToXContent {
@@ -59,14 +59,19 @@ public class GetScheduledInfoResponse extends BaseNodesResponse<GetScheduledInfo
             builder.endArray();
         } else {
             builder.startArray("jobs");
-            Set<Object> uniqueJobs = new HashSet<>();
+            Set<String> seenJobIds = new HashSet<>();
             for (GetScheduledInfoNodeResponse nodeResponse : getNodes()) {
                 Object jobs = nodeResponse.getScheduledJobInfo().get("jobs");
                 if (jobs instanceof List) {
                     for (Object job : (List<?>) jobs) {
-                        if (uniqueJobs.add(job)) {
-                            builder.value(job);
-                            totalJobs++;
+                        if (job instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> jobMap = (Map<String, Object>) job;
+                            String jobId = (String) jobMap.get("job_id");
+                            if (jobId != null && seenJobIds.add(jobId)) {
+                                builder.value(job);
+                                totalJobs++;
+                            }
                         }
                     }
                 }
