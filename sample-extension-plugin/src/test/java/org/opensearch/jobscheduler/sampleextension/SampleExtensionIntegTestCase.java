@@ -413,7 +413,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             {
                 "query": {
                     "match": {
-                        "_id": {
+                        "job_id": {
                             "query": "%s"
                         }
                     }
