@@ -30,11 +30,15 @@ import org.opensearch.index.analysis.AnalysisRegistry;
 import org.opensearch.index.engine.EngineConfigFactory;
 import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
+import org.opensearch.jobscheduler.rest.action.RestGetScheduledInfoAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
 import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
+import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
+import org.opensearch.jobscheduler.transport.action.TransportGetScheduledInfoAction;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
+import org.opensearch.plugins.ActionPlugin.ActionHandler;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.rest.RestController;
 import org.opensearch.rest.RestHandler;
@@ -165,7 +169,8 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
             containsInAnyOrder(
                 instanceOf(RestGetJobDetailsAction.class),
                 instanceOf(RestGetLockAction.class),
-                instanceOf(RestReleaseLockAction.class)
+                instanceOf(RestReleaseLockAction.class),
+                instanceOf(RestGetScheduledInfoAction.class)
             )
         );
     }
@@ -186,5 +191,14 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
         expectedProviders.put("index1", new ScheduledJobProvider("test-job-1", "test-job-index-1", mockParser, mockRunner));
         Map<String, ScheduledJobProvider> actualProviders = plugin.getIndexToJobProviders();
         assertEquals(expectedProviders, actualProviders);
+    }
+
+    public void testGetActions() {
+        List<ActionHandler<?, ?>> actions = plugin.getActions();
+        assertNotNull(actions);
+        assertEquals(1, actions.size());
+        ActionHandler<?, ?> actionHandler = actions.get(0);
+        assertEquals(GetScheduledInfoAction.INSTANCE, actionHandler.getAction());
+        assertEquals(TransportGetScheduledInfoAction.class, actionHandler.getTransportAction());
     }
 }

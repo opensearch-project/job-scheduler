@@ -10,12 +10,14 @@ package org.opensearch.jobscheduler.sampleextension;
 
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
+import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.delete.DeleteResponse;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.index.IndexResponse;
 import org.opensearch.common.xcontent.json.JsonXContent;
+import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
@@ -25,6 +27,7 @@ import org.opensearch.transport.client.node.NodeClient;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,14 +36,15 @@ import java.util.List;
 /**
  * A sample rest handler that supports schedule and deschedule job operation
  *
- * Users need to provide "id", "index", "job_name", and "interval" parameter to schedule
+ * Users need to provide "id", "index", "job_name", and either "interval" or "cron" parameter to schedule
  * a job. e.g.
  * {@code
  * POST /_plugins/scheduler_sample/watch?id=dashboards-job-id&job_name=watch dashboards index&index=.opensearch_dashboards_1&interval=1
+ * POST /_plugins/scheduler_sample/watch?id=dashboards-job-id&job_name=watch dashboards index&index=.opensearch_dashboards_1&cron=0 9 * * MON
  * }
  *
  * creates a job with id "dashboards-job-id" and job name "watch dashboards index",
- * which logs ".opensearch_dashboards_1" index's shards info every 1 minute
+ * which logs ".opensearch_dashboards_1" index's shards info every 1 minute or every Monday at 9 AM
  *
  * Users can remove that job by calling
  * {@code DELETE /_plugins/scheduler_sample/watch?id=dashboards-job-id}
@@ -68,6 +72,7 @@ public class SampleExtensionRestHandler extends BaseRestHandler {
             String indexName = request.param("index");
             String jobName = request.param("job_name");
             String interval = request.param("interval");
+            String cron = request.param("cron");
             String lockDurationSecondsString = request.param("lock_duration_seconds");
             Long lockDurationSeconds = lockDurationSecondsString != null ? Long.parseLong(lockDurationSecondsString) : null;
             String jitterString = request.param("jitter");
@@ -76,14 +81,21 @@ public class SampleExtensionRestHandler extends BaseRestHandler {
             if (id == null || indexName == null) {
                 throw new IllegalArgumentException("Must specify id and index parameter");
             }
-            SampleJobParameter jobParameter = new SampleJobParameter(
-                id,
-                jobName,
-                indexName,
-                new IntervalSchedule(Instant.now(), Integer.parseInt(interval), ChronoUnit.MINUTES),
-                lockDurationSeconds,
-                jitter
-            );
+            if (interval == null && cron == null) {
+                throw new IllegalArgumentException("Must specify either interval or cron parameter");
+            }
+            if (interval != null && cron != null) {
+                throw new IllegalArgumentException("Cannot specify both interval and cron parameters");
+            }
+
+            Schedule schedule;
+            if (interval != null) {
+                schedule = new IntervalSchedule(Instant.now(), Integer.parseInt(interval), ChronoUnit.MINUTES);
+            } else {
+                schedule = new CronSchedule(cron, ZoneId.systemDefault());
+            }
+
+            SampleJobParameter jobParameter = new SampleJobParameter(id, jobName, indexName, schedule, lockDurationSeconds, jitter);
             IndexRequest indexRequest = new IndexRequest().index(SampleExtensionPlugin.JOB_INDEX_NAME)
                 .id(id)
                 .source(jobParameter.toXContent(JsonXContent.contentBuilder(), null))
