@@ -275,17 +275,17 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
     @SuppressWarnings("unchecked")
     protected SampleJobParameter getJobParameter(RestClient client, String jobId) throws IOException {
         Request request = new Request("POST", "/" + SampleExtensionPlugin.JOB_INDEX_NAME + "/_search");
-        String entity = "{\n"
-            + "    \"query\": {\n"
-            + "        \"match\": {\n"
-            + "            \"_id\": {\n"
-            + "                \"query\": \""
-            + jobId
-            + "\"\n"
-            + "            }\n"
-            + "        }\n"
-            + "    }\n"
-            + "}";
+        String entity = """
+            {
+                "query": {
+                    "match": {
+                        "_id": {
+                            "query": "%s"
+                        }
+                    }
+                }
+            }
+            """.formatted(jobId);
         request.setJsonEntity(entity);
         Response response = client.performRequest(request);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
@@ -339,7 +339,14 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
     }
 
     protected long countRecordsInTestIndex(String index) throws IOException {
-        String entity = "{\n" + "    \"query\": {\n" + "        \"match_all\": {\n" + "        }\n" + "    }\n" + "}";
+        String entity = """
+            {
+                "query": {
+                    "match_all": {
+                    }
+                }
+            }
+            """;
         Response response = makeRequest(
             client(),
             "POST",
@@ -418,17 +425,17 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
 
     @SuppressWarnings("unchecked")
     protected long getLockTimeByJobId(String jobId) throws IOException {
-        String entity = "{\n"
-            + "    \"query\": {\n"
-            + "        \"match\": {\n"
-            + "            \"job_id\": {\n"
-            + "                \"query\": \""
-            + jobId
-            + "\"\n"
-            + "            }\n"
-            + "        }\n"
-            + "    }\n"
-            + "}";
+        String entity = """
+            {
+                "query": {
+                    "match": {
+                        "job_id": {
+                            "query": "%s"
+                        }
+                    }
+                }
+            }
+            """.formatted(jobId);
         Response response = makeRequest(
             client(),
             "POST",
@@ -451,17 +458,17 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
 
     @SuppressWarnings("unchecked")
     protected boolean doesLockExistByLockTime(long lockTime) throws IOException {
-        String entity = "{\n"
-            + "    \"query\": {\n"
-            + "        \"match\": {\n"
-            + "            \"lock_time\": {\n"
-            + "                \"query\": "
-            + lockTime
-            + "\n"
-            + "            }\n"
-            + "        }\n"
-            + "    }\n"
-            + "}";
+        String entity = """
+            {
+                "query": {
+                    "match": {
+                        "lock_time": {
+                            "query": %d
+                        }
+                    }
+                }
+            }
+            """.formatted(lockTime);
         Response response = makeRequest(
             client(),
             "POST",
