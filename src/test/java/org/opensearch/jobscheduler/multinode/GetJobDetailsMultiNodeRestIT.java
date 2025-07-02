@@ -18,10 +18,25 @@ import org.opensearch.jobscheduler.rest.request.GetJobDetailsRequest;
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetJobDetailsMultiNodeRestIT extends ODFERestTestCase {
 
-    private static final String initialRequestBody =
-        "{\"job_index\":\"intial_job_index\",\"job_type\":\"intial_job_type\",\"job_parameter_action\":\"intial_job_parameter_action\",\"job_runner_action\":\"intial_job_runner_action\",\"extension_unique_id\":\"extension_unique_id\"}";
-    private static final String updatedRequestBody =
-        "{\"job_index\":\"updated_job_index\",\"job_type\":\"updated_job_type\",\"job_parameter_action\":\"updated_job_parameter_action\",\"job_runner_action\":\"updated_job_runner_action\",\"extension_unique_id\":\"extension_unique_id\"}";
+    private static final String initialRequestBody = """
+        {
+          "job_index": "intial_job_index",
+          "job_type": "intial_job_type",
+          "job_parameter_action": "intial_job_parameter_action",
+          "job_runner_action": "intial_job_runner_action",
+          "extension_unique_id": "extension_unique_id"
+        }
+        """;
+
+    private static final String updatedRequestBody = """
+        {
+          "job_index": "updated_job_index",
+          "job_type": "updated_job_type",
+          "job_parameter_action": "updated_job_parameter_action",
+          "job_runner_action": "updated_job_runner_action",
+          "extension_unique_id": "extension_unique_id"
+        }
+        """;
 
     /**
      * The below test performs a get index api on a multinode cluster. Internally, the cluster redirects the request to either of the node.
