@@ -10,31 +10,29 @@ package org.opensearch.jobscheduler.transport;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import org.opensearch.action.ActionRequest;
 import org.opensearch.action.ActionType;
-import org.opensearch.client.Client;
-import org.opensearch.client.FilterClient;
 import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.action.ActionResponse;
 import org.opensearch.identity.Subject;
+import org.opensearch.transport.client.Client;
+import org.opensearch.transport.client.FilterClient;
 
 /**
- * Implementation of client that will run transport actions in a stashed context and inject the name of the provided
- * subject into the context.
+ * A special client for executing transport actions as this plugin's system subject.
  */
-public class RunAsSubjectClient extends FilterClient {
+public class PluginClient extends FilterClient {
 
-    private static final Logger logger = LogManager.getLogger(RunAsSubjectClient.class);
+    private static final Logger logger = LogManager.getLogger(PluginClient.class);
 
     private Subject subject;
 
-    public RunAsSubjectClient(Client delegate) {
+    public PluginClient(Client delegate) {
         super(delegate);
     }
 
-    public RunAsSubjectClient(Client delegate, Subject subject) {
+    public PluginClient(Client delegate, Subject subject) {
         super(delegate);
         this.subject = subject;
     }
@@ -50,16 +48,13 @@ public class RunAsSubjectClient extends FilterClient {
         ActionListener<Response> listener
     ) {
         if (subject == null) {
-            throw new IllegalStateException("RunAsSubjectClient is not initialized.");
+            throw new IllegalStateException("PluginClient is not initialized.");
         }
         try (ThreadContext.StoredContext ctx = threadPool().getThreadContext().newStoredContext(false)) {
             subject.runAs(() -> {
                 logger.info("Running transport action with subject: {}", subject.getPrincipal().getName());
                 super.doExecute(action, request, ActionListener.runBefore(listener, ctx::restore));
-                return null;
             });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 }

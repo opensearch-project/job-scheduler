@@ -21,6 +21,7 @@ import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestGetScheduledInfoAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
+import org.opensearch.jobscheduler.transport.PluginClient;
 import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetScheduledInfoAction;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
@@ -43,7 +44,6 @@ import org.opensearch.env.Environment;
 import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
 import org.opensearch.indices.SystemIndexDescriptor;
-import org.opensearch.jobscheduler.transport.RunAsSubjectClient;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
@@ -80,7 +80,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private LockService lockService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
-    private RunAsSubjectClient pluginClient;
+    private PluginClient pluginClient;
 
     private JobDetailsService jobDetailsService;
 
@@ -118,7 +118,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
-        this.pluginClient = new RunAsSubjectClient(client);
+        this.pluginClient = new PluginClient(client);
         this.lockService = new LockService(pluginClient, clusterService);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
