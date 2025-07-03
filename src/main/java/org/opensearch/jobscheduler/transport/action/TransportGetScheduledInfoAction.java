@@ -138,12 +138,12 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 // Add execution information
 
                                 if (jobInfo.getActualPreviousExecutionTime() != null) {
-                                    jobDetails.put("last_execution_time", jobInfo.getActualPreviousExecutionTime());
+                                    jobDetails.put("last_execution_time", jobInfo.getActualPreviousExecutionTime().toString());
                                 } else {
                                     jobDetails.put("last_execution_time", "none");
                                 }
                                 if (jobInfo.getExpectedPreviousExecutionTime() != null) {
-                                    jobDetails.put("last_expected_execution_time", jobInfo.getExpectedPreviousExecutionTime());
+                                    jobDetails.put("last_expected_execution_time", jobInfo.getExpectedPreviousExecutionTime().toString());
                                 } else {
                                     jobDetails.put("last_expected_execution_time", "none");
                                 }
