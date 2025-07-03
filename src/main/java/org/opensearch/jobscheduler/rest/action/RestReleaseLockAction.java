@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.rest.action;
 
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
@@ -20,7 +19,6 @@ import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.core.action.ActionListener;
-import org.opensearch.client.node.NodeClient;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.spi.LockModel;
@@ -31,6 +29,7 @@ import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
 import static org.opensearch.rest.RestRequest.Method.PUT;
 import org.opensearch.core.rest.RestStatus;
+import org.opensearch.transport.client.node.NodeClient;
 
 public class RestReleaseLockAction extends BaseRestHandler {
 
@@ -50,7 +49,7 @@ public class RestReleaseLockAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return ImmutableList.of(
+        return List.of(
             new Route(PUT, String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock", LockModel.LOCK_ID))
         );
     }

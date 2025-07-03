@@ -7,11 +7,11 @@ import com.github.jengelman.gradle.plugins.shadow.ShadowBasePlugin
 import org.opensearch.gradle.test.RestIntegTestTask
 
 plugins {
-    id 'com.github.johnrengelman.shadow'
+    id 'com.gradleup.shadow'
     id 'jacoco'
     id 'maven-publish'
     id 'signing'
-    id "org.gradle.test-retry" version "1.6.1"
+    id "org.gradle.test-retry" version "1.6.2"
 }
 
 apply plugin: 'opensearch.java'
@@ -21,6 +21,7 @@ apply plugin: 'opensearch.java-rest-test'
 repositories {
     mavenLocal()
     mavenCentral()
+    maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
     maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
 }
 
@@ -31,7 +32,7 @@ ext {
 }
 
 jacoco {
-    toolVersion = '0.8.7'
+    toolVersion = '0.8.12'
     reportsDirectory = file("$buildDir/JacocoReport")
 }
 
@@ -44,7 +45,7 @@ jacocoTestReport {
 }
 check.dependsOn jacocoTestReport
 
-def slf4j_version_of_cronutils = "2.0.16"
+def slf4j_version_of_cronutils = "2.0.17"
 dependencies {
     compileOnly "org.opensearch:opensearch:${opensearch_version}"
     // slf4j is the runtime dependency of cron-utils
@@ -117,7 +118,7 @@ publishing {
         }
         maven {
             name = "Snapshots" //  optional target repository name
-            url = "https://aws.oss.sonatype.org/content/repositories/snapshots"
+            url = "https://central.sonatype.com/repository/maven-snapshots/"
             credentials {
                 username "$System.env.SONATYPE_USERNAME"
                 password "$System.env.SONATYPE_PASSWORD"

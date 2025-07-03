@@ -35,7 +35,7 @@ import java.util.Set;
 public class IntervalSchedule implements Schedule {
 
     static final String START_TIME_FIELD = "start_time";
-    static final String INTERVAL_FIELD = "interval";
+    public static final String INTERVAL_FIELD = "interval";
     static final String PERIOD_FIELD = "period";
     static final String UNIT_FIELD = "unit";
 

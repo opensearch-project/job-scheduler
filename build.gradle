@@ -9,12 +9,15 @@ import java.util.concurrent.Callable
 
 buildscript {
     ext {
-        opensearch_version = System.getProperty("opensearch.version", "3.0.0-SNAPSHOT")
+        opensearch_version = System.getProperty("opensearch.version", "3.2.0-SNAPSHOT")
         isSnapshot = "true" == System.getProperty("build.snapshot", "true")
         buildVersionQualifier = System.getProperty("build.version_qualifier", "")
         // 2.2.0-SNAPSHOT -> 2.2.0.0-SNAPSHOT
         version_tokens = opensearch_version.tokenize('-')
         opensearch_build = version_tokens[0] + '.0'
+        if (buildVersionQualifier) {
+            opensearch_build += "-${buildVersionQualifier}"
+        }
         if (isSnapshot) {
             opensearch_build += "-SNAPSHOT"
         }
@@ -24,6 +27,7 @@ buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
+        maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
         maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
     }
 
@@ -33,8 +37,8 @@ buildscript {
 }
 
 plugins {
-    id "de.undercouch.download" version "5.3.0"
-    id 'com.netflix.nebula.ospackage' version "11.10.1"
+    id "de.undercouch.download" version "5.6.0"
+    id 'com.netflix.nebula.ospackage' version "11.11.2"
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
 }
@@ -43,6 +47,7 @@ apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-rest-test'
 apply plugin: 'opensearch.pluginzip'
+apply plugin: 'opensearch.java-agent'
 apply from: 'build-tools/opensearchplugin-coverage.gradle'
 apply from: 'gradle/formatting.gradle'
 
@@ -51,15 +56,18 @@ ext {
     licenseFile = rootProject.file('LICENSE.txt')
     noticeFile = rootProject.file('NOTICE')
 
-    ['esnode.pem', 'esnode-key.pem', 'kirk.pem', 'kirk-key.pem', 'root-ca.pem', 'sample.pem', 'test-kirk.jks'].forEach { file ->
-        File local = getLayout().getBuildDirectory().file(file).get().getAsFile()
-        download.run {
-            src "https://raw.githubusercontent.com/opensearch-project/security/refs/heads/main/bwc-test/src/test/resources/security/" + file
-            dest local
-            overwrite false
-        }
-        processResources {
-            from(local)
+    runIntegTestWithSecurityPlugin= System.getProperty("security.enabled")
+    if (runIntegTestWithSecurityPlugin == "true"){
+        ['esnode.pem', 'esnode-key.pem', 'kirk.pem', 'kirk-key.pem', 'root-ca.pem', 'sample.pem', 'test-kirk.jks'].forEach { file ->
+            File local = getLayout().getBuildDirectory().file(file).get().getAsFile()
+            download.run {
+                src "https://raw.githubusercontent.com/opensearch-project/security/refs/heads/main/bwc-test/src/test/resources/security/" + file
+                dest local
+                overwrite false
+            }
+            processResources {
+                from(local)
+            }
         }
     }
 }
@@ -161,7 +169,7 @@ publishing {
     repositories {
         maven {
             name = "Snapshots" //  optional target repository name
-            url = "https://aws.oss.sonatype.org/content/repositories/snapshots"
+            url = "https://central.sonatype.com/repository/maven-snapshots/"
             credentials {
                 username "$System.env.SONATYPE_USERNAME"
                 password "$System.env.SONATYPE_PASSWORD"
@@ -173,27 +181,15 @@ publishing {
 repositories {
     mavenLocal()
     mavenCentral()
+    maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
     maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
-}
-
-configurations {
-    all {
-        resolutionStrategy {
-            force 'com.google.guava:guava:32.1.3-jre'
-        }
-    }
 }
 
 dependencies {
     implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
-    implementation group: 'com.google.guava', name: 'guava', version:'32.1.3-jre'
-    implementation group: 'com.google.guava', name: 'failureaccess', version:'1.0.2'
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"
     javaRestTestImplementation project.sourceSets.main.runtimeClasspath
-    //spotless
-    implementation('com.google.googlejavaformat:google-java-format:1.25.2') {
-        exclude group: 'com.google.guava'
-    }
+
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
 
@@ -278,7 +274,7 @@ def securityPluginFile = resolvePluginFile("opensearch-security")
 
 // === Setup security test ===
 // This flag indicates the existence of security plugin
-def securityEnabled = System.getProperty("security", "false") == "true" || System.getProperty("https", "false") == "true"
+def securityEnabled = System.getProperty("security.enabled", "false") == "true" || System.getProperty("https", "false") == "true"
 afterEvaluate {
     testClusters.integTest.nodes.each { node ->
         def plugins = node.plugins
@@ -357,7 +353,7 @@ task integTestRemote(type: RestIntegTestTask) {
     systemProperty 'java.io.tmpdir', opensearch_tmp_dir.absolutePath
 
     systemProperty "https", System.getProperty("https")
-    systemProperty "security", System.getProperty("security")
+    systemProperty "security.enabled", System.getProperty("security.enabled")
     systemProperty "user", System.getProperty("user")
     systemProperty "password", System.getProperty("password")
     systemProperty 'tests.rest.cluster', 'localhost:9200'

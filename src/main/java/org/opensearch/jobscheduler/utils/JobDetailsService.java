@@ -23,7 +23,6 @@ import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.get.GetRequest;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.update.UpdateRequest;
-import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.common.xcontent.XContentFactory;
@@ -53,6 +52,7 @@ import org.opensearch.jobscheduler.transport.request.JobParameterRequest;
 import org.opensearch.jobscheduler.transport.response.JobParameterResponse;
 import org.opensearch.jobscheduler.transport.request.JobRunnerRequest;
 import org.opensearch.jobscheduler.transport.response.JobRunnerResponse;
+import org.opensearch.transport.client.Client;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;

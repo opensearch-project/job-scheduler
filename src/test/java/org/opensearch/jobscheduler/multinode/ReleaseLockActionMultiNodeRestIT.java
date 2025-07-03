@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.multinode;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.junit.Before;
 import org.opensearch.client.Response;
@@ -33,7 +32,7 @@ public class ReleaseLockActionMultiNodeRestIT extends ODFERestTestCase {
             client(),
             "GET",
             TestHelpers.GET_LOCK_BASE_URI,
-            ImmutableMap.of(),
+            Map.of(),
             TestHelpers.toHttpEntity(TestHelpers.generateAcquireLockRequestBody(initialJobIndexName, initialJobId)),
             null
         );
@@ -46,7 +45,7 @@ public class ReleaseLockActionMultiNodeRestIT extends ODFERestTestCase {
             client(),
             "PUT",
             TestHelpers.RELEASE_LOCK_BASE_URI + "/" + TestHelpers.generateExpectedLockId(initialJobIndexName, initialJobId),
-            ImmutableMap.of(),
+            Map.of(),
             null,
             null
         );

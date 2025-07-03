@@ -9,6 +9,7 @@
 package org.opensearch.jobscheduler.multinode;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.junit.Before;
 import org.opensearch.client.Response;
@@ -20,8 +21,6 @@ import org.opensearch.jobscheduler.ODFERestTestCase;
 import org.opensearch.jobscheduler.TestHelpers;
 import org.opensearch.jobscheduler.transport.AcquireLockResponse;
 import org.opensearch.test.OpenSearchIntegTestCase;
-
-import com.google.common.collect.ImmutableMap;
 
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
 public class GetLockMultiNodeRestIT extends ODFERestTestCase {
@@ -41,7 +40,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
             client(),
             "GET",
             TestHelpers.GET_LOCK_BASE_URI,
-            ImmutableMap.of(),
+            Map.of(),
             TestHelpers.toHttpEntity(TestHelpers.generateAcquireLockRequestBody(this.initialJobIndexName, this.initialJobId)),
             null
         );
@@ -51,7 +50,6 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
         String initialLockId = validateResponseAndGetLockId(initialGetLockResponse);
         assertEquals(TestHelpers.generateExpectedLockId(initialJobIndexName, initialJobId), initialLockId);
-
         // Submit 10 requests to generate new lock models for different job indexes
         for (int i = 0; i < 10; i++) {
             String expectedLockId = TestHelpers.generateExpectedLockId(String.valueOf(i), String.valueOf(i));
@@ -59,7 +57,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
                 client(),
                 "GET",
                 TestHelpers.GET_LOCK_BASE_URI,
-                ImmutableMap.of(),
+                Map.of(),
                 TestHelpers.toHttpEntity(TestHelpers.generateAcquireLockRequestBody(String.valueOf(i), String.valueOf(i))),
                 null
             );
@@ -68,7 +66,7 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
                 client(),
                 "PUT",
                 TestHelpers.RELEASE_LOCK_BASE_URI + "/" + expectedLockId,
-                ImmutableMap.of(),
+                Map.of(),
                 null,
                 null
             );

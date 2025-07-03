@@ -13,7 +13,7 @@ import org.opensearch.threadpool.Scheduler;
 
 import java.time.Instant;
 
-class JobSchedulingInfo {
+public class JobSchedulingInfo {
 
     private String indexName;
     private String jobId;
@@ -24,7 +24,7 @@ class JobSchedulingInfo {
     private Instant expectedExecutionTime;
     private Scheduler.ScheduledCancellable scheduledCancellable;
 
-    JobSchedulingInfo(String indexName, String jobId, ScheduledJobParameter jobParameter) {
+    public JobSchedulingInfo(String indexName, String jobId, ScheduledJobParameter jobParameter) {
         this.indexName = indexName;
         this.jobId = jobId;
         this.jobParameter = jobParameter;

@@ -16,7 +16,6 @@ import java.util.Locale;
 import java.util.Map;
 import org.junit.Before;
 import org.mockito.Mockito;
-import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.spi.LockModel;
@@ -26,6 +25,7 @@ import org.opensearch.rest.RestRequest;
 import org.opensearch.test.OpenSearchTestCase;
 import org.opensearch.test.rest.FakeRestChannel;
 import org.opensearch.test.rest.FakeRestRequest;
+import org.opensearch.transport.client.Client;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class RestReleaseLockActionTests extends OpenSearchTestCase {
