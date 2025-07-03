@@ -268,9 +268,9 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
 
     @Override
     public void assignSubject(PluginSubject pluginSubject) {
-        if (this.pluginClient != null) {
-            this.pluginClient.setSubject(pluginSubject);
-        }
+        // When security is not installed, the pluginSubject will still be assigned.
+        assert pluginSubject != null;
+        this.pluginClient.setSubject(pluginSubject);
     }
 
 }
