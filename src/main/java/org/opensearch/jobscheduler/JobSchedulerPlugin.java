@@ -30,7 +30,7 @@ import org.opensearch.jobscheduler.spi.ScheduledJobParser;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import org.opensearch.jobscheduler.spi.schedule.ScheduleParser;
-import org.opensearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.utils.LockServiceImpl;
 import org.opensearch.jobscheduler.sweeper.JobSweeper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,7 +77,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private static final Logger log = LogManager.getLogger(JobSchedulerPlugin.class);
     private JobSweeper sweeper;
     private JobScheduler scheduler;
-    private LockService lockService;
+    private LockServiceImpl lockService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
     private PluginClient pluginClient;
@@ -100,7 +100,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     @Override
     public Collection<SystemIndexDescriptor> getSystemIndexDescriptors(Settings settings) {
         return Collections.singletonList(
-            new SystemIndexDescriptor(LockService.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution")
+            new SystemIndexDescriptor(LockServiceImpl.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution")
         );
     }
 
@@ -119,7 +119,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
         this.pluginClient = new PluginClient(client);
-        this.lockService = new LockService(pluginClient, clusterService);
+        this.lockService = new LockServiceImpl(pluginClient, clusterService);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
@@ -226,7 +226,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         ThreadPool threadPool,
         NamedXContentRegistry registry,
         JobScheduler scheduler,
-        LockService lockService,
+        LockServiceImpl lockService,
         JobDetailsService jobDetailsService
     ) {
         return new JobSweeper(
