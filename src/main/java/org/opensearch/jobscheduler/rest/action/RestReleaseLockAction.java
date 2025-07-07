@@ -22,7 +22,7 @@ import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.spi.LockModel;
-import org.opensearch.jobscheduler.utils.LockServiceImpl;
+import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
@@ -36,9 +36,9 @@ public class RestReleaseLockAction extends BaseRestHandler {
     public static final String RELEASE_LOCK_ACTION = "release_lock_action";
     private final Logger logger = LogManager.getLogger(RestReleaseLockAction.class);
 
-    private LockServiceImpl lockService;
+    private LockService lockService;
 
-    public RestReleaseLockAction(LockServiceImpl lockService) {
+    public RestReleaseLockAction(LockService lockService) {
         this.lockService = lockService;
     }
 

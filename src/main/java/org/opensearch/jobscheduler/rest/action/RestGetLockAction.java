@@ -15,11 +15,11 @@ import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
+import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.AcquireLockResponse;
 import org.opensearch.jobscheduler.transport.AcquireLockRequest;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.jobscheduler.spi.LockModel;
-import org.opensearch.jobscheduler.utils.LockServiceImpl;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
@@ -46,9 +46,9 @@ import static org.opensearch.jobscheduler.spi.LockModel.GET_LOCK_ACTION;
 public class RestGetLockAction extends BaseRestHandler {
     private final Logger logger = LogManager.getLogger(RestGetLockAction.class);
 
-    public LockServiceImpl lockService;
+    public LockService lockService;
 
-    public RestGetLockAction(final LockServiceImpl lockService) {
+    public RestGetLockAction(final LockService lockService) {
         this.lockService = lockService;
     }
 

@@ -13,7 +13,7 @@ import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
-import org.opensearch.jobscheduler.utils.LockServiceImpl;
+import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.utils.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,9 +40,9 @@ public class JobScheduler {
     private ThreadPool threadPool;
     private ScheduledJobInfo scheduledJobInfo;
     private Clock clock;
-    private final LockServiceImpl lockService;
+    private final LockService lockService;
 
-    public JobScheduler(ThreadPool threadPool, final LockServiceImpl lockService) {
+    public JobScheduler(ThreadPool threadPool, final LockService lockService) {
         this.threadPool = threadPool;
         this.scheduledJobInfo = new ScheduledJobInfo();
         this.clock = Clock.systemDefaultZone();

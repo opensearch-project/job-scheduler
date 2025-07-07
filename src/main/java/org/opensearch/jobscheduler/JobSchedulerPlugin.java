@@ -21,6 +21,7 @@ import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestGetScheduledInfoAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
+import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.PluginClient;
 import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetScheduledInfoAction;
@@ -77,7 +78,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private static final Logger log = LogManager.getLogger(JobSchedulerPlugin.class);
     private JobSweeper sweeper;
     private JobScheduler scheduler;
-    private LockServiceImpl lockService;
+    private LockService lockService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
     private PluginClient pluginClient;
@@ -226,7 +227,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         ThreadPool threadPool,
         NamedXContentRegistry registry,
         JobScheduler scheduler,
-        LockServiceImpl lockService,
+        LockService lockService,
         JobDetailsService jobDetailsService
     ) {
         return new JobSweeper(
