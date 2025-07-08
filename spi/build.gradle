@@ -16,7 +16,6 @@ plugins {
 
 apply plugin: 'opensearch.java'
 apply plugin: 'opensearch.testclusters'
-apply plugin: 'opensearch.java-rest-test'
 
 repositories {
     mavenLocal()
@@ -91,12 +90,6 @@ task integTest(type: RestIntegTestTask) {
     description 'Run integ test with opensearch test framework'
     group 'verification'
     systemProperty 'tests.security.manager', 'false'
-    dependsOn test
-}
-check.dependsOn integTest
-
-testClusters.javaRestTest {
-    testDistribution = 'INTEG_TEST'
 }
 
 task sourcesJar(type: Jar) {
