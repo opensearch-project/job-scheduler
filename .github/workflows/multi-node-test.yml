@@ -13,6 +13,7 @@ jobs:
     strategy:
       matrix:
         java: [ 21 ]
+        numNodes: [ 2 ]
     # Job name
     name: Build and test Job-scheduler
     # This job runs on Linux
@@ -29,4 +30,4 @@ jobs:
       - name: Run Job-scheduler Integ Tests with Multiple Nodes
         run: |
           echo "Running integ tests with multiple nodes..."
-          ./gradlew :opensearch-job-scheduler-sample-extension:integTest -PnumNodes=2
+          ./gradlew :opensearch-job-scheduler-sample-extension:integTest -PnumNodes=${{ matrix.numNodes }}
