@@ -45,9 +45,9 @@ plugins {
 
 apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.testclusters'
-apply plugin: 'opensearch.java-rest-test'
 apply plugin: 'opensearch.pluginzip'
 apply plugin: 'opensearch.java-agent'
+apply plugin: 'opensearch.rest-test'
 apply from: 'build-tools/opensearchplugin-coverage.gradle'
 apply from: 'gradle/formatting.gradle'
 
@@ -90,15 +90,6 @@ opensearchplugin {
 
 configurations {
     opensearchPlugin
-}
-
-javaRestTest {
-    // add "-Dtests.security.manager=false" to VM options if you want to run integ tests in IntelliJ
-    systemProperty 'tests.security.manager', 'false'
-}
-
-testClusters.javaRestTest {
-    testDistribution = 'INTEG_TEST'
 }
 
 allprojects {
@@ -188,7 +179,6 @@ repositories {
 dependencies {
     implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"
-    javaRestTestImplementation project.sourceSets.main.runtimeClasspath
 
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
@@ -204,13 +194,6 @@ def _numNodes = findProperty('numNodes') as Integer ?: 1
 
 def opensearch_tmp_dir = rootProject.file('build/private/opensearch_tmp').absoluteFile
 opensearch_tmp_dir.mkdirs()
-
-task integTest(type: RestIntegTestTask) {
-    description = "Run tests against a cluster"
-    testClassesDirs = sourceSets.test.output.classesDirs
-    classpath = sourceSets.test.runtimeClasspath
-}
-tasks.named("check").configure { dependsOn(integTest) }
 
 tasks.generatePomFileForPluginZipPublication.dependsOn publishNebulaPublicationToMavenLocal
 
@@ -248,7 +231,6 @@ integTest {
     }
 }
 Zip bundle = (Zip) project.getTasks().getByName("bundlePlugin");
-integTest.dependsOn(bundle)
 integTest.getClusters().forEach{c -> {
     c.plugin(project.getObjects().fileProperty().value(bundle.getArchiveFile()))
 }}
