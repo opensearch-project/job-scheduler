@@ -19,11 +19,10 @@ import org.opensearch.test.rest.OpenSearchRestTestCase;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 
 public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
-
-    private static final String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs";
 
     public void testJobCreateWithCorrectParams() throws IOException {
         SampleJobParameter jobParameter = new SampleJobParameter();
@@ -93,12 +92,28 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
     }
 
     public void testJobUpdateWithRescheduleJobThenListJobs() throws Exception {
+
+        String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs?by_node";
+
         String index = createTestIndex();
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-it");
         jobParameter.setIndexToWatch(index);
         jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
         jobParameter.setLockDurationSeconds(120L);
+
+        for (int i = 0; i < 10; i++) {
+            // Creates a new watcher job.
+            String indexN = createTestIndex();
+            SampleJobParameter jobParameterN = new SampleJobParameter();
+            jobParameterN.setJobName("sample-job-it" + i);
+            jobParameterN.setIndexToWatch(indexN);
+            jobParameterN.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
+            jobParameterN.setLockDurationSeconds(120L);
+
+            String jobIdN = OpenSearchRestTestCase.randomAlphaOfLength(10);
+            createWatcherJob(jobIdN, jobParameterN);
+        }
 
         // Creates a new watcher job.
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
@@ -126,7 +141,47 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
         ).map();
-        System.out.println("Response from list jobs: " + responseJson);
+
+        List<Map<String, Object>> nodes = (List<Map<String, Object>>) responseJson.get("nodes");
+        assertNotNull("Nodes list should not be null", nodes);
+        assertEquals(11, responseJson.get("total_jobs"));
+        assertEquals(0, ((List<?>) responseJson.get("failures")).size());
+        assertFalse("Should have at least one node", nodes.isEmpty());
+
+        for (Map<String, Object> node : nodes) {
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> nodeJobs = (List<Map<String, Object>>) ((Map<String, Object>) node.get("scheduled_job_info")).get(
+                "jobs"
+            );
+            if (nodeJobs != null) {
+                for (Map<String, Object> job : nodeJobs) {
+                    assertEquals("job_type should be scheduler_sample_extension", "scheduler_sample_extension", job.get("job_type"));
+                    assertNotNull("job_id should not be null", job.get("job_id"));
+                    assertEquals(
+                        "index_name should not be .scheduler_sample_extension",
+                        ".scheduler_sample_extension",
+                        job.get("index_name")
+                    );
+                    assertNotNull("name should not be null", job.get("name"));
+                    assertFalse("descheduled should be False", (Boolean) job.get("descheduled"));
+                    assertTrue("enabled should be True", (Boolean) job.get("enabled"));
+                    assertNotNull("enabled_time should not be null", job.get("enabled_time"));
+                    assertNotNull("last_update_time should not be null", job.get("last_update_time"));
+                    assertNotNull("schedule should not be null", job.get("schedule"));
+                    assertTrue(job.get("lock_duration") instanceof Integer);
+                    assertEquals("none", job.get("jitter"));
+                    assertEquals("none", job.get("delay"));
+                    // Validate schedule object
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> schedule = (Map<String, Object>) job.get("schedule");
+                    assertTrue(
+                        "schedule should be interval or Cron",
+                        ((schedule.get("type").equals("interval")) || (schedule.get("type").equals("cron")))
+                    );
+                }
+            }
+        }
     }
 
     public void testAcquiredLockPreventExecOfTasks() throws Exception {
