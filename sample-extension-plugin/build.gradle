@@ -153,6 +153,7 @@ String bwcDownloadUrl = "https://aws.oss.sonatype.org/service/local/artifact/mav
             }))
             setting 'path.repo', "${buildDir}/cluster/shared/repo/${baseName}"
             setting 'http.content_type.required', 'true'
+            setting 'plugins.jobscheduler.sweeper.period', '1s'
         }
     }
 }

@@ -121,12 +121,12 @@ public class JobSchedulerBackwardsCompatibilityIT extends SampleExtensionIntegTe
                 "schedule": {
                     "interval": {
                         "start_time": %d,
-                        "period": 1,
-                        "unit": "Minutes"
+                        "period": 5,
+                        "unit": "Seconds"
                     }
                 },
                 "index_name_to_watch": "%s",
-                "lock_duration_seconds": 120
+                "lock_duration_seconds": 5
             }
             """.formatted(now.toEpochMilli(), now.toEpochMilli(), now.toEpochMilli(), index);
 
