@@ -37,6 +37,9 @@ repositories {
 
 dependencies {
     compileOnly project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    testImplementation('org.awaitility:awaitility:4.3.0') {
+        exclude(group: 'org.hamcrest', module: 'hamcrest')
+    }
 }
 
 def es_tmp_dir = rootProject.file('build/private/es_tmp').absoluteFile
@@ -112,7 +115,7 @@ testClusters.integTest {
         }
     }
     setting 'path.repo', repo.absolutePath
-    setting 'plugins.jobscheduler.sweeper.period', '5s'
+    setting 'plugins.jobscheduler.sweeper.period', '1s'
 }
 
 String baseName = "jobSchedulerBwcCluster"

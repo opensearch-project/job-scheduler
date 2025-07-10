@@ -60,8 +60,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Timer;
-import java.util.TimerTask;
+import static org.awaitility.Awaitility.await;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
 
@@ -339,7 +342,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         deleteIndex(index);
     }
 
-    protected long countRecordsInTestIndex(String index) throws IOException {
+    protected int countRecordsInTestIndex(String index) throws IOException {
         String entity = """
             {
                 "query": {
@@ -363,103 +366,21 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         return Integer.parseInt(responseJson.get("count").toString());
     }
 
-    protected void waitAndCreateWatcherJob(String prevIndex, String jobId, SampleJobParameter jobParameter) {
-        Timer timer = new Timer();
-        TimerTask timerTask = new TimerTask() {
-            private int timeoutCounter = 0;
-
-            @Override
-            public void run() {
-                try {
-                    long count = countRecordsInTestIndex(prevIndex);
-                    ++timeoutCounter;
-                    if (count == 1) {
-                        createWatcherJob(jobId, jobParameter);
-                        timer.cancel();
-                        timer.purge();
-                    }
-                    if (timeoutCounter >= 24) {
-                        timer.cancel();
-                        timer.purge();
-                    }
-                } catch (IOException ex) {
-                    // do nothing
-                    // suppress exception
-                }
+    protected void waitUntilLockIsAcquiredAndReleased(String jobId) {
+        AtomicLong prevLockAcquiredTime = new AtomicLong(0L);
+        AtomicReference<LockModel> lock = new AtomicReference<>();
+        try {
+            lock.set(getLockByJobId(jobId));
+            if (lock.get() != null && prevLockAcquiredTime.get() == 0L && lock.get().isReleased()) {
+                prevLockAcquiredTime.set(lock.get().getLockTime().toEpochMilli());
             }
-        };
-        timer.scheduleAtFixedRate(timerTask, 2000, 5000);
-    }
-
-    protected void waitAndDeleteWatcherJob(String prevIndex, String jobId) {
-        Timer timer = new Timer();
-        TimerTask timerTask = new TimerTask() {
-            private int timeoutCounter = 0;
-
-            @Override
-            public void run() {
-                try {
-                    long count = countRecordsInTestIndex(prevIndex);
-                    ++timeoutCounter;
-                    if (count == 1) {
-                        deleteWatcherJob(jobId);
-                        timer.cancel();
-                        timer.purge();
-                    }
-                    if (timeoutCounter >= 24) {
-                        timer.cancel();
-                        timer.purge();
-                    }
-                } catch (IOException ex) {
-                    // do nothing
-                    // suppress exception
-                }
-            }
-        };
-        timer.scheduleAtFixedRate(timerTask, 2000, 5000);
-    }
-
-    protected long waitAndCountRecords(String index, long waitForInMs) throws Exception {
-        Thread.sleep(waitForInMs);
-        return countRecordsInTestIndex(index);
-    }
-
-    protected long waitAndCountRecords(String index, String jobId) throws Exception {
-        // Thread.sleep(waitForInMs);
-        return countRecordsInTestIndex(index);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected long getLockTimeByJobId(String jobId) throws IOException {
-        String entity = """
-            {
-                "query": {
-                    "match": {
-                        "job_id": {
-                            "query": "%s"
-                        }
-                    }
-                }
-            }
-            """.formatted(jobId);
-        Response response = makeRequest(
-            client(),
-            "POST",
-            "/" + ".opendistro-job-scheduler-lock" + "/_search",
-            Collections.emptyMap(),
-            new StringEntity(entity, ContentType.APPLICATION_JSON)
-        );
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
-        List<Map<String, Object>> hits = (List<Map<String, Object>>) ((Map<String, Object>) responseJson.get("hits")).get("hits");
-        if (hits.size() == 0) {
-            return 0L;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        Map<String, Object> lockSource = (Map<String, Object>) hits.get(0).get("_source");
-        return Long.parseLong(lockSource.get("lock_time").toString());
+        await().atMost(20, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
+            lock.set(getLockByJobId(jobId));
+            return lock.get() != null && lock.get().getLockTime().toEpochMilli() != prevLockAcquiredTime.get() && lock.get().isReleased();
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -479,16 +400,19 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             client(),
             "POST",
             "/.opendistro-job-scheduler-lock/_search",
-            Collections.emptyMap(),
+            Map.of("ignore", "404"),
             new StringEntity(entity, ContentType.APPLICATION_JSON)
         );
+        if (response.getStatusLine().getStatusCode() == 404) {
+            return null;
+        }
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
             NamedXContentRegistry.EMPTY,
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
         ).map();
         List<Map<String, Object>> hits = (List<Map<String, Object>>) ((Map<String, Object>) responseJson.get("hits")).get("hits");
-        if (hits.size() == 0) {
+        if (hits.isEmpty()) {
             return null;
         }
         Map<String, Object> lockSource = (Map<String, Object>) hits.get(0).get("_source");
@@ -497,36 +421,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             lockSource.get(LockModel.JOB_ID).toString(),
             Instant.ofEpochMilli(Long.parseLong(lockSource.get(LockModel.LOCK_TIME).toString())),
             Long.parseLong(lockSource.get(LockModel.LOCK_DURATION).toString()),
-            Boolean.valueOf(lockSource.get(LockModel.RELEASED).toString())
+            Boolean.parseBoolean(lockSource.get(LockModel.RELEASED).toString())
         );
-    }
-
-    @SuppressWarnings("unchecked")
-    protected boolean doesLockExistByLockTime(long lockTime) throws IOException {
-        String entity = """
-            {
-                "query": {
-                    "match": {
-                        "lock_time": {
-                            "query": %d
-                        }
-                    }
-                }
-            }
-            """.formatted(lockTime);
-        Response response = makeRequest(
-            client(),
-            "POST",
-            "/" + ".opendistro-job-scheduler-lock" + "/_search",
-            Collections.emptyMap(),
-            new StringEntity(entity, ContentType.APPLICATION_JSON)
-        );
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
-        List<Map<String, Object>> hits = (List<Map<String, Object>>) ((Map<String, Object>) responseJson.get("hits")).get("hits");
-        return hits.size() == 1;
     }
 }

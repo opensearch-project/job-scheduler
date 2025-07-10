@@ -107,7 +107,6 @@ public class SampleJobRunner implements ScheduledJobRunner {
                     SampleJobParameter parameter = (SampleJobParameter) jobParameter;
                     StringBuilder msg = new StringBuilder();
                     msg.append("Watching index ").append(parameter.getIndexToWatch()).append("\n");
-                    System.out.println("msg.toString(): " + msg.toString());
 
                     List<ShardRouting> shardRoutingList = this.clusterService.state().routingTable().allShards(parameter.getIndexToWatch());
                     for (ShardRouting shardRouting : shardRoutingList) {
@@ -144,7 +143,7 @@ public class SampleJobRunner implements ScheduledJobRunner {
 
     private void runTaskForLockIntegrationTests(SampleJobParameter jobParameter) throws InterruptedException {
         if (jobParameter.getName().equals("sample-job-lock-test-it")) {
-            Thread.sleep(180000);
+            Thread.sleep(10000);
         }
     }
 }

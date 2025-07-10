@@ -135,15 +135,12 @@ public class JobScheduler {
         JobDocVersion version,
         Double jitterLimit
     ) {
-        System.out.println("reschedule called with: " + jobInfo.getExpectedExecutionTime());
         if (jobParameter.getEnabledTime() == null) {
             log.info("There is no enable time of job {}, this job should never be scheduled.", jobParameter.getName());
             return false;
         }
 
         Instant nextExecutionTime = jobParameter.getSchedule().getNextExecutionTime(jobInfo.getExpectedExecutionTime());
-        System.out.println("jobParameter: " + jobParameter);
-        System.out.println("nextExecutionTime: " + nextExecutionTime);
         if (nextExecutionTime == null) {
             log.info("No next execution time for job {}", jobParameter.getName());
             return true;
@@ -160,8 +157,6 @@ public class JobScheduler {
             nextExecutionTime = now;
             duration = Duration.ZERO;
         }
-
-        System.out.println("duration before: " + duration.toMillis());
 
         // Too many jobs start at the same time point will bring burst. Add random jitter delay to spread out load.
         // Example, if interval is 10 minutes, jitter is 0.6, next job run will be randomly delayed by 0 to 10*0.6 minutes.
@@ -185,11 +180,8 @@ public class JobScheduler {
 
         jobInfo.setExpectedExecutionTime(nextExecutionTime);
 
-        System.out.println("should call runJob");
-
         Runnable runnable = () -> {
             if (jobInfo.isDescheduled()) {
-                System.out.println("descheduled");
                 return;
             }
 
@@ -207,16 +199,13 @@ public class JobScheduler {
                 jobInfo.getJobId()
             );
 
-            System.out.println("runJob called");
             jobRunner.runJob(jobParameter, context);
         };
 
         if (jobInfo.isDescheduled()) {
-            System.out.println("descheduled2");
             return false;
         }
 
-        System.out.println("setScheduledCancellable, duration: " + duration.toMillis());
         jobInfo.setScheduledCancellable(
             this.threadPool.schedule(
                 runnable,

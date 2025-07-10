@@ -112,35 +112,29 @@ public class JobSchedulerBackwardsCompatibilityIT extends SampleExtensionIntegTe
         * Thus, failure to schedule the job would mean, backward incompatible changes were made in the serde logic.
         * & the assert would fail.
          */
-        String jobParameter = "{"
-            + "\"name\":\"sample-job-it\","
-            + "\"enabled\":true,"
-            + "\"enabled_time\":"
-            + now.toEpochMilli()
-            + ", "
-            + "\"last_update_time\":"
-            + now.toEpochMilli()
-            + ", "
-            + "\"schedule\":{"
-            + "\"interval\":{"
-            + "\"start_time\":"
-            + now.toEpochMilli()
-            + ","
-            + "\"period\":1,"
-            + "\"unit\":\"Minutes\""
-            + "}"
-            + "},"
-            + "\"index_name_to_watch\":\""
-            + index
-            + "\","
-            + "\"lock_duration_seconds\":120"
-            + "}";
+        String jobParameter = """
+            {
+                "name": "sample-job-it",
+                "enabled": true,
+                "enabled_time": %d,
+                "last_update_time": %d,
+                "schedule": {
+                    "interval": {
+                        "start_time": %d,
+                        "period": 1,
+                        "unit": "Minutes"
+                    }
+                },
+                "index_name_to_watch": "%s",
+                "lock_duration_seconds": 120
+            }
+            """.formatted(now.toEpochMilli(), now.toEpochMilli(), now.toEpochMilli(), index);
 
         // Creates a new watcher job.
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
         createWatcherJobJson(jobId, jobParameter);
+        waitUntilLockIsAcquiredAndReleased(jobId);
 
-        long actualCount = waitAndCountRecords(index, 100000);
-        Assert.assertEquals(1, actualCount);
+        Assert.assertEquals(1, countRecordsInTestIndex(index));
     }
 }
