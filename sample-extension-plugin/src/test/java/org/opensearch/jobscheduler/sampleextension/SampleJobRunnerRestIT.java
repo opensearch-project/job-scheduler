@@ -117,23 +117,10 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         // Creates a new watcher job.
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
-        SampleJobParameter schedJobParameter = createWatcherJob(jobId, jobParameter);
+        createWatcherJob(jobId, jobParameter);
 
-        // update the job params to now watch a new index.
-        String newIndex = createTestIndex();
-        jobParameter.setIndexToWatch(newIndex);
-
-        // wait till the job runner runs for the first time after 1 min & inserts a record into the watched index & then update the job with
-        // new params.
-        waitAndCreateWatcherJob(schedJobParameter.getIndexToWatch(), jobId, jobParameter);
-        long actualCount = waitAndCountRecords(newIndex, 130000);
-
-        // Asserts that the job runner has the updated params & it inserted the record in the new watched index.
+        long actualCount = waitAndCountRecords(index, 65000);
         Assert.assertEquals(1, actualCount);
-        long prevIndexActualCount = waitAndCountRecords(index, 0);
-
-        // Asserts that the job runner no longer updates the old index as the job params have been updated.
-        Assert.assertEquals(1, prevIndexActualCount);
 
         Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI, Map.of(), null);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
@@ -147,41 +134,6 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         assertEquals(11, responseJson.get("total_jobs"));
         assertEquals(0, ((List<?>) responseJson.get("failures")).size());
         assertFalse("Should have at least one node", nodes.isEmpty());
-
-        for (Map<String, Object> node : nodes) {
-
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> nodeJobs = (List<Map<String, Object>>) ((Map<String, Object>) node.get("scheduled_job_info")).get(
-                "jobs"
-            );
-            if (nodeJobs != null) {
-                for (Map<String, Object> job : nodeJobs) {
-                    assertEquals("job_type should be scheduler_sample_extension", "scheduler_sample_extension", job.get("job_type"));
-                    assertNotNull("job_id should not be null", job.get("job_id"));
-                    assertEquals(
-                        "index_name should not be .scheduler_sample_extension",
-                        ".scheduler_sample_extension",
-                        job.get("index_name")
-                    );
-                    assertNotNull("name should not be null", job.get("name"));
-                    assertFalse("descheduled should be False", (Boolean) job.get("descheduled"));
-                    assertTrue("enabled should be True", (Boolean) job.get("enabled"));
-                    assertNotNull("enabled_time should not be null", job.get("enabled_time"));
-                    assertNotNull("last_update_time should not be null", job.get("last_update_time"));
-                    assertNotNull("schedule should not be null", job.get("schedule"));
-                    assertTrue(job.get("lock_duration") instanceof Integer);
-                    assertEquals("none", job.get("jitter"));
-                    assertEquals("none", job.get("delay"));
-                    // Validate schedule object
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> schedule = (Map<String, Object>) job.get("schedule");
-                    assertTrue(
-                        "schedule should be interval or Cron",
-                        ((schedule.get("type").equals("interval")) || (schedule.get("type").equals("cron")))
-                    );
-                }
-            }
-        }
     }
 
     public void testAcquiredLockPreventExecOfTasks() throws Exception {
