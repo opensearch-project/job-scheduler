@@ -111,7 +111,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         Assert.assertEquals(1, countRecordsInTestIndex(index));
     }
 
-    public void testJobUpdateWithRescheduleJobThenListJobs() throws Exception {
+    public void testRunThenListJobs() throws Exception {
 
         String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs?by_node";
 
@@ -119,8 +119,8 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-it");
         jobParameter.setIndexToWatch(index);
-        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
-        jobParameter.setLockDurationSeconds(120L);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(5L);
 
         for (int i = 0; i < 10; i++) {
             // Creates a new watcher job.
@@ -139,8 +139,8 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
         createWatcherJob(jobId, jobParameter);
 
-        long actualCount = waitAndCountRecords(index, 65000);
-        Assert.assertEquals(1, actualCount);
+        waitUntilLockIsAcquiredAndReleased(jobId);
+        Assert.assertEquals(1, countRecordsInTestIndex(index));
 
         Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI, Map.of(), null);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
