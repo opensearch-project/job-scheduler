@@ -112,6 +112,7 @@ testClusters.integTest {
         }
     }
     setting 'path.repo', repo.absolutePath
+    setting 'plugins.jobscheduler.sweeper.period', '5s'
 }
 
 String baseName = "jobSchedulerBwcCluster"

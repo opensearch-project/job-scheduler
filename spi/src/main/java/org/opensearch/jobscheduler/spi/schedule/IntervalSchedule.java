@@ -43,6 +43,7 @@ public class IntervalSchedule implements Schedule {
 
     static {
         HashSet<ChronoUnit> set = new HashSet<>();
+        set.add(ChronoUnit.SECONDS);
         set.add(ChronoUnit.MINUTES);
         set.add(ChronoUnit.HOURS);
         set.add(ChronoUnit.DAYS);
@@ -66,6 +67,7 @@ public class IntervalSchedule implements Schedule {
         this.initialStartTime = startTime;
         this.startTimeWithDelay = startTime;
         this.interval = interval;
+        System.out.println("unit in constructor: " + unit);
         this.unit = unit;
         this.intervalInMillis = Duration.of(interval, this.unit).toMillis();
         this.clock = Clock.system(ZoneId.systemDefault());
@@ -105,10 +107,17 @@ public class IntervalSchedule implements Schedule {
 
     @Override
     public Instant getNextExecutionTime(Instant time) {
+        System.out.println("time: " + time);
         Instant baseTime = time == null ? this.clock.instant() : time;
+        System.out.println("baseTime: " + baseTime);
+        System.out.println("this.startTimeWithDelay: " + this.startTimeWithDelay);
         long delta = (baseTime.toEpochMilli() - this.startTimeWithDelay.toEpochMilli());
+        System.out.println("delta: " + delta);
+        System.out.println("interval: " + interval);
+        System.out.println("unit: " + unit);
         if (delta >= 0) {
             long remaining = this.intervalInMillis - (delta % this.intervalInMillis);
+            System.out.println("remaining: " + remaining);
             return baseTime.plus(remaining, ChronoUnit.MILLIS);
         } else {
             return this.startTimeWithDelay;

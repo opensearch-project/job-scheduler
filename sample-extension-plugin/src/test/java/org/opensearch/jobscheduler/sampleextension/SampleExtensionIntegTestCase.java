@@ -37,6 +37,7 @@ import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.common.xcontent.json.JsonXContent;
+import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.core.rest.RestStatus;
@@ -315,7 +316,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
                 new IntervalSchedule(
                     Instant.ofEpochMilli(Long.parseLong(((Map<String, Object>) jobSchedule.get("interval")).get("start_time").toString())),
                     Integer.parseInt(((Map<String, Object>) jobSchedule.get("interval")).get("period").toString()),
-                    ChronoUnit.MINUTES
+                    ChronoUnit.SECONDS
                 )
 
             );
@@ -423,6 +424,11 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         return countRecordsInTestIndex(index);
     }
 
+    protected long waitAndCountRecords(String index, String jobId) throws Exception {
+        // Thread.sleep(waitForInMs);
+        return countRecordsInTestIndex(index);
+    }
+
     @SuppressWarnings("unchecked")
     protected long getLockTimeByJobId(String jobId) throws IOException {
         String entity = """
@@ -454,6 +460,45 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         }
         Map<String, Object> lockSource = (Map<String, Object>) hits.get(0).get("_source");
         return Long.parseLong(lockSource.get("lock_time").toString());
+    }
+
+    @SuppressWarnings("unchecked")
+    protected LockModel getLockByJobId(String jobId) throws IOException {
+        String entity = """
+            {
+                "query": {
+                    "match": {
+                        "job_id": {
+                            "query": "%s"
+                        }
+                    }
+                }
+            }
+            """.formatted(jobId);
+        Response response = makeRequest(
+            client(),
+            "POST",
+            "/.opendistro-job-scheduler-lock/_search",
+            Collections.emptyMap(),
+            new StringEntity(entity, ContentType.APPLICATION_JSON)
+        );
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+        List<Map<String, Object>> hits = (List<Map<String, Object>>) ((Map<String, Object>) responseJson.get("hits")).get("hits");
+        if (hits.size() == 0) {
+            return null;
+        }
+        Map<String, Object> lockSource = (Map<String, Object>) hits.get(0).get("_source");
+        return new LockModel(
+            lockSource.get(LockModel.JOB_INDEX_NAME).toString(),
+            lockSource.get(LockModel.JOB_ID).toString(),
+            Instant.ofEpochMilli(Long.parseLong(lockSource.get(LockModel.LOCK_TIME).toString())),
+            Long.parseLong(lockSource.get(LockModel.LOCK_DURATION).toString()),
+            Boolean.valueOf(lockSource.get(LockModel.RELEASED).toString())
+        );
     }
 
     @SuppressWarnings("unchecked")

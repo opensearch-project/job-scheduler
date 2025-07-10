@@ -265,6 +265,8 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                         return null;
                     }
                     ScheduledJobRunner jobRunner = this.indexToProviders.get(shardId.getIndexName()).getJobRunner();
+                    System.out.println("jobRunner: " + jobRunner);
+                    System.out.println("jobParameter: " + jobParameter);
                     if (jobParameter.isEnabled()) {
                         this.scheduler.schedule(shardId.getIndexName(), docId, jobParameter, jobRunner, jobDocVersion, jitterLimit);
                     }
@@ -298,6 +300,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
             log.info("Running full sweep");
             TimeValue elapsedTime = getFullSweepElapsedTime();
             long delta = this.sweepPeriod.millis() - elapsedTime.millis();
+            System.out.println("delta: " + delta);
             if (delta < 20L) {
                 this.fullSweepExecutor.submit(this::sweepAllJobIndices);
             }
@@ -326,6 +329,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
 
     private void sweepAllJobIndices() {
         for (String indexName : this.indexToProviders.keySet()) {
+            System.out.println("sweeping index: " + indexName);
             this.sweepIndex(indexName);
         }
         this.lastFullSweepTimeNano = System.nanoTime();
@@ -379,7 +383,10 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
             ? this.sweptJobs.get(shardId)
             : new ConcurrentHashMap<>();
 
+        System.out.println("currentJobs: " + currentJobs);
+
         for (String jobId : currentJobs.keySet()) {
+
             if (!shardNodes.isOwningNode(jobId)) {
                 this.scheduler.deschedule(shardId.getIndexName(), jobId);
                 currentJobs.remove(jobId);
@@ -410,6 +417,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
             }
             for (SearchHit hit : response.getHits()) {
                 String jobId = hit.getId();
+                System.out.println("Sweeping jobId: " + jobId);
                 if (shardNodes.isOwningNode(jobId)) {
                     this.sweep(
                         shardId,

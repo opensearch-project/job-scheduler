@@ -90,7 +90,7 @@ public class SampleExtensionRestHandler extends BaseRestHandler {
 
             Schedule schedule;
             if (interval != null) {
-                schedule = new IntervalSchedule(Instant.now(), Integer.parseInt(interval), ChronoUnit.MINUTES);
+                schedule = new IntervalSchedule(Instant.now(), Integer.parseInt(interval), ChronoUnit.SECONDS);
             } else {
                 schedule = new CronSchedule(cron, ZoneId.systemDefault());
             }
