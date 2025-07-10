@@ -183,10 +183,6 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         return createWatcherJobWithClient(client(), jobId, jobParameter);
     }
 
-    protected String createWatcherJobJson(String jobId, String jobParameter) throws IOException {
-        return createWatcherJobJsonWithClient(client(), jobId, jobParameter);
-    }
-
     protected SampleJobParameter createWatcherJobWithClient(RestClient client, String jobId, SampleJobParameter jobParameter)
         throws IOException {
         Map<String, String> params = getJobParameterAsMap(jobId, jobParameter);
@@ -367,6 +363,10 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
     }
 
     protected void waitUntilLockIsAcquiredAndReleased(String jobId) {
+        waitUntilLockIsAcquiredAndReleased(jobId, 20);
+    }
+
+    protected void waitUntilLockIsAcquiredAndReleased(String jobId, int maxTimeInSec) {
         AtomicLong prevLockAcquiredTime = new AtomicLong(0L);
         AtomicReference<LockModel> lock = new AtomicReference<>();
         try {
@@ -377,7 +377,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        await().atMost(20, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
+        await().atMost(maxTimeInSec, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
             lock.set(getLockByJobId(jobId));
             return lock.get() != null && lock.get().getLockTime().toEpochMilli() != prevLockAcquiredTime.get() && lock.get().isReleased();
         });
