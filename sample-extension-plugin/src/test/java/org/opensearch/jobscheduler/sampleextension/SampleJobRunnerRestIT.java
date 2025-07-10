@@ -11,6 +11,10 @@ package org.opensearch.jobscheduler.sampleextension;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.Assert;
 import org.opensearch.jobscheduler.spi.LockModel;
+import org.opensearch.client.Response;
+import org.opensearch.common.xcontent.LoggingDeprecationHandler;
+import org.opensearch.common.xcontent.json.JsonXContent;
+import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.test.rest.OpenSearchRestTestCase;
 
@@ -20,6 +24,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
+import java.util.List;
+import java.util.Map;
 
 public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
@@ -103,6 +109,51 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         // Asserts that the job runner no longer updates the old index as the job params have been updated.
         Assert.assertEquals(1, countRecordsInTestIndex(index));
+    }
+
+    public void testJobUpdateWithRescheduleJobThenListJobs() throws Exception {
+
+        String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs?by_node";
+
+        String index = createTestIndex();
+        SampleJobParameter jobParameter = new SampleJobParameter();
+        jobParameter.setJobName("sample-job-it");
+        jobParameter.setIndexToWatch(index);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
+        jobParameter.setLockDurationSeconds(120L);
+
+        for (int i = 0; i < 10; i++) {
+            // Creates a new watcher job.
+            String indexN = createTestIndex();
+            SampleJobParameter jobParameterN = new SampleJobParameter();
+            jobParameterN.setJobName("sample-job-it" + i);
+            jobParameterN.setIndexToWatch(indexN);
+            jobParameterN.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
+            jobParameterN.setLockDurationSeconds(120L);
+
+            String jobIdN = OpenSearchRestTestCase.randomAlphaOfLength(10);
+            createWatcherJob(jobIdN, jobParameterN);
+        }
+
+        // Creates a new watcher job.
+        String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
+        createWatcherJob(jobId, jobParameter);
+
+        long actualCount = waitAndCountRecords(index, 65000);
+        Assert.assertEquals(1, actualCount);
+
+        Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI, Map.of(), null);
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+
+        List<Map<String, Object>> nodes = (List<Map<String, Object>>) responseJson.get("nodes");
+        assertNotNull("Nodes list should not be null", nodes);
+        assertEquals(11, responseJson.get("total_jobs"));
+        assertEquals(0, ((List<?>) responseJson.get("failures")).size());
+        assertFalse("Should have at least one node", nodes.isEmpty());
     }
 
     public void testAcquiredLockPreventExecOfTasks() throws Exception {
