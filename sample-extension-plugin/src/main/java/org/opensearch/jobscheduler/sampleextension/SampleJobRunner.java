@@ -143,7 +143,7 @@ public class SampleJobRunner implements ScheduledJobRunner {
 
     private void runTaskForLockIntegrationTests(SampleJobParameter jobParameter) throws InterruptedException {
         if (jobParameter.getName().equals("sample-job-lock-test-it")) {
-            Thread.sleep(180000);
+            Thread.sleep(10000);
         }
     }
 }

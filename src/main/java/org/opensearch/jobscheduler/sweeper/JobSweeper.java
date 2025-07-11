@@ -380,6 +380,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
             : new ConcurrentHashMap<>();
 
         for (String jobId : currentJobs.keySet()) {
+
             if (!shardNodes.isOwningNode(jobId)) {
                 this.scheduler.deschedule(shardId.getIndexName(), jobId);
                 currentJobs.remove(jobId);

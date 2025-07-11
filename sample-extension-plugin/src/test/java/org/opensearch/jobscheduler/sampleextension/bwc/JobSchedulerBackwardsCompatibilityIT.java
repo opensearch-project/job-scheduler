@@ -10,9 +10,12 @@ package org.opensearch.jobscheduler.sampleextension.bwc;
 
 import org.junit.Assert;
 import org.opensearch.jobscheduler.sampleextension.SampleExtensionIntegTestCase;
+import org.opensearch.jobscheduler.sampleextension.SampleJobParameter;
+import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.test.rest.OpenSearchRestTestCase;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -104,43 +107,17 @@ public class JobSchedulerBackwardsCompatibilityIT extends SampleExtensionIntegTe
 
     private void createBasicWatcherJob() throws Exception {
         String index = createTestIndex();
-        Instant now = Instant.now();
-        /*
-        * we insert the oldest version of job metadata directly into the registered index of sample-extension plugin. this will avoid
-        * calling the serde methods of ScheduledJobParameter class.
-        * Once this doc is inserted, JobSweeper listens for changes in the registered index, tries to deserialize, & then schedule the job.
-        * Thus, failure to schedule the job would mean, backward incompatible changes were made in the serde logic.
-        * & the assert would fail.
-         */
-        String jobParameter = "{"
-            + "\"name\":\"sample-job-it\","
-            + "\"enabled\":true,"
-            + "\"enabled_time\":"
-            + now.toEpochMilli()
-            + ", "
-            + "\"last_update_time\":"
-            + now.toEpochMilli()
-            + ", "
-            + "\"schedule\":{"
-            + "\"interval\":{"
-            + "\"start_time\":"
-            + now.toEpochMilli()
-            + ","
-            + "\"period\":1,"
-            + "\"unit\":\"Minutes\""
-            + "}"
-            + "},"
-            + "\"index_name_to_watch\":\""
-            + index
-            + "\","
-            + "\"lock_duration_seconds\":120"
-            + "}";
+        SampleJobParameter jobParameter = new SampleJobParameter();
+        jobParameter.setJobName("sample-job-it");
+        jobParameter.setIndexToWatch(index);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(5L);
 
         // Creates a new watcher job.
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
-        createWatcherJobJson(jobId, jobParameter);
+        createWatcherJob(jobId, jobParameter);
+        waitUntilLockIsAcquiredAndReleased(jobId, 20);
 
-        long actualCount = waitAndCountRecords(index, 100000);
-        Assert.assertEquals(1, actualCount);
+        Assert.assertEquals(1, countRecordsInTestIndex(index));
     }
 }

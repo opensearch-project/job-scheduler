@@ -8,7 +8,9 @@
  */
 package org.opensearch.jobscheduler.sampleextension;
 
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.Assert;
+import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.client.Response;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.common.xcontent.json.JsonXContent;
@@ -19,6 +21,9 @@ import org.opensearch.test.rest.OpenSearchRestTestCase;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
 import java.util.List;
 import java.util.Map;
 
@@ -28,8 +33,8 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-it");
         jobParameter.setIndexToWatch("http-logs");
-        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
-        jobParameter.setLockDurationSeconds(120L);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(5L);
 
         // Creates a new watcher job.
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
@@ -46,20 +51,34 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-it");
         jobParameter.setIndexToWatch(index);
-        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
-        jobParameter.setLockDurationSeconds(120L);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(5L);
 
         // Creates a new watcher job.
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
         SampleJobParameter schedJobParameter = createWatcherJob(jobId, jobParameter);
 
-        // wait till the job runner runs for the first time after 1 min & inserts a record into the watched index & then delete the job.
-        waitAndDeleteWatcherJob(schedJobParameter.getIndexToWatch(), jobId);
-        long actualCount = waitAndCountRecords(index, 130000);
+        waitUntilLockIsAcquiredAndReleased(jobId);
 
-        // Asserts that in the last 3 mins, no new job ran to insert a record into the watched index & all locks are deleted for the job.
+        // wait till the job runner runs for the first time after 5s & inserts a record into the watched index & then delete the job.
+        deleteWatcherJob(jobId);
+
+        // ensure log remains released as job is now descheduled
+        assertThrows(
+            ConditionTimeoutException.class,
+            () -> await().atMost(10, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
+                LockModel lock = getLockByJobId(jobId);
+                if (lock != null && !lock.isReleased()) {
+                    Assert.fail("Lock should not be acquired after job deletion");
+                }
+                return false;
+            })
+        );
+
+        long actualCount = countRecordsInTestIndex(index);
+
+        // Asserts that in the last 10s, no new job ran to insert a record into the watched index & all locks are deleted for the job.
         Assert.assertEquals(1, actualCount);
-        Assert.assertEquals(0L, getLockTimeByJobId(jobId));
     }
 
     public void testJobUpdateWithRescheduleJob() throws Exception {
@@ -67,31 +86,32 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-it");
         jobParameter.setIndexToWatch(index);
-        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
-        jobParameter.setLockDurationSeconds(120L);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(5L);
 
         // Creates a new watcher job.
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
-        SampleJobParameter schedJobParameter = createWatcherJob(jobId, jobParameter);
+        createWatcherJob(jobId, jobParameter);
 
+        waitUntilLockIsAcquiredAndReleased(jobId);
+        Assert.assertEquals(1, countRecordsInTestIndex(index));
         // update the job params to now watch a new index.
         String newIndex = createTestIndex();
         jobParameter.setIndexToWatch(newIndex);
 
         // wait till the job runner runs for the first time after 1 min & inserts a record into the watched index & then update the job with
         // new params.
-        waitAndCreateWatcherJob(schedJobParameter.getIndexToWatch(), jobId, jobParameter);
-        long actualCount = waitAndCountRecords(newIndex, 130000);
+        createWatcherJob(jobId, jobParameter);
+        waitUntilLockIsAcquiredAndReleased(jobId);
 
         // Asserts that the job runner has the updated params & it inserted the record in the new watched index.
-        Assert.assertEquals(1, actualCount);
-        long prevIndexActualCount = waitAndCountRecords(index, 0);
+        Assert.assertEquals(1, countRecordsInTestIndex(newIndex));
 
         // Asserts that the job runner no longer updates the old index as the job params have been updated.
-        Assert.assertEquals(1, prevIndexActualCount);
+        Assert.assertEquals(1, countRecordsInTestIndex(index));
     }
 
-    public void testJobUpdateWithRescheduleJobThenListJobs() throws Exception {
+    public void testRunThenListJobs() throws Exception {
 
         String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs?by_node";
 
@@ -99,8 +119,8 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-it");
         jobParameter.setIndexToWatch(index);
-        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
-        jobParameter.setLockDurationSeconds(120L);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(5L);
 
         for (int i = 0; i < 10; i++) {
             // Creates a new watcher job.
@@ -119,8 +139,8 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
         createWatcherJob(jobId, jobParameter);
 
-        long actualCount = waitAndCountRecords(index, 65000);
-        Assert.assertEquals(1, actualCount);
+        waitUntilLockIsAcquiredAndReleased(jobId);
+        Assert.assertEquals(1, countRecordsInTestIndex(index));
 
         Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI, Map.of(), null);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
@@ -143,31 +163,26 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         jobParameter.setIndexToWatch(index);
         // ensures that the next job tries to run even before the previous job finished & released its lock. Also look at
         // SampleJobRunner.runTaskForLockIntegrationTests
-        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 1, ChronoUnit.MINUTES));
-        jobParameter.setLockDurationSeconds(120L);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(10L);
 
         // Creates a new watcher job.
         String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
         createWatcherJob(jobId, jobParameter);
 
+        long startTime = System.currentTimeMillis();
+
+        waitUntilLockIsAcquiredAndReleased(jobId);
+
+        long endTime = System.currentTimeMillis();
+
+        long durationMs = endTime - startTime;
+        Assert.assertTrue("Lock duration should be more than 10 seconds", durationMs > 10000);
+
         // Asserts that the job runner is running for the first time & it has inserted a new record into the watched index.
-        long actualCount = waitAndCountRecords(index, 80000);
-        Assert.assertEquals(1, actualCount);
+        Assert.assertEquals(1, countRecordsInTestIndex(index));
 
-        // gets the lock time for the lock acquired for running first job.
-        long lockTime = getLockTimeByJobId(jobId);
-
-        // Asserts that the second job could not run & hence no new record is inserted into the watched index.
-        // Also asserts that the old lock acquired for running first job is still not released.
-        actualCount = waitAndCountRecords(index, 80000);
-        Assert.assertEquals(1, actualCount);
-        Assert.assertTrue(doesLockExistByLockTime(lockTime));
-
-        // Asserts that the new job ran after 2 mins after the first job lock is released. Hence new record is inserted into the watched
-        // index.
-        // Also asserts that the old lock is released.
-        actualCount = waitAndCountRecords(index, 130000);
-        Assert.assertEquals(2, actualCount);
-        Assert.assertFalse(doesLockExistByLockTime(lockTime));
+        waitUntilLockIsAcquiredAndReleased(jobId);
+        Assert.assertEquals(2, countRecordsInTestIndex(index));
     }
 }
