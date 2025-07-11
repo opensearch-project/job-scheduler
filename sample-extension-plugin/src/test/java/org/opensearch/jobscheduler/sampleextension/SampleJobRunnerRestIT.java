@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import static org.awaitility.Awaitility.await;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
@@ -185,4 +187,79 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         waitUntilLockIsAcquiredAndReleased(jobId);
         Assert.assertEquals(2, countRecordsInTestIndex(index));
     }
+
+    public void testActiveLockResponseInScheduledInfo() throws Exception {
+        String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs?by_node";
+
+        String index = createTestIndex();
+        SampleJobParameter jobParameter = new SampleJobParameter();
+        jobParameter.setJobName("sample-job-lock-test-it");
+        jobParameter.setIndexToWatch(index);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(10L);
+
+        String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
+        createWatcherJob(jobId, jobParameter);
+
+        // Run job and check for release = false
+        waitUntilLockIsAcquiredAndReleasedTransportCall(jobId, 20);
+
+        // Call the scheduled info API
+        // Checks lock is released
+        Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI, Map.of(), null);
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+
+        List<Map<String, Object>> nodes = (List<Map<String, Object>>) responseJson.get("nodes");
+        Map<String, Object> node = nodes.get(0);
+        Map<String, Object> scheduled_job_info = (Map<String, Object>) node.get("scheduled_job_info");
+        List<Map<String, Object>> jobs = (List<Map<String, Object>>) scheduled_job_info.get("jobs");
+        Map<String, Object> job = jobs.get(0);
+        List<Object> lockProperties = (List<Object>) job.get("locks");
+        Map<String, Object> lockMap = (Map<String, Object>) lockProperties.get(0);
+        assertTrue((boolean) lockMap.get("released"));
+
+    }
+
+    protected void waitUntilLockIsAcquiredAndReleasedTransportCall(String jobId, int maxTimeInSec) throws IOException,
+        InterruptedException {
+        AtomicLong prevLockAcquiredTime = new AtomicLong(0L);
+        AtomicReference<LockModel> lock = new AtomicReference<>();
+        String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs?by_node";
+        try {
+            lock.set(getLockByJobId(jobId));
+            if (lock.get() != null && prevLockAcquiredTime.get() == 0L && lock.get().isReleased()) {
+                prevLockAcquiredTime.set(lock.get().getLockTime().toEpochMilli());
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        Thread.sleep(7000);
+
+        Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI, Map.of(), null);
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+
+        List<Map<String, Object>> nodes = (List<Map<String, Object>>) responseJson.get("nodes");
+        Map<String, Object> node = nodes.get(0);
+        Map<String, Object> scheduled_job_info = (Map<String, Object>) node.get("scheduled_job_info");
+        List<Map<String, Object>> jobs = (List<Map<String, Object>>) scheduled_job_info.get("jobs");
+        Map<String, Object> job = jobs.get(0);
+        List<Object> lockProperties = (List<Object>) job.get("locks");
+        Map<String, Object> lockMap = (Map<String, Object>) lockProperties.get(0);
+        assertFalse((boolean) lockMap.get("released"));
+
+        await().atMost(maxTimeInSec, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
+            lock.set(getLockByJobId(jobId));
+            return lock.get() != null && lock.get().getLockTime().toEpochMilli() != prevLockAcquiredTime.get() && lock.get().isReleased();
+        });
+    }
+
 }

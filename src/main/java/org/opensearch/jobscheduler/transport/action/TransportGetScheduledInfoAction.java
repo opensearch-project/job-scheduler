@@ -30,6 +30,11 @@ import org.opensearch.jobscheduler.transport.request.GetScheduledInfoRequest;
 import org.opensearch.jobscheduler.transport.response.GetScheduledInfoResponse;
 import org.opensearch.jobscheduler.transport.request.GetScheduledInfoNodeRequest;
 import org.opensearch.jobscheduler.transport.response.GetScheduledInfoNodeResponse;
+import org.opensearch.transport.client.Client;
+import org.opensearch.action.search.SearchRequest;
+import org.opensearch.action.search.SearchResponse;
+import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.time.ZoneOffset;
@@ -49,6 +54,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
     private final JobScheduler jobScheduler;
     private final JobDetailsService jobDetailsService;
     private static final DateFormatter STRICT_DATE_TIME_FORMATTER = DateFormatter.forPattern("strict_date_time");
+    private final Client client;
 
     @Inject
     public TransportGetScheduledInfoAction(
@@ -57,7 +63,8 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
         TransportService transportService,
         ActionFilters actionFilters,
         JobScheduler jobScheduler,
-        JobDetailsService jobDetailsService
+        JobDetailsService jobDetailsService,
+        Client client
     ) {
         super(
             GetScheduledInfoAction.NAME,
@@ -72,6 +79,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
         );
         this.jobScheduler = jobScheduler;
         this.jobDetailsService = jobDetailsService;
+        this.client = client;
     }
 
     @Override
@@ -91,6 +99,22 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
     @Override
     protected GetScheduledInfoNodeResponse newNodeResponse(StreamInput in) throws IOException {
         return new GetScheduledInfoNodeResponse(in);
+    }
+
+    private List<Map<String, Object>> findLocksByJobId(String jobId) {
+        try {
+            SearchRequest searchRequest = new SearchRequest(".opendistro-job-scheduler-lock");
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(QueryBuilders.matchQuery("job_id", jobId));
+            searchRequest.source(searchSourceBuilder);
+
+            SearchResponse searchResponse = client.search(searchRequest).actionGet();
+            List<Map<String, Object>> locks = new ArrayList<>();
+            searchResponse.getHits().forEach(hit -> locks.add(hit.getSourceAsMap()));
+            return locks;
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 
     @Override
@@ -130,6 +154,9 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 jobDetails.put("job_type", jobType);
                                 jobDetails.put("job_id", jobId);
                                 jobDetails.put("index_name", indexName);
+                                // jobDetails.put("active_lock", isLockActive(indexName, jobId));
+                                jobDetails.put("locks", findLocksByJobId(jobId));
+                                // jobDetails.put("enabled_by_default", findLocksByJobId(jobId).get(4));
 
                                 // Add job parameter details
 
