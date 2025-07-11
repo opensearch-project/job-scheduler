@@ -43,6 +43,7 @@ public class IntervalSchedule implements Schedule {
 
     static {
         HashSet<ChronoUnit> set = new HashSet<>();
+        set.add(ChronoUnit.SECONDS);
         set.add(ChronoUnit.MINUTES);
         set.add(ChronoUnit.HOURS);
         set.add(ChronoUnit.DAYS);
