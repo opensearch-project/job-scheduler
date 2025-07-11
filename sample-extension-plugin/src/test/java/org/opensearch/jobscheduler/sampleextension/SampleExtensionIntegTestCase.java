@@ -180,13 +180,9 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
     }
 
     protected SampleJobParameter createWatcherJob(String jobId, SampleJobParameter jobParameter) throws IOException {
-        return createWatcherJobWithClient(client(), jobId, jobParameter);
-    }
-
-    protected SampleJobParameter createWatcherJobWithClient(RestClient client, String jobId, SampleJobParameter jobParameter)
-        throws IOException {
+        jobParameter.setEnabled(true);
         Map<String, String> params = getJobParameterAsMap(jobId, jobParameter);
-        Response response = makeRequest(client, "POST", SampleExtensionRestHandler.WATCH_INDEX_URI, params, null);
+        Response response = makeRequest(client(), "POST", SampleExtensionRestHandler.WATCH_INDEX_URI, params, null);
         Assert.assertEquals("Unable to create a watcher job", RestStatus.OK, RestStatus.fromCode(response.getStatusLine().getStatusCode()));
 
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
@@ -194,38 +190,12 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
         ).map();
-        return getJobParameter(client, responseJson.get("_id").toString());
-    }
-
-    protected String createWatcherJobJsonWithClient(RestClient client, String jobId, String jobParameter) throws IOException {
-        Response response = makeRequest(
-            client,
-            "PUT",
-            "/" + SampleExtensionPlugin.JOB_INDEX_NAME + "/_doc/" + jobId + "?refresh",
-            Collections.emptyMap(),
-            new StringEntity(jobParameter, ContentType.APPLICATION_JSON)
-        );
-        Assert.assertEquals(
-            "Unable to create a watcher job",
-            RestStatus.CREATED,
-            RestStatus.fromCode(response.getStatusLine().getStatusCode())
-        );
-
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
-        return responseJson.get("_id").toString();
+        return getJobParameter(client(), responseJson.get("_id").toString());
     }
 
     protected void deleteWatcherJob(String jobId) throws IOException {
-        deleteWatcherJobWithClient(client(), jobId);
-    }
-
-    protected void deleteWatcherJobWithClient(RestClient client, String jobId) throws IOException {
         Response response = makeRequest(
-            client,
+            client(),
             "DELETE",
             SampleExtensionRestHandler.WATCH_INDEX_URI,
             Collections.singletonMap("id", jobId),
@@ -233,6 +203,20 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         );
 
         Assert.assertEquals("Unable to delete a watcher job", RestStatus.OK, RestStatus.fromCode(response.getStatusLine().getStatusCode()));
+    }
+
+    protected SampleJobParameter disableWatcherJob(String jobId, SampleJobParameter jobParameter) throws IOException {
+        jobParameter.setEnabled(false);
+        Map<String, String> params = getJobParameterAsMap(jobId, jobParameter);
+        Response response = makeRequest(client(), "POST", SampleExtensionRestHandler.WATCH_INDEX_URI, params, null);
+        Assert.assertEquals("Unable to create a watcher job", RestStatus.OK, RestStatus.fromCode(response.getStatusLine().getStatusCode()));
+
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+        return getJobParameter(client(), responseJson.get("_id").toString());
     }
 
     protected Response makeRequest(
@@ -263,6 +247,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         params.put("id", jobId);
         params.put("job_name", jobParameter.getName());
         params.put("index", jobParameter.getIndexToWatch());
+        params.put("enabled", String.valueOf(jobParameter.isEnabled()));
         if (jobParameter.getSchedule() instanceof IntervalSchedule) {
             params.put("interval", String.valueOf(((IntervalSchedule) jobParameter.getSchedule()).getInterval()));
         } else if (jobParameter.getSchedule() instanceof CronSchedule) {
@@ -321,6 +306,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             );
         }
         jobParameter.setLockDurationSeconds(Long.parseLong(jobSource.get("lock_duration_seconds").toString()));
+        jobParameter.setEnabled(Boolean.parseBoolean(jobSource.get("enabled").toString()));
         return jobParameter;
     }
 
