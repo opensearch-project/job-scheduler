@@ -16,6 +16,7 @@ import org.opensearch.action.support.nodes.TransportNodesAction;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.common.time.DateFormatter;
+import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
@@ -37,6 +38,7 @@ import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -101,18 +103,31 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
         return new GetScheduledInfoNodeResponse(in);
     }
 
-    private List<Map<String, Object>> findLocksByJobId(String jobId) {
-        try {
+    private List<Map<String, Object>> findLockByJobId(String jobId) {
+        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
             SearchRequest searchRequest = new SearchRequest(".opendistro-job-scheduler-lock");
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.query(QueryBuilders.matchQuery("job_id", jobId));
             searchRequest.source(searchSourceBuilder);
 
             SearchResponse searchResponse = client.search(searchRequest).actionGet();
-            List<Map<String, Object>> locks = new ArrayList<>();
-            searchResponse.getHits().forEach(hit -> locks.add(hit.getSourceAsMap()));
-            return locks;
+            List<Map<String, Object>> lock = new ArrayList<>();
+            searchResponse.getHits().forEach(hit -> lock.add(hit.getSourceAsMap()));
+
+            if (lock.get(0).containsKey("lock_time")) {
+                Object lockTime = lock.get(0).get("lock_time");
+                if (lockTime instanceof Number) {
+                    long lockTimeSeconds = ((Number) lockTime).longValue();
+                    String formattedLockTime = STRICT_DATE_TIME_FORMATTER.format(
+                        Instant.ofEpochSecond(lockTimeSeconds).atOffset(ZoneOffset.UTC)
+                    );
+                    lock.get(0).put("lock_time", formattedLockTime);
+                }
+            }
+
+            return lock;
         } catch (Exception e) {
+            log.debug("Error in find Locks by Job id {}", jobId, e);
             return new ArrayList<>();
         }
     }
@@ -154,12 +169,8 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 jobDetails.put("job_type", jobType);
                                 jobDetails.put("job_id", jobId);
                                 jobDetails.put("index_name", indexName);
-                                // jobDetails.put("active_lock", isLockActive(indexName, jobId));
-                                jobDetails.put("locks", findLocksByJobId(jobId));
-                                // jobDetails.put("enabled_by_default", findLocksByJobId(jobId).get(4));
 
                                 // Add job parameter details
-
                                 jobDetails.put("name", jobInfo.getJobParameter().getName());
                                 jobDetails.put("descheduled", jobInfo.isDescheduled());
                                 jobDetails.put("enabled", jobInfo.getJobParameter().isEnabled());
@@ -173,8 +184,8 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                         jobInfo.getJobParameter().getLastUpdateTime().atOffset(ZoneOffset.UTC)
                                     )
                                 );
-                                // Add execution information
 
+                                // Add execution information
                                 if (jobInfo.getActualPreviousExecutionTime() != null) {
                                     jobDetails.put(
                                         "last_execution_time",
@@ -208,7 +219,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 if (jobInfo.getJobParameter().getSchedule() == null) {
                                     log.debug("Schedule for job {} does not exist.", jobId);
                                 } else {
-                                    Map<String, Object> scheduleMap = new HashMap<>();
+                                    Map<String, Object> scheduleMap = new LinkedHashMap<>();
 
                                     // Set schedule type
                                     if (jobInfo.getJobParameter().getSchedule() instanceof IntervalSchedule intervalSchedule) {
@@ -219,37 +230,37 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                         );
                                         scheduleMap.put("interval", intervalSchedule.getInterval());
                                         scheduleMap.put("unit", intervalSchedule.getUnit().toString());
+                                        scheduleMap.put(
+                                            "delay",
+                                            jobInfo.getJobParameter().getSchedule().getDelay() != null
+                                                ? jobInfo.getJobParameter().getSchedule().getDelay()
+                                                : "none"
+                                        );
                                     } else if (jobInfo.getJobParameter().getSchedule() instanceof CronSchedule cronSchedule) {
                                         scheduleMap.put("type", CronSchedule.CRON_FIELD);
                                         scheduleMap.put("expression", cronSchedule.getCronExpression());
                                         scheduleMap.put("timezone", cronSchedule.getTimeZone().getId());
+                                        scheduleMap.put(
+                                            "delay",
+                                            jobInfo.getJobParameter().getSchedule().getDelay() != null
+                                                ? jobInfo.getJobParameter().getSchedule().getDelay()
+                                                : "none"
+                                        );
                                     } else {
                                         scheduleMap.put("type", "unknown");
                                     }
 
                                     jobDetails.put("schedule", scheduleMap);
-
-                                    // Add delay information
-                                    jobDetails.put(
-                                        "delay",
-                                        jobInfo.getJobParameter().getSchedule().getDelay() != null
-                                            ? jobInfo.getJobParameter().getSchedule().getDelay()
-                                            : "none"
-                                    );
                                 }
+
+                                // Add lock information
+                                jobDetails.put("lock", findLockByJobId(jobId));
 
                                 // Add jitter and lock duration
                                 jobDetails.put(
                                     "jitter",
                                     jobInfo.getJobParameter().getJitter() != null ? jobInfo.getJobParameter().getJitter() : "none"
                                 );
-                                jobDetails.put(
-                                    "lock_duration",
-                                    jobInfo.getJobParameter().getLockDurationSeconds() != null
-                                        ? jobInfo.getJobParameter().getLockDurationSeconds()
-                                        : "no_lock"
-                                );
-
                                 jobs.add(jobDetails);
                             }
                         }
