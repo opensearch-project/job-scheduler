@@ -16,6 +16,7 @@ plugins {
 
 apply plugin: 'opensearch.java'
 apply plugin: 'opensearch.testclusters'
+apply plugin: 'opensearch.java-agent'
 
 repositories {
     mavenLocal()
