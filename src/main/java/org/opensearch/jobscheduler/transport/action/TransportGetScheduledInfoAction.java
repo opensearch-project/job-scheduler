@@ -107,7 +107,6 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
         return new GetScheduledInfoNodeResponse(in);
     }
 
-
     private void findLockByJobId(String jobId, ActionListener<List<Map<String, Object>>> listener) {
         try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
             SearchRequest searchRequest = new SearchRequest(".opendistro-job-scheduler-lock");
@@ -127,7 +126,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                             if (lockTime instanceof Number) {
                                 long lockTimeSeconds = ((Number) lockTime).longValue();
                                 String formattedLockTime = STRICT_DATE_TIME_FORMATTER.format(
-                                        Instant.ofEpochSecond(lockTimeSeconds).atOffset(ZoneOffset.UTC)
+                                    Instant.ofEpochSecond(lockTimeSeconds).atOffset(ZoneOffset.UTC)
                                 );
                                 lock.get(0).put("lock_time", formattedLockTime);
                             }
@@ -146,7 +145,6 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
             });
         }
     }
-
 
     @Override
     protected GetScheduledInfoNodeResponse nodeOperation(GetScheduledInfoNodeRequest request) {
@@ -275,17 +273,14 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 CountDownLatch latch = new CountDownLatch(1);
                                 AtomicReference<List<Map<String, Object>>> lockRef = new AtomicReference<>();
 
-                                findLockByJobId(jobId, ActionListener.wrap(
-                                        lock -> {
-                                            lockRef.set(lock);
-                                            latch.countDown();
-                                        },
-                                        e -> {
-                                            log.error("Failed to get lock for job {}", jobId, e);
-                                            lockRef.set(new ArrayList<>());
-                                            latch.countDown();
-                                        }
-                                ));
+                                findLockByJobId(jobId, ActionListener.wrap(lock -> {
+                                    lockRef.set(lock);
+                                    latch.countDown();
+                                }, e -> {
+                                    log.error("Failed to get lock for job {}", jobId, e);
+                                    lockRef.set(new ArrayList<>());
+                                    latch.countDown();
+                                }));
 
                                 try {
                                     if (latch.await(5, TimeUnit.SECONDS)) {

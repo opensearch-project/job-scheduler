@@ -287,18 +287,24 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
     }
 
     // navigates to released property in lock
+    @SuppressWarnings("unchecked")
     Function<Map<String, Object>, Boolean> navigationFunctionByNode = (responseJson) -> {
         List<Map<String, Object>> nodes = (List<Map<String, Object>>) responseJson.get("nodes");
-        Map<String, Object> node = nodes.get(0);
-        Map<String, Object> scheduled_job_info = (Map<String, Object>) node.get("scheduled_job_info");
-        List<Map<String, Object>> jobs = (List<Map<String, Object>>) scheduled_job_info.get("jobs");
-        Map<String, Object> job = jobs.get(0);
-        List<Object> lockProperties = (List<Object>) job.get("lock");
-        Map<String, Object> lockMap = (Map<String, Object>) lockProperties.get(0);
-        return (boolean) lockMap.get("released");
+        for (Map<String, Object> node : nodes) {
+            if (!node.isEmpty()) {
+                Map<String, Object> scheduled_job_info = (Map<String, Object>) node.get("scheduled_job_info");
+                List<Map<String, Object>> jobs = (List<Map<String, Object>>) scheduled_job_info.get("jobs");
+                Map<String, Object> job = jobs.get(0);
+                List<Object> lockProperties = (List<Object>) job.get("lock");
+                Map<String, Object> lockMap = (Map<String, Object>) lockProperties.getFirst();
+                return (boolean) lockMap.get("released");
+            }
+        }
+        return null;
     };
 
     // navigates to released property in lock
+    @SuppressWarnings("unchecked")
     Function<Map<String, Object>, Boolean> navigationFunctionEntireCuster = (responseJson) -> {
         List<Map<String, Object>> jobs = (List<Map<String, Object>>) responseJson.get("jobs");
         Map<String, Object> job = jobs.get(0);
