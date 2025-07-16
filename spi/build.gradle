@@ -37,10 +37,11 @@ jacoco {
 }
 
 jacocoTestReport {
+    dependsOn test
     reports {
-        xml.required = false
+        xml.required = true
         csv.required = false
-        html.destination file("${buildDir}/jacoco/")
+        html.required = true
     }
 }
 check.dependsOn jacocoTestReport
