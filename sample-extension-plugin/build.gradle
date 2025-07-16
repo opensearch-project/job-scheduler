@@ -7,6 +7,7 @@ apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-agent'
 apply plugin: 'opensearch.rest-test'
+apply plugin: 'jacoco'
 
 import org.opensearch.gradle.test.RestIntegTestTask
 import org.opensearch.gradle.testclusters.StandaloneRestIntegTestTask
@@ -52,6 +53,20 @@ licenseHeaders.enabled = true
 validateNebulaPom.enabled = false
 testingConventions.enabled = false
 loggerUsageCheck.enabled = false
+
+jacoco {
+    toolVersion = '0.8.12'
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+check.dependsOn jacocoTestReport
 
 integTest {
     if (project.hasProperty('excludeTests')) {

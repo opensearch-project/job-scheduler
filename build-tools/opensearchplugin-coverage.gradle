@@ -47,3 +47,21 @@ project.gradle.projectsEvaluated {
 }
 
 check.dependsOn jacocoTestReport
+
+// Aggregate coverage task to combine coverage from all subprojects
+task jacocoRootReport(type: JacocoReport) {
+    description = 'Generates an aggregate report from all subprojects'
+    dependsOn(subprojects.jacocoTestReport)
+    
+    additionalSourceDirs.from(files(subprojects.sourceSets.main.allSource.srcDirs))
+    sourceDirectories.from(files(subprojects.sourceSets.main.allSource.srcDirs))
+    classDirectories.from(files(subprojects.sourceSets.main.output))
+    executionData.from(project.fileTree(dir: '.', include: '**/build/jacoco/test.exec'))
+    
+    reports {
+        html.required = true
+        xml.required = true
+    }
+}
+
+check.dependsOn jacocoRootReport
