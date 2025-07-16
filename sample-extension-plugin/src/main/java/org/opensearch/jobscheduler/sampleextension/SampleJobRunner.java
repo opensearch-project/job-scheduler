@@ -9,6 +9,7 @@
 package org.opensearch.jobscheduler.sampleextension;
 
 import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.support.WriteRequest;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -137,6 +138,7 @@ public class SampleJobRunner implements ScheduledJobRunner {
     private void runTaskForIntegrationTests(SampleJobParameter jobParameter) {
         this.client.index(
             new IndexRequest(jobParameter.getIndexToWatch()).id(UUID.randomUUID().toString())
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .source("{\"message\": \"message\"}", XContentType.JSON)
         );
     }
