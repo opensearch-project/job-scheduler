@@ -16,6 +16,7 @@ plugins {
 
 apply plugin: 'opensearch.java'
 apply plugin: 'opensearch.testclusters'
+apply plugin: 'opensearch.java-agent'
 
 repositories {
     mavenLocal()
@@ -83,13 +84,13 @@ test {
         test.classpath += project.extensions.getByType(SourceSetContainer).getByName(SourceSet.MAIN_SOURCE_SET_NAME).runtimeClasspath
     }
     // add "-Dtests.security.manager=false" to VM options if you want to run integ tests in IntelliJ
-    systemProperty 'tests.security.manager', 'false'
+    systemProperty 'tests.security.manager', 'true'
 }
 
 task integTest(type: RestIntegTestTask) {
     description 'Run integ test with opensearch test framework'
     group 'verification'
-    systemProperty 'tests.security.manager', 'false'
+    systemProperty 'tests.security.manager', 'true'
 }
 
 task sourcesJar(type: Jar) {
