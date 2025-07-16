@@ -327,7 +327,8 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         List<Map<String, Object>> nodes = (List<Map<String, Object>>) responseJson.get("nodes");
         for (Map<String, Object> node : nodes) {
             List<Map<String, Object>> nodeJobs = (List<Map<String, Object>>) ((Map<String, Object>) node.get("scheduled_job_info")).get(
-                    "jobs");
+                "jobs"
+            );
             if (!nodeJobs.isEmpty()) {
                 Map<String, Object> job = nodeJobs.get(0);
                 List<Object> lockProperties = (List<Object>) job.get("lock");
