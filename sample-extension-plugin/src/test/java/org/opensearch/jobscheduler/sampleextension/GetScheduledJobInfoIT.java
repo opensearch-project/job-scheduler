@@ -96,7 +96,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> jobs = (List<Map<String, Object>>) responseJson.get("jobs");
         assertNotNull("Jobs list should not be null", jobs);
-        // assertEquals("Should have 4 jobs in the list", 4, jobs.size());
+        assertEquals("Should have 4 jobs in the list", 4, jobs.size());
 
         // Check that all expected job IDs are present and validate job fields
         Set<String> expectedJobIds = Set.of("test-job-1", "test-job-2", "test-job-3", "test-job-4");
