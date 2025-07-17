@@ -332,7 +332,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
             if (!nodeJobs.isEmpty()) {
                 Map<String, Object> job = nodeJobs.get(0);
                 List<Object> lockProperties = (List<Object>) job.get("lock");
-                Map<String, Object> lockMap = (Map<String, Object>) lockProperties.getFirst();
+                Map<String, Object> lockMap = (Map<String, Object>) lockProperties.get(0);
                 return (boolean) lockMap.get("released");
             }
         }
