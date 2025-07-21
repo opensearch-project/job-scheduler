@@ -73,6 +73,7 @@ public class SampleExtensionRestHandler extends BaseRestHandler {
             String jobName = request.param("job_name");
             String interval = request.param("interval");
             String cron = request.param("cron");
+            String enabled = request.param("enabled", "true");
             String lockDurationSecondsString = request.param("lock_duration_seconds");
             Long lockDurationSeconds = lockDurationSecondsString != null ? Long.parseLong(lockDurationSecondsString) : null;
             String jitterString = request.param("jitter");
@@ -90,12 +91,13 @@ public class SampleExtensionRestHandler extends BaseRestHandler {
 
             Schedule schedule;
             if (interval != null) {
-                schedule = new IntervalSchedule(Instant.now(), Integer.parseInt(interval), ChronoUnit.MINUTES);
+                schedule = new IntervalSchedule(Instant.now(), Integer.parseInt(interval), ChronoUnit.SECONDS);
             } else {
                 schedule = new CronSchedule(cron, ZoneId.systemDefault());
             }
 
             SampleJobParameter jobParameter = new SampleJobParameter(id, jobName, indexName, schedule, lockDurationSeconds, jitter);
+            jobParameter.setEnabled(Boolean.parseBoolean(enabled));
             IndexRequest indexRequest = new IndexRequest().index(SampleExtensionPlugin.JOB_INDEX_NAME)
                 .id(id)
                 .source(jobParameter.toXContent(JsonXContent.contentBuilder(), null))

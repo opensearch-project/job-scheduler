@@ -15,6 +15,7 @@ import org.opensearch.action.support.ActionFilters;
 import org.opensearch.action.support.nodes.TransportNodesAction;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
+import org.opensearch.common.time.DateFormatter;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
@@ -31,6 +32,7 @@ import org.opensearch.jobscheduler.transport.request.GetScheduledInfoNodeRequest
 import org.opensearch.jobscheduler.transport.response.GetScheduledInfoNodeResponse;
 
 import java.io.IOException;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,6 +48,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
     private static final Logger log = LogManager.getLogger(JobScheduler.class);
     private final JobScheduler jobScheduler;
     private final JobDetailsService jobDetailsService;
+    private static final DateFormatter STRICT_DATE_TIME_FORMATTER = DateFormatter.forPattern("strict_date_time");
 
     @Inject
     public TransportGetScheduledInfoAction(
@@ -133,24 +136,43 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 jobDetails.put("name", jobInfo.getJobParameter().getName());
                                 jobDetails.put("descheduled", jobInfo.isDescheduled());
                                 jobDetails.put("enabled", jobInfo.getJobParameter().isEnabled());
-                                jobDetails.put("enabled_time", jobInfo.getJobParameter().getEnabledTime().toString());
-                                jobDetails.put("last_update_time", jobInfo.getJobParameter().getLastUpdateTime().toString());
+                                jobDetails.put(
+                                    "enabled_time",
+                                    STRICT_DATE_TIME_FORMATTER.format(jobInfo.getJobParameter().getEnabledTime().atOffset(ZoneOffset.UTC))
+                                );
+                                jobDetails.put(
+                                    "last_update_time",
+                                    STRICT_DATE_TIME_FORMATTER.format(
+                                        jobInfo.getJobParameter().getLastUpdateTime().atOffset(ZoneOffset.UTC)
+                                    )
+                                );
                                 // Add execution information
 
                                 if (jobInfo.getActualPreviousExecutionTime() != null) {
-                                    jobDetails.put("last_execution_time", jobInfo.getActualPreviousExecutionTime());
+                                    jobDetails.put(
+                                        "last_execution_time",
+                                        STRICT_DATE_TIME_FORMATTER.format(jobInfo.getActualPreviousExecutionTime().atOffset(ZoneOffset.UTC))
+                                    );
                                 } else {
                                     jobDetails.put("last_execution_time", "none");
                                 }
                                 if (jobInfo.getExpectedPreviousExecutionTime() != null) {
-                                    jobDetails.put("last_expected_execution_time", jobInfo.getExpectedPreviousExecutionTime());
+                                    jobDetails.put(
+                                        "last_expected_execution_time",
+                                        STRICT_DATE_TIME_FORMATTER.format(
+                                            jobInfo.getExpectedPreviousExecutionTime().atOffset(ZoneOffset.UTC)
+                                        )
+                                    );
                                 } else {
                                     jobDetails.put("last_expected_execution_time", "none");
                                 }
 
                                 // Add next execution time
                                 if (jobInfo.getExpectedExecutionTime() != null) {
-                                    jobDetails.put("next_expected_execution_time", jobInfo.getExpectedExecutionTime().toString());
+                                    jobDetails.put(
+                                        "next_expected_execution_time",
+                                        STRICT_DATE_TIME_FORMATTER.format(jobInfo.getExpectedExecutionTime().atOffset(ZoneOffset.UTC))
+                                    );
                                 } else {
                                     jobDetails.put("next_expected_execution_time", "none");
                                 }
@@ -164,7 +186,10 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                     // Set schedule type
                                     if (jobInfo.getJobParameter().getSchedule() instanceof IntervalSchedule intervalSchedule) {
                                         scheduleMap.put("type", IntervalSchedule.INTERVAL_FIELD);
-                                        scheduleMap.put("start_time", intervalSchedule.getStartTime().toString());
+                                        scheduleMap.put(
+                                            "start_time",
+                                            STRICT_DATE_TIME_FORMATTER.format(intervalSchedule.getStartTime().atOffset(ZoneOffset.UTC))
+                                        );
                                         scheduleMap.put("interval", intervalSchedule.getInterval());
                                         scheduleMap.put("unit", intervalSchedule.getUnit().toString());
                                     } else if (jobInfo.getJobParameter().getSchedule() instanceof CronSchedule cronSchedule) {
