@@ -10,3 +10,8 @@ coverage:
       default:
         target: 75%    # the required coverage value
         threshold: 1%  # the leniency in hitting the target
+
+fixes:
+  - "build/reports/jacoco/test/jacocoTestReport.xml"
+  - "spi/build/reports/jacoco/test/jacocoTestReport.xml"
+  - "sample-extension-plugin/build/reports/jacoco/test/jacocoTestReport.xml"
