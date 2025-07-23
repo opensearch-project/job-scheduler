@@ -214,6 +214,13 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                     jobDetails.put("schedule", scheduleMap);
                                 }
 
+                                jobDetails.put(
+                                    "lock_duration",
+                                    jobInfo.getJobParameter().getLockDurationSeconds() != null
+                                        ? jobInfo.getJobParameter().getLockDurationSeconds()
+                                        : "no_lock"
+                                );
+
                                 // Add jitter and lock duration
                                 jobDetails.put(
                                     "jitter",
