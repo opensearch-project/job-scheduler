@@ -30,7 +30,6 @@ import org.opensearch.jobscheduler.transport.request.GetScheduledInfoRequest;
 import org.opensearch.jobscheduler.transport.response.GetScheduledInfoResponse;
 import org.opensearch.jobscheduler.transport.request.GetScheduledInfoNodeRequest;
 import org.opensearch.jobscheduler.transport.response.GetScheduledInfoNodeResponse;
-import org.opensearch.transport.client.Client;
 
 import java.io.IOException;
 import java.time.ZoneOffset;
@@ -50,7 +49,6 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
     private final JobScheduler jobScheduler;
     private final JobDetailsService jobDetailsService;
     private static final DateFormatter STRICT_DATE_TIME_FORMATTER = DateFormatter.forPattern("strict_date_time");
-    private final Client client;
 
     @Inject
     public TransportGetScheduledInfoAction(
@@ -59,8 +57,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
         TransportService transportService,
         ActionFilters actionFilters,
         JobScheduler jobScheduler,
-        JobDetailsService jobDetailsService,
-        Client client
+        JobDetailsService jobDetailsService
     ) {
         super(
             GetScheduledInfoAction.NAME,
@@ -75,7 +72,6 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
         );
         this.jobScheduler = jobScheduler;
         this.jobDetailsService = jobDetailsService;
-        this.client = client;
     }
 
     @Override
