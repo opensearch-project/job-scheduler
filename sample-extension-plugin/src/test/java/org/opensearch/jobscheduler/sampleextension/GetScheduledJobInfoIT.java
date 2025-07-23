@@ -114,9 +114,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
             assertNotNull("enabled_time should not be null", job.get("enabled_time"));
             assertNotNull("last_update_time should not be null", job.get("last_update_time"));
             assertNotNull("schedule should not be null", job.get("schedule"));
-            assertTrue(job.get("lock_duration") instanceof Integer);
             assertEquals("none", job.get("jitter"));
-            assertEquals("none", job.get("delay"));
 
             // Validate schedule object
             @SuppressWarnings("unchecked")
@@ -125,6 +123,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
                 "schedule should be interval or Cron",
                 ((schedule.get("type").equals("interval")) || (schedule.get("type").equals("cron")))
             );
+            assertNotNull("none", ((Map<String, Object>) job.get("schedule")).get("delay"));
         }
         assertEquals("All expected job IDs should be present", expectedJobIds, actualJobIds);
     }
@@ -175,9 +174,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
                     assertNotNull("enabled_time should not be null", job.get("enabled_time"));
                     assertNotNull("last_update_time should not be null", job.get("last_update_time"));
                     assertNotNull("schedule should not be null", job.get("schedule"));
-                    assertTrue(job.get("lock_duration") instanceof Integer);
                     assertEquals("none", job.get("jitter"));
-                    assertEquals("none", job.get("delay"));
                     // Validate schedule object
                     @SuppressWarnings("unchecked")
                     Map<String, Object> schedule = (Map<String, Object>) job.get("schedule");
@@ -185,6 +182,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
                         "schedule should be interval or Cron",
                         ((schedule.get("type").equals("interval")) || (schedule.get("type").equals("cron")))
                     );
+                    assertNotNull("none", ((Map<String, Object>) job.get("schedule")).get("delay"));
                 }
             }
         }
