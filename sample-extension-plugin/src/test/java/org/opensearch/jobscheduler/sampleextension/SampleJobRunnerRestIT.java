@@ -244,9 +244,9 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         // Checks lock is released
         Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-                NamedXContentRegistry.EMPTY,
-                LoggingDeprecationHandler.INSTANCE,
-                response.getEntity().getContent()
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
         ).map();
 
         // Asserts that "released" is true
@@ -255,10 +255,10 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
     }
 
     protected void waitUntilLockIsAcquiredAndReleasedTransportCall(
-            String jobId,
-            int maxTimeInSec,
-            String SCHEDULER_INFO_URI,
-            Function<Map<String, Object>, Boolean> navigationFunction
+        String jobId,
+        int maxTimeInSec,
+        String SCHEDULER_INFO_URI,
+        Function<Map<String, Object>, Boolean> navigationFunction
     ) throws IOException, InterruptedException {
         AtomicLong prevLockAcquiredTime = new AtomicLong(0L);
         AtomicReference<LockModel> lock = new AtomicReference<>();
@@ -277,9 +277,9 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI, Map.of(), null);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-                NamedXContentRegistry.EMPTY,
-                LoggingDeprecationHandler.INSTANCE,
-                response.getEntity().getContent()
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
         ).map();
 
         // Asserts that "released" is false
