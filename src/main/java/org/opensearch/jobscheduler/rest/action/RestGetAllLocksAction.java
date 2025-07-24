@@ -32,12 +32,16 @@ public class RestGetAllLocksAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return List.of(new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/locks"));
+        return List.of(
+            new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/locks"),
+            new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/locks/{lock_id}")
+        );
     }
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) {
-        GetAllLocksRequest getAllLocksRequest = new GetAllLocksRequest();
+        String lockId = request.param("lock_id");
+        GetAllLocksRequest getAllLocksRequest = new GetAllLocksRequest(lockId);
         return channel -> client.execute(GetAllLocksAction.INSTANCE, getAllLocksRequest, new RestToXContentListener<>(channel));
     }
 }

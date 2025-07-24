@@ -28,6 +28,7 @@ import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.request.GetAllLocksRequest;
 import org.opensearch.jobscheduler.transport.response.GetAllLocksResponse;
+import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.tasks.Task;
 import org.opensearch.threadpool.ThreadPool;
@@ -57,7 +58,60 @@ public class TransportGetAllLocksAction extends HandledTransportAction<GetAllLoc
 
     @Override
     protected void doExecute(Task task, GetAllLocksRequest request, ActionListener<GetAllLocksResponse> listener) {
-        getAllLocks(ActionListener.wrap(locks -> listener.onResponse(new GetAllLocksResponse(locks)), listener::onFailure));
+        if (request.getLockId() != null) {
+            getLockById(
+                request.getLockId(),
+                ActionListener.wrap(locks -> listener.onResponse(new GetAllLocksResponse(locks)), listener::onFailure)
+            );
+        } else {
+            getAllLocks(ActionListener.wrap(locks -> listener.onResponse(new GetAllLocksResponse(locks)), listener::onFailure));
+        }
+    }
+
+    private void getLockById(String lockId, ActionListener<Map<String, LockModel>> listener) {
+        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
+            String[] parts = lockId.split("-", 2);
+            if (parts.length != 2) {
+                listener.onResponse(new HashMap<>());
+                return;
+            }
+            String jobIndexName = parts[0];
+            String jobId = parts[1];
+
+            SearchRequest searchRequest = new SearchRequest(LockService.LOCK_INDEX_NAME);
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(
+                QueryBuilders.boolQuery()
+                    .must(QueryBuilders.termQuery("job_index_name", jobIndexName))
+                    .must(QueryBuilders.termQuery("job_id", jobId))
+            );
+            searchRequest.source(searchSourceBuilder);
+
+            client.search(searchRequest, new ActionListener<SearchResponse>() {
+                @Override
+                public void onResponse(SearchResponse searchResponse) {
+                    Map<String, LockModel> result = new HashMap<>();
+                    searchResponse.getHits().forEach(hit -> {
+                        try {
+                            XContentParser parser = XContentType.JSON.xContent()
+                                .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, hit.getSourceAsString());
+                            parser.nextToken();
+                            LockModel lock = LockModel.parse(parser, hit.getSeqNo(), hit.getPrimaryTerm());
+                            result.put(lock.getLockId(), lock);
+                        } catch (IOException e) {
+                            log.error("Error parsing lock from search hit", e);
+                        }
+                    });
+                    listener.onResponse(result);
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    log.debug("Error in finding lock by ID {}", lockId, e);
+                    listener.onResponse(new HashMap<>());
+                }
+            });
+        }
     }
 
     private void getAllLocks(ActionListener<Map<String, LockModel>> listener) {

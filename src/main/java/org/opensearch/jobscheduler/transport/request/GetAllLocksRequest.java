@@ -17,17 +17,30 @@ import java.io.IOException;
 
 public class GetAllLocksRequest extends ActionRequest {
 
+    private String lockId;
+
     public GetAllLocksRequest() {
         super();
     }
 
+    public GetAllLocksRequest(String lockId) {
+        super();
+        this.lockId = lockId;
+    }
+
     public GetAllLocksRequest(StreamInput in) throws IOException {
         super(in);
+        this.lockId = in.readOptionalString();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
+        out.writeOptionalString(lockId);
+    }
+
+    public String getLockId() {
+        return lockId;
     }
 
     @Override
