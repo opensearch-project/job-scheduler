@@ -52,9 +52,11 @@ public class RestGetAllLocksActionTests extends OpenSearchTestCase {
 
     public void testRoutes() {
         List<RestHandler.Route> routes = action.routes();
-        assertEquals(1, routes.size());
+        assertEquals(2, routes.size());
         assertEquals(getAllLocksPath, routes.get(0).getPath());
         assertEquals(RestRequest.Method.GET, routes.get(0).getMethod());
+        assertEquals(getAllLocksPath + "/{lock_id}", routes.get(1).getPath());
+        assertEquals(RestRequest.Method.GET, routes.get(1).getMethod());
     }
 
     public void testPrepareRequest() throws IOException {

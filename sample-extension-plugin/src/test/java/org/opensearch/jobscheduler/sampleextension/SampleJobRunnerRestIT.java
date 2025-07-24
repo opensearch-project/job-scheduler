@@ -254,6 +254,37 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
     }
 
+    public void testActiveLockTransportPathParameter() throws Exception {
+        String LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks";
+
+        String index = createTestIndex();
+        SampleJobParameter jobParameter = new SampleJobParameter();
+        jobParameter.setJobName("sample-job-lock-test-it");
+        jobParameter.setIndexToWatch(index);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(10L);
+
+        String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
+        createWatcherJob(jobId, jobParameter);
+
+        // Run job and check for release = false
+        waitUntilLockIsAcquiredAndReleasedTransportCall(jobId, 20, LOCK_INFO_URI, navigationFunctionEntireCuster);
+
+        // Call the scheduled info API
+        // Checks lock is released
+        LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks/" + ".scheduler_sample_extension" + "-" + jobId;
+
+        Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+
+        // Asserts that "released" is true
+        assertTrue(navigationFunctionEntireCuster.apply(responseJson));
+    }
+
     protected void waitUntilLockIsAcquiredAndReleasedTransportCall(
         String jobId,
         int maxTimeInSec,
