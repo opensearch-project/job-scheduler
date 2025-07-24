@@ -1,0 +1,98 @@
+/*
+ * Copyright OpenSearch Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ */
+package org.opensearch.jobscheduler.transport.response;
+
+import org.opensearch.core.action.ActionResponse;
+import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.core.xcontent.ToXContent;
+import org.opensearch.core.xcontent.ToXContentObject;
+import org.opensearch.core.xcontent.XContentBuilder;
+import org.opensearch.jobscheduler.spi.LockModel;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+public class GetAllLocksResponse extends ActionResponse implements ToXContentObject {
+
+    private Map<String, LockModel> locks;
+
+    public GetAllLocksResponse() {
+        this.locks = new HashMap<>();
+    }
+
+    public GetAllLocksResponse(Map<String, LockModel> locks) {
+        this.locks = locks;
+    }
+
+    public GetAllLocksResponse(StreamInput in) throws IOException {
+        super(in);
+        int size = in.readInt();
+        this.locks = new HashMap<>(size);
+        for (int i = 0; i < size; i++) {
+            String key = in.readString();
+            // Read LockModel fields
+            String jobIndexName = in.readString();
+            String jobId = in.readString();
+            long lockTimeSeconds = in.readLong();
+            long lockDurationSeconds = in.readLong();
+            boolean released = in.readBoolean();
+            long seqNo = in.readLong();
+            long primaryTerm = in.readLong();
+
+            // Create LockModel
+            LockModel value = new LockModel(
+                jobIndexName,
+                jobId,
+                Instant.ofEpochSecond(lockTimeSeconds),
+                lockDurationSeconds,
+                released,
+                seqNo,
+                primaryTerm
+            );
+            this.locks.put(key, value);
+        }
+    }
+
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeInt(locks.size());
+        for (Map.Entry<String, LockModel> entry : locks.entrySet()) {
+            LockModel lock = entry.getValue();
+            out.writeString(entry.getKey());
+            // Write LockModel fields
+            out.writeString(lock.getJobIndexName());
+            out.writeString(lock.getJobId());
+            out.writeLong(lock.getLockTime().getEpochSecond());
+            out.writeLong(lock.getLockDurationSeconds());
+            out.writeBoolean(lock.isReleased());
+            out.writeLong(lock.getSeqNo());
+            out.writeLong(lock.getPrimaryTerm());
+        }
+    }
+
+    public Map<String, LockModel> getLocks() {
+        return locks;
+    }
+
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, ToXContent.Params params) throws IOException {
+        builder.startObject();
+        builder.field("total_locks", locks.size());
+        builder.startArray("locks");
+        for (LockModel lock : locks.values()) {
+            lock.toXContent(builder, params);
+        }
+        builder.endArray();
+        builder.endObject();
+        return builder;
+    }
+}
