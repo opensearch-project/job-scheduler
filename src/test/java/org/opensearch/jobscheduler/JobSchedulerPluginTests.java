@@ -28,7 +28,7 @@ import org.opensearch.index.IndexModule;
 import org.opensearch.index.IndexSettings;
 import org.opensearch.index.analysis.AnalysisRegistry;
 import org.opensearch.index.engine.EngineConfigFactory;
-import org.opensearch.jobscheduler.rest.action.RestGetAllLocksAction;
+import org.opensearch.jobscheduler.rest.action.RestGetLocksAction;
 import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestGetScheduledInfoAction;
@@ -174,7 +174,7 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
                 instanceOf(RestGetLockAction.class),
                 instanceOf(RestReleaseLockAction.class),
                 instanceOf(RestGetScheduledInfoAction.class),
-                instanceOf(RestGetAllLocksAction.class)
+                instanceOf(RestGetLocksAction.class)
             )
         );
     }

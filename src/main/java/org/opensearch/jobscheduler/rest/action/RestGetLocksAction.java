@@ -11,7 +11,7 @@ package org.opensearch.jobscheduler.rest.action;
 import org.opensearch.transport.client.node.NodeClient;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.transport.action.GetAllLocksAction;
-import org.opensearch.jobscheduler.transport.request.GetAllLocksRequest;
+import org.opensearch.jobscheduler.transport.request.GetLocksRequest;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.rest.action.RestToXContentListener;
@@ -23,7 +23,7 @@ import static org.opensearch.rest.RestRequest.Method.GET;
 /**
  * REST handler for getting all locks
  */
-public class RestGetAllLocksAction extends BaseRestHandler {
+public class RestGetLocksAction extends BaseRestHandler {
 
     @Override
     public String getName() {
@@ -41,7 +41,7 @@ public class RestGetAllLocksAction extends BaseRestHandler {
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) {
         String lockId = request.param("lock_id");
-        GetAllLocksRequest getAllLocksRequest = new GetAllLocksRequest(lockId);
+        GetLocksRequest getAllLocksRequest = new GetLocksRequest(lockId);
         return channel -> client.execute(GetAllLocksAction.INSTANCE, getAllLocksRequest, new RestToXContentListener<>(channel));
     }
 }

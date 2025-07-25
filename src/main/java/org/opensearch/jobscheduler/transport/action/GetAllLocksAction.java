@@ -9,13 +9,13 @@
 package org.opensearch.jobscheduler.transport.action;
 
 import org.opensearch.action.ActionType;
-import org.opensearch.jobscheduler.transport.response.GetAllLocksResponse;
+import org.opensearch.jobscheduler.transport.response.GetLocksResponse;
 
-public class GetAllLocksAction extends ActionType<GetAllLocksResponse> {
+public class GetAllLocksAction extends ActionType<GetLocksResponse> {
     public static final String NAME = "cluster:admin/opensearch/jobscheduler/locks";
     public static final GetAllLocksAction INSTANCE = new GetAllLocksAction();
 
     private GetAllLocksAction() {
-        super(NAME, GetAllLocksResponse::new);
+        super(NAME, GetLocksResponse::new);
     }
 }

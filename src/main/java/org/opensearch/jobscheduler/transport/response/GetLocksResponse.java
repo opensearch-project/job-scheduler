@@ -23,20 +23,20 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GetAllLocksResponse extends ActionResponse implements ToXContentObject {
+public class GetLocksResponse extends ActionResponse implements ToXContentObject {
 
     private Map<String, LockModel> locks;
     private static final DateFormatter STRICT_DATE_TIME_FORMATTER = DateFormatter.forPattern("strict_date_time");
 
-    public GetAllLocksResponse() {
+    public GetLocksResponse() {
         this.locks = new HashMap<>();
     }
 
-    public GetAllLocksResponse(Map<String, LockModel> locks) {
+    public GetLocksResponse(Map<String, LockModel> locks) {
         this.locks = locks;
     }
 
-    public GetAllLocksResponse(StreamInput in) throws IOException {
+    public GetLocksResponse(StreamInput in) throws IOException {
         super(in);
         int size = in.readInt();
         this.locks = new HashMap<>(size);
@@ -90,11 +90,10 @@ public class GetAllLocksResponse extends ActionResponse implements ToXContentObj
     public XContentBuilder toXContent(XContentBuilder builder, ToXContent.Params params) throws IOException {
         builder.startObject();
         builder.field("total_locks", locks.size());
-        builder.startArray("locks");
+        builder.startObject("locks");
         for (Map.Entry<String, LockModel> entry : locks.entrySet()) {
             LockModel lock = entry.getValue();
-            builder.startObject()
-                .field("lock_id", entry.getKey())
+            builder.startObject(entry.getKey())
                 .field("job_index_name", lock.getJobIndexName())
                 .field("job_id", lock.getJobId())
                 .field("lock_aquired_time", STRICT_DATE_TIME_FORMATTER.format(lock.getLockTime().atOffset(ZoneOffset.UTC)))
@@ -102,7 +101,7 @@ public class GetAllLocksResponse extends ActionResponse implements ToXContentObj
                 .field("released", lock.isReleased())
                 .endObject();
         }
-        builder.endArray();
+        builder.endObject();
         builder.endObject();
         return builder;
     }

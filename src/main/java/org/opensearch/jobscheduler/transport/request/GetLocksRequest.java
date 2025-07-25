@@ -15,20 +15,20 @@ import org.opensearch.core.common.io.stream.StreamOutput;
 
 import java.io.IOException;
 
-public class GetAllLocksRequest extends ActionRequest {
+public class GetLocksRequest extends ActionRequest {
 
     private String lockId;
 
-    public GetAllLocksRequest() {
+    public GetLocksRequest() {
         super();
     }
 
-    public GetAllLocksRequest(String lockId) {
+    public GetLocksRequest(String lockId) {
         super();
         this.lockId = lockId;
     }
 
-    public GetAllLocksRequest(StreamInput in) throws IOException {
+    public GetLocksRequest(StreamInput in) throws IOException {
         super(in);
         this.lockId = in.readOptionalString();
     }

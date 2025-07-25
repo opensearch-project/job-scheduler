@@ -18,8 +18,8 @@ import org.mockito.Mockito;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.transport.action.GetAllLocksAction;
-import org.opensearch.jobscheduler.transport.request.GetAllLocksRequest;
-import org.opensearch.jobscheduler.transport.response.GetAllLocksResponse;
+import org.opensearch.jobscheduler.transport.request.GetLocksRequest;
+import org.opensearch.jobscheduler.transport.response.GetLocksResponse;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.test.OpenSearchTestCase;
@@ -35,13 +35,13 @@ import static org.mockito.Mockito.doAnswer;
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class RestGetAllLocksActionTests extends OpenSearchTestCase {
 
-    private RestGetAllLocksAction action;
+    private RestGetLocksAction action;
     private String getAllLocksPath;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        this.action = new RestGetAllLocksAction();
+        this.action = new RestGetLocksAction();
         this.getAllLocksPath = JobSchedulerPlugin.JS_BASE_URI + "/api/locks";
     }
 
@@ -69,11 +69,11 @@ public class RestGetAllLocksActionTests extends OpenSearchTestCase {
         NodeClient mockClient = Mockito.mock(NodeClient.class);
 
         doAnswer(invocation -> {
-            ActionListener<GetAllLocksResponse> listener = invocation.getArgument(2);
-            GetAllLocksResponse response = new GetAllLocksResponse(emptyMap());
+            ActionListener<GetLocksResponse> listener = invocation.getArgument(2);
+            GetLocksResponse response = new GetLocksResponse(emptyMap());
             listener.onResponse(response);
             return null;
-        }).when(mockClient).execute(eq(GetAllLocksAction.INSTANCE), any(GetAllLocksRequest.class), any(ActionListener.class));
+        }).when(mockClient).execute(eq(GetAllLocksAction.INSTANCE), any(GetLocksRequest.class), any(ActionListener.class));
 
         action.prepareRequest(request, mockClient);
 

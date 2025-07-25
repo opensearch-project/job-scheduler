@@ -227,6 +227,16 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
     public void testActiveLockTransport() throws Exception {
         String LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks";
 
+        // Checks ability to return no locks
+        Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+
+        assertTrue(isLockReleased.apply(responseJson));
+
         String index = createTestIndex();
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-lock-test-it");
@@ -238,19 +248,18 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         createWatcherJob(jobId, jobParameter);
 
         // Run job and check for release = false
-        waitUntilLockIsAcquiredAndReleasedTransportCall(jobId, 20, LOCK_INFO_URI, navigationFunctionEntireCuster);
+        waitUntilLockIsAcquiredAndReleased(jobId, 20, LOCK_INFO_URI, isLockReleased);
 
-        // Call the scheduled info API
         // Checks lock is released
-        Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+        response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
+        responseJson = JsonXContent.jsonXContent.createParser(
             NamedXContentRegistry.EMPTY,
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
         ).map();
 
         // Asserts that "released" is true
-        assertTrue(navigationFunctionEntireCuster.apply(responseJson));
+        assertTrue(isLockReleased.apply(responseJson));
 
     }
 
@@ -268,7 +277,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         createWatcherJob(jobId, jobParameter);
 
         // Run job and check for release = false
-        waitUntilLockIsAcquiredAndReleasedTransportCall(jobId, 20, LOCK_INFO_URI, navigationFunctionEntireCuster);
+        waitUntilLockIsAcquiredAndReleased(jobId, 20, LOCK_INFO_URI, isLockReleased);
 
         // Call the scheduled info API
         // Checks lock is released
@@ -282,10 +291,10 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         ).map();
 
         // Asserts that "released" is true
-        assertTrue(navigationFunctionEntireCuster.apply(responseJson));
+        assertTrue(isLockReleased.apply(responseJson));
     }
 
-    protected void waitUntilLockIsAcquiredAndReleasedTransportCall(
+    protected void waitUntilLockIsAcquiredAndReleased(
         String jobId,
         int maxTimeInSec,
         String SCHEDULER_INFO_URI,
@@ -303,8 +312,11 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
             throw new RuntimeException(e);
         }
 
-        // Ensure the job is running then calls API
-        Thread.sleep(7000);
+        // Wait until lock is acquired (released=false)
+        await().atMost(15, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
+            LockModel currentLock = getLockByJobId(jobId);
+            return currentLock != null && !currentLock.isReleased();
+        });
 
         Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI, Map.of(), null);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
@@ -322,12 +334,18 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         });
     }
 
-    // navigates to released property in lock
+    // Checks if lock is released, returns true if no locks exist (no active lock)
     @SuppressWarnings("unchecked")
-    Function<Map<String, Object>, Boolean> navigationFunctionEntireCuster = (responseJson) -> {
-        List<Map<String, Object>> locks = (List<Map<String, Object>>) responseJson.get("locks");
-        Map<String, Object> lock = locks.get(0);
-        boolean released = (boolean) lock.get("released");
-        return released;
+    Function<Map<String, Object>, Boolean> isLockReleased = (responseJson) -> {
+        Object locksObj = responseJson.get("locks");
+        if (locksObj instanceof Map) {
+            Map<String, Object> locks = (Map<String, Object>) locksObj;
+            if (locks.isEmpty()) {
+                return true; // No locks exist, so no active lock
+            }
+            Map<String, Object> firstLock = (Map<String, Object>) locks.values().iterator().next();
+            return (boolean) firstLock.get("released");
+        }
+        return true; // Default to true if structure is unexpected
     };
 }

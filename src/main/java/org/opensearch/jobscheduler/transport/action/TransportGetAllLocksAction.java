@@ -26,8 +26,8 @@ import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.utils.LockService;
-import org.opensearch.jobscheduler.transport.request.GetAllLocksRequest;
-import org.opensearch.jobscheduler.transport.response.GetAllLocksResponse;
+import org.opensearch.jobscheduler.transport.request.GetLocksRequest;
+import org.opensearch.jobscheduler.transport.response.GetLocksResponse;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.tasks.Task;
@@ -39,7 +39,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TransportGetAllLocksAction extends HandledTransportAction<GetAllLocksRequest, GetAllLocksResponse> {
+public class TransportGetAllLocksAction extends HandledTransportAction<GetLocksRequest, GetLocksResponse> {
     private static final Logger log = LogManager.getLogger(TransportGetAllLocksAction.class);
     private final Client client;
     private final ThreadPool threadPool;
@@ -51,20 +51,20 @@ public class TransportGetAllLocksAction extends HandledTransportAction<GetAllLoc
         Client client,
         ThreadPool threadPool
     ) {
-        super(GetAllLocksAction.NAME, transportService, actionFilters, GetAllLocksRequest::new);
+        super(GetAllLocksAction.NAME, transportService, actionFilters, GetLocksRequest::new);
         this.client = client;
         this.threadPool = threadPool;
     }
 
     @Override
-    protected void doExecute(Task task, GetAllLocksRequest request, ActionListener<GetAllLocksResponse> listener) {
+    protected void doExecute(Task task, GetLocksRequest request, ActionListener<GetLocksResponse> listener) {
         if (request.getLockId() != null) {
             getLockById(
                 request.getLockId(),
-                ActionListener.wrap(locks -> listener.onResponse(new GetAllLocksResponse(locks)), listener::onFailure)
+                ActionListener.wrap(locks -> listener.onResponse(new GetLocksResponse(locks)), listener::onFailure)
             );
         } else {
-            getAllLocks(ActionListener.wrap(locks -> listener.onResponse(new GetAllLocksResponse(locks)), listener::onFailure));
+            getAllLocks(ActionListener.wrap(locks -> listener.onResponse(new GetLocksResponse(locks)), listener::onFailure));
         }
     }
 
@@ -72,7 +72,7 @@ public class TransportGetAllLocksAction extends HandledTransportAction<GetAllLoc
         try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
             String[] parts = lockId.split("-", 2);
             if (parts.length != 2) {
-                listener.onResponse(new HashMap<>());
+                listener.onFailure(new IllegalArgumentException("Lock ID must be in format 'index-jobid'"));
                 return;
             }
             String jobIndexName = parts[0];
