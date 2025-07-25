@@ -26,6 +26,9 @@ import java.util.concurrent.TimeUnit;
 import static org.awaitility.Awaitility.await;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
@@ -220,4 +223,129 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         waitUntilLockIsAcquiredAndReleased(jobId);
         Assert.assertEquals(2, countRecordsInTestIndex(index));
     }
+
+    public void testActiveLockTransport() throws Exception {
+        String LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks";
+
+        // Checks ability to return no locks
+        Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+
+        assertTrue(isLockReleased.apply(responseJson));
+
+        String index = createTestIndex();
+        SampleJobParameter jobParameter = new SampleJobParameter();
+        jobParameter.setJobName("sample-job-lock-test-it");
+        jobParameter.setIndexToWatch(index);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(10L);
+
+        String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
+        createWatcherJob(jobId, jobParameter);
+
+        // Run job and check for release = false
+        waitUntilLockIsAcquiredAndReleased(jobId, 20, LOCK_INFO_URI, isLockReleased);
+
+        // Checks lock is released
+        response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
+        responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+
+        // Asserts that "released" is true
+        assertTrue(isLockReleased.apply(responseJson));
+
+    }
+
+    public void testActiveLockTransportPathParameter() throws Exception {
+        String LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks";
+
+        String index = createTestIndex();
+        SampleJobParameter jobParameter = new SampleJobParameter();
+        jobParameter.setJobName("sample-job-lock-test-it");
+        jobParameter.setIndexToWatch(index);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(10L);
+
+        String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
+        createWatcherJob(jobId, jobParameter);
+
+        // Run job and check for release = false
+        waitUntilLockIsAcquiredAndReleased(jobId, 20, LOCK_INFO_URI, isLockReleased);
+
+        // Call the scheduled info API
+        // Checks lock is released
+        LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks/" + ".scheduler_sample_extension" + "-" + jobId;
+
+        Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+
+        // Asserts that "released" is true
+        assertTrue(isLockReleased.apply(responseJson));
+    }
+
+    protected void waitUntilLockIsAcquiredAndReleased(
+        String jobId,
+        int maxTimeInSec,
+        String LOCK_INFO_URI,
+        Function<Map<String, Object>, Boolean> navigationFunction
+    ) throws IOException, InterruptedException {
+        AtomicLong prevLockAcquiredTime = new AtomicLong(0L);
+        AtomicReference<LockModel> lock = new AtomicReference<>();
+
+        try {
+            lock.set(getLockByJobId(jobId));
+            if (lock.get() != null && prevLockAcquiredTime.get() == 0L && lock.get().isReleased()) {
+                prevLockAcquiredTime.set(lock.get().getLockTime().toEpochMilli());
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Wait until lock is acquired (released=false)
+        await().atMost(15, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
+            LockModel currentLock = getLockByJobId(jobId);
+            return currentLock != null && !currentLock.isReleased();
+        });
+
+        Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+
+        // Asserts that "released" is false
+        assertFalse(navigationFunction.apply(responseJson));
+
+        await().atMost(maxTimeInSec, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
+            lock.set(getLockByJobId(jobId));
+            return lock.get() != null && lock.get().getLockTime().toEpochMilli() != prevLockAcquiredTime.get() && lock.get().isReleased();
+        });
+    }
+
+    // Checks if lock is released, returns true if no locks exist (no active lock)
+    @SuppressWarnings("unchecked")
+    Function<Map<String, Object>, Boolean> isLockReleased = (responseJson) -> {
+        Object locksObj = responseJson.get("locks");
+        if (locksObj instanceof Map) {
+            Map<String, Object> locks = (Map<String, Object>) locksObj;
+            if (locks.isEmpty()) {
+                return true; // No locks exist, so no active lock
+            }
+            Map<String, Object> firstLock = (Map<String, Object>) locks.values().iterator().next();
+            return (boolean) firstLock.get("released");
+        }
+        return true; // Default to true if structure is unexpected
+    };
 }
