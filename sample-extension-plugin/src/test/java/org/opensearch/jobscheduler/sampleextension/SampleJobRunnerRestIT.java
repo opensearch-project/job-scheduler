@@ -297,7 +297,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
     protected void waitUntilLockIsAcquiredAndReleased(
         String jobId,
         int maxTimeInSec,
-        String SCHEDULER_INFO_URI,
+        String LOCK_INFO_URI,
         Function<Map<String, Object>, Boolean> navigationFunction
     ) throws IOException, InterruptedException {
         AtomicLong prevLockAcquiredTime = new AtomicLong(0L);
@@ -318,7 +318,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
             return currentLock != null && !currentLock.isReleased();
         });
 
-        Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI, Map.of(), null);
+        Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
             NamedXContentRegistry.EMPTY,
             LoggingDeprecationHandler.INSTANCE,
