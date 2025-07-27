@@ -132,7 +132,6 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 jobDetails.put("index_name", indexName);
 
                                 // Add job parameter details
-
                                 jobDetails.put("name", jobInfo.getJobParameter().getName());
                                 jobDetails.put("descheduled", jobInfo.isDescheduled());
                                 jobDetails.put("enabled", jobInfo.getJobParameter().isEnabled());
@@ -146,8 +145,8 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                         jobInfo.getJobParameter().getLastUpdateTime().atOffset(ZoneOffset.UTC)
                                     )
                                 );
-                                // Add execution information
 
+                                // Add execution information
                                 if (jobInfo.getActualPreviousExecutionTime() != null) {
                                     jobDetails.put(
                                         "last_execution_time",
@@ -181,7 +180,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                 if (jobInfo.getJobParameter().getSchedule() == null) {
                                     log.debug("Schedule for job {} does not exist.", jobId);
                                 } else {
-                                    Map<String, Object> scheduleMap = new HashMap<>();
+                                    Map<String, Object> scheduleMap = new LinkedHashMap<>();
 
                                     // Set schedule type
                                     if (jobInfo.getJobParameter().getSchedule() instanceof IntervalSchedule intervalSchedule) {
@@ -192,30 +191,29 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                         );
                                         scheduleMap.put("interval", intervalSchedule.getInterval());
                                         scheduleMap.put("unit", intervalSchedule.getUnit().toString());
+                                        scheduleMap.put(
+                                            "delay",
+                                            jobInfo.getJobParameter().getSchedule().getDelay() != null
+                                                ? jobInfo.getJobParameter().getSchedule().getDelay()
+                                                : "none"
+                                        );
                                     } else if (jobInfo.getJobParameter().getSchedule() instanceof CronSchedule cronSchedule) {
                                         scheduleMap.put("type", CronSchedule.CRON_FIELD);
                                         scheduleMap.put("expression", cronSchedule.getCronExpression());
                                         scheduleMap.put("timezone", cronSchedule.getTimeZone().getId());
+                                        scheduleMap.put(
+                                            "delay",
+                                            jobInfo.getJobParameter().getSchedule().getDelay() != null
+                                                ? jobInfo.getJobParameter().getSchedule().getDelay()
+                                                : "none"
+                                        );
                                     } else {
                                         scheduleMap.put("type", "unknown");
                                     }
 
                                     jobDetails.put("schedule", scheduleMap);
-
-                                    // Add delay information
-                                    jobDetails.put(
-                                        "delay",
-                                        jobInfo.getJobParameter().getSchedule().getDelay() != null
-                                            ? jobInfo.getJobParameter().getSchedule().getDelay()
-                                            : "none"
-                                    );
                                 }
 
-                                // Add jitter and lock duration
-                                jobDetails.put(
-                                    "jitter",
-                                    jobInfo.getJobParameter().getJitter() != null ? jobInfo.getJobParameter().getJitter() : "none"
-                                );
                                 jobDetails.put(
                                     "lock_duration",
                                     jobInfo.getJobParameter().getLockDurationSeconds() != null
@@ -223,6 +221,11 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
                                         : "no_lock"
                                 );
 
+                                // Add jitter and lock duration
+                                jobDetails.put(
+                                    "jitter",
+                                    jobInfo.getJobParameter().getJitter() != null ? jobInfo.getJobParameter().getJitter() : "none"
+                                );
                                 jobs.add(jobDetails);
                             }
                         }
