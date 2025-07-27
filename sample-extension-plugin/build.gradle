@@ -293,6 +293,8 @@ if (!(Os.isFamily(Os.FAMILY_MAC))) {
     tasks.named("check").configure {dependsOn(bwcTestSuite)}
 }
 
+bwcTestSuite.finalizedBy(jacocoTestReport)
+
 run {
     doFirst {
         // There seems to be an issue when running multi node run or integ tasks with unicast_hosts
