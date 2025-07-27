@@ -110,10 +110,6 @@ allprojects {
     }
 }
 
-// Ensure build task runs tests and generates jacoco reports for all projects
-build.dependsOn subprojects.collect { it.tasks.matching { task -> task.name == 'test' } }
-build.dependsOn subprojects.collect { it.tasks.matching { task -> task.name == 'jacocoTestReport' } }
-
 allprojects {
     // Default to the apache license
     project.ext.licenseName = 'The Apache Software License, Version 2.0'

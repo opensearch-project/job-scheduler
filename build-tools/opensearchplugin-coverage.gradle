@@ -35,6 +35,7 @@ integTest {
 jacocoTestReport {
     dependsOn integTest, test
     executionData.from = [integTest.jacoco.destinationFile, test.jacoco.destinationFile]
+    executionData fileTree(dir: "${buildDir}/jacoco", include: "**/*.exec")
     reports {
         html.getRequired().set(true) // human readable
         csv.getRequired().set(true)
