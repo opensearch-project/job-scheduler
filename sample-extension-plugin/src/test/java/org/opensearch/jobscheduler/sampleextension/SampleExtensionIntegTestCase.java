@@ -100,7 +100,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
                 false
             );
 
-            Path path = Path.of(Path.of(jacocoBuildPath, "integTest.exec").toFile().getCanonicalPath());
+            Path path = PathUtils.get(jacocoBuildPath, "integTest.exec");
             AccessController.doPrivilegedChecked(() -> { Files.write(path, proxy.getExecutionData(false)); });
         } catch (Exception ex) {
             // log.error("Failed to dump coverage: ", ex);
