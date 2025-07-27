@@ -23,6 +23,7 @@ import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.reactor.ssl.TlsDetails;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.util.Timeout;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.opensearch.client.Request;
 import org.opensearch.client.RequestOptions;
@@ -41,13 +42,21 @@ import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.core.rest.RestStatus;
+import org.opensearch.secure_sm.AccessController;
 import org.opensearch.test.rest.OpenSearchRestTestCase;
 
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -67,6 +76,53 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
+
+    @AfterClass
+    public static void dumpCoverage() throws IOException, MalformedObjectNameException {
+        // jacoco.dir is set in esplugin-coverage.gradle, if it doesn't exist we don't
+        // want to collect coverage so we can return early
+        String jacocoBuildPath = System.getProperty("jacoco.dir");
+        if (org.opensearch.core.common.Strings.isNullOrEmpty(jacocoBuildPath)) {
+            return;
+        }
+
+        String serverUrl = System.getProperty("jmx.serviceUrl");
+        if (serverUrl == null) {
+            // log.error("Failed to dump coverage because JMX Service URL is null");
+            throw new IllegalArgumentException("JMX Service URL is null");
+        }
+
+        try (JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(serverUrl))) {
+            IProxy proxy = MBeanServerInvocationHandler.newProxyInstance(
+                connector.getMBeanServerConnection(),
+                new ObjectName("org.jacoco:type=Runtime"),
+                IProxy.class,
+                false
+            );
+
+            Path path = Path.of(Path.of(jacocoBuildPath, "integTest.exec").toFile().getCanonicalPath());
+            AccessController.doPrivilegedChecked(() -> { Files.write(path, proxy.getExecutionData(false)); });
+        } catch (Exception ex) {
+            // log.error("Failed to dump coverage: ", ex);
+            throw new RuntimeException("Failed to dump coverage: " + ex);
+        }
+    }
+
+    /**
+     * We need to be able to dump the jacoco coverage before cluster is shut down.
+     * The new internal testing framework removed some of the gradle tasks we were listening to
+     * to choose a good time to do it. This will dump the executionData to file after each test.
+     * TODO: This is also currently just overwriting integTest.exec with the updated execData without
+     * resetting after writing each time. This can be improved to either write an exec file per test
+     * or by letting jacoco append to the file
+     */
+    public interface IProxy {
+        byte[] getExecutionData(boolean reset);
+
+        void dump(boolean reset);
+
+        void reset();
+    }
 
     protected boolean isHttps() {
         boolean isHttps = Optional.ofNullable(System.getProperty("https")).map("true"::equalsIgnoreCase).orElse(false);

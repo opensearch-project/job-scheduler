@@ -8,7 +8,7 @@ apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-agent'
 apply plugin: 'opensearch.rest-test'
 apply plugin: 'jacoco'
-apply plugin: 'jacoco'
+apply from: '../build-tools/opensearchplugin-coverage.gradle'
 
 import org.opensearch.gradle.test.RestIntegTestTask
 import org.opensearch.gradle.testclusters.StandaloneRestIntegTestTask
@@ -61,20 +61,7 @@ jacoco {
 
 jacocoTestReport {
     dependsOn test, integTest
-    reports {
-        xml.required = true
-        html.required = true
-    }
-}
-
-check.dependsOn jacocoTestReport
-
-jacoco {
-    toolVersion = '0.8.12'
-}
-
-jacocoTestReport {
-    dependsOn test
+    executionData fileTree(dir: "${buildDir}/jacoco", include: "**/*.exec")
     reports {
         xml.required = true
         html.required = true
@@ -89,7 +76,7 @@ integTest {
             exclude "${it}"
         }
     }
-    systemProperty 'tests.security.manager', 'true'
+    systemProperty 'tests.security.manager', 'false'
     systemProperty 'java.io.tmpdir', es_tmp_dir.absolutePath
 
     systemProperty "https", System.getProperty("https")
@@ -319,4 +306,29 @@ run {
         }
     }
     useCluster testClusters.integTest
+}
+
+// report covering both sample & root plugin classes
+tasks.register('jacocoSamplePluginReport', JacocoReport) {
+    dependsOn integTest, test
+    executionData.from = [integTest.jacoco.destinationFile, test.jacoco.destinationFile]
+
+    def sampleClasses = sourceSets.main.output.classesDirs
+    def rootClasses   = project(':').sourceSets.main.output.classesDirs
+    def spiClasses = project(':opensearch-job-scheduler-spi').sourceSets.main.output.classesDirs
+    classDirectories  = files(sampleClasses, rootClasses, spiClasses)
+
+    def sampleSrc = sourceSets.main.allSource.srcDirs
+    def rootSrc   = project(':').sourceSets.main.allSource.srcDirs
+    def spiSrc = project(':opensearch-job-scheduler-spi').sourceSets.main.allSource.srcDirs
+    sourceDirectories = files(sampleSrc, rootSrc, spiSrc)
+
+    reports {
+        xml.required  = true
+    }
+}
+
+// Ensure integrationTest task depends on the root project's compile task
+tasks.named("integTest").configure {
+    finalizedBy jacocoSamplePluginReport
 }
