@@ -44,6 +44,9 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         Assert.assertEquals(jobParameter.getName(), schedJobParameter.getName());
         Assert.assertEquals(jobParameter.getIndexToWatch(), schedJobParameter.getIndexToWatch());
         Assert.assertEquals(jobParameter.getLockDurationSeconds(), schedJobParameter.getLockDurationSeconds());
+
+        // Cleanup
+        deleteWatcherJob(jobId);
     }
 
     public void testJobDeleteWithDescheduleJob() throws Exception {
@@ -114,6 +117,9 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         // Asserts that in the last 10s, no new job ran to insert a record into the watched index & all locks are deleted for the job.
         Assert.assertEquals(1, actualCount);
+
+        // Cleanup
+        deleteWatcherJob(jobId);
     }
 
     public void testJobUpdateWithRescheduleJob() throws Exception {
@@ -144,6 +150,9 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         // Asserts that the job runner no longer updates the old index as the job params have been updated.
         Assert.assertEquals(1, countRecordsInTestIndex(index));
+
+        // Cleanup
+        deleteWatcherJob(jobId);
     }
 
     public void testRunThenListJobs() throws Exception {
@@ -157,6 +166,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
         jobParameter.setLockDurationSeconds(5L);
 
+        String[] jobIds = new String[10];
         for (int i = 0; i < 10; i++) {
             // Creates a new watcher job.
             String indexN = createTestIndex();
@@ -167,6 +177,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
             jobParameterN.setLockDurationSeconds(120L);
 
             String jobIdN = OpenSearchRestTestCase.randomAlphaOfLength(10);
+            jobIds[i] = jobIdN;
             createWatcherJob(jobIdN, jobParameterN);
         }
 
@@ -189,6 +200,12 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         assertEquals(11, responseJson.get("total_jobs"));
         assertEquals(0, ((List<?>) responseJson.get("failures")).size());
         assertFalse("Should have at least one node", nodes.isEmpty());
+
+        // Cleanup all jobs
+        for (String id : jobIds) {
+            deleteWatcherJob(id);
+        }
+        deleteWatcherJob(jobId);
     }
 
     public void testAcquiredLockPreventExecOfTasks() throws Exception {
