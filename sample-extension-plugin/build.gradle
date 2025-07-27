@@ -8,7 +8,12 @@ apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-agent'
 apply plugin: 'opensearch.rest-test'
 apply plugin: 'jacoco'
-apply from: '../build-tools/opensearchplugin-coverage.gradle'
+
+
+def usingMultiNode = project.properties.containsKey('numNodes')
+if (!usingMultiNode) {
+    apply from: '../build-tools/opensearchplugin-coverage.gradle'
+}
 
 import org.opensearch.gradle.test.RestIntegTestTask
 import org.opensearch.gradle.testclusters.StandaloneRestIntegTestTask
