@@ -9,6 +9,7 @@
 package org.opensearch.jobscheduler.sampleextension;
 
 import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.index.IndexResponse;
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
@@ -119,15 +120,18 @@ public class SampleJobRunner implements ScheduledJobRunner {
                             .append("\n");
                     }
                     log.info(msg.toString());
-                    runTaskForIntegrationTests(parameter);
                     runTaskForLockIntegrationTests(parameter);
-
-                    lockService.release(
-                        lock,
-                        ActionListener.wrap(released -> { log.info("Released lock for job {}", jobParameter.getName()); }, exception -> {
-                            throw new IllegalStateException("Failed to release lock.");
-                        })
-                    );
+                    runTaskForIntegrationTests(parameter, ActionListener.wrap(idxResponse -> {
+                        lockService.release(
+                            lock,
+                            ActionListener.wrap(
+                                released -> { log.info("Released lock for job {}", jobParameter.getName()); },
+                                exception -> {
+                                    throw new IllegalStateException("Failed to release lock.");
+                                }
+                            )
+                        );
+                    }, exception -> { throw new IllegalStateException("Failed to index sample doc."); }));
                 }, exception -> { throw new IllegalStateException("Failed to acquire lock."); }));
             }
         };
@@ -135,11 +139,12 @@ public class SampleJobRunner implements ScheduledJobRunner {
         threadPool.generic().submit(runnable);
     }
 
-    private void runTaskForIntegrationTests(SampleJobParameter jobParameter) {
+    private void runTaskForIntegrationTests(SampleJobParameter jobParameter, ActionListener<IndexResponse> listener) {
         this.client.index(
             new IndexRequest(jobParameter.getIndexToWatch()).id(UUID.randomUUID().toString())
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-                .source("{\"message\": \"message\"}", XContentType.JSON)
+                .source("{\"message\": \"message\"}", XContentType.JSON),
+            listener
         );
     }
 
