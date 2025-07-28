@@ -229,6 +229,15 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                     exception -> log.debug("Failed to delete lock", exception)
                 )
             );
+        } else if (this.scheduler.getDeScheduledJobIds(shardId.getIndexName()).contains(delete.id())) {
+            this.scheduler.removeDeScheduledJob(shardId.getIndexName(), delete.id());
+            lockService.deleteLock(
+                LockModel.generateLockId(shardId.getIndexName(), delete.id()),
+                ActionListener.wrap(
+                    deleted -> log.debug("Deleted lock: {}", deleted),
+                    exception -> log.debug("Failed to delete lock", exception)
+                )
+            );
         }
     }
 
@@ -267,6 +276,8 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                     ScheduledJobRunner jobRunner = this.indexToProviders.get(shardId.getIndexName()).getJobRunner();
                     if (jobParameter.isEnabled()) {
                         this.scheduler.schedule(shardId.getIndexName(), docId, jobParameter, jobRunner, jobDocVersion, jitterLimit);
+                    } else {
+                        this.scheduler.addDisabledjob(shardId.getIndexName(), docId, jobParameter, jobRunner, jobDocVersion, jitterLimit);
                     }
                     return jobDocVersion;
                 } catch (Exception e) {
