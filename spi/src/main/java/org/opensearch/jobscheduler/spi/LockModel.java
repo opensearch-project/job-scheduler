@@ -11,6 +11,9 @@ package org.opensearch.jobscheduler.spi;
 import org.opensearch.ExceptionsHelper;
 import org.opensearch.OpenSearchException;
 import org.opensearch.core.common.bytes.BytesReference;
+import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.core.common.io.stream.Writeable;
 import org.opensearch.core.xcontent.ToXContentObject;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentParser;
@@ -24,8 +27,8 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public final class LockModel implements ToXContentObject {
-    private static final String LOCK_ID_DELIMITR = "-";
+public final class LockModel implements ToXContentObject, Writeable {
+    private static final String LOCK_ID_DELIMITER = "-";
     public static final String JOB_INDEX_NAME = "job_index_name";
     public static final String JOB_ID = "job_id";
     public static final String LOCK_TIME = "lock_time";
@@ -110,7 +113,7 @@ public final class LockModel implements ToXContentObject {
         long seqNo,
         long primaryTerm
     ) {
-        this.lockId = jobIndexName + LOCK_ID_DELIMITR + jobId;
+        this.lockId = jobIndexName + LOCK_ID_DELIMITER + jobId;
         this.jobIndexName = jobIndexName;
         // The jobId parameter does not necessarily need to represent the id of a job scheduler job, as it is being used
         // to scope the lock, and could represent any resource.
@@ -122,8 +125,20 @@ public final class LockModel implements ToXContentObject {
         this.primaryTerm = primaryTerm;
     }
 
+    public LockModel(StreamInput in) throws IOException {
+        this(
+            in.readString(),
+            in.readString(),
+            in.readInstant(),
+            in.readLong(),
+            in.readBoolean(),
+            SequenceNumbers.UNASSIGNED_SEQ_NO,
+            SequenceNumbers.UNASSIGNED_PRIMARY_TERM
+        );
+    }
+
     public static String generateLockId(String jobIndexName, String jobId) {
-        return jobIndexName + LOCK_ID_DELIMITR + jobId;
+        return jobIndexName + LOCK_ID_DELIMITER + jobId;
     }
 
     public static LockModel parse(final XContentParser parser, long seqNo, long primaryTerm) throws IOException {
@@ -256,5 +271,17 @@ public final class LockModel implements ToXContentObject {
     @Override
     public int hashCode() {
         return Objects.hash(lockId, jobIndexName, jobId, lockTime, lockDurationSeconds, released, seqNo, primaryTerm);
+    }
+
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        // Write LockModel fields
+        out.writeString(this.jobIndexName);
+        out.writeString(this.jobId);
+        out.writeInstant(this.lockTime);
+        out.writeLong(this.lockDurationSeconds);
+        out.writeBoolean(this.released);
+        out.writeLong(this.seqNo);
+        out.writeLong(this.primaryTerm);
     }
 }
