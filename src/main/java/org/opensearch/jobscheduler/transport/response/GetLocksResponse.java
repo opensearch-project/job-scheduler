@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.transport.response;
 
-import org.opensearch.common.time.DateFormatter;
 import org.opensearch.core.action.ActionResponse;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
@@ -18,14 +17,12 @@ import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.spi.LockModel;
 
 import java.io.IOException;
-import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
 public class GetLocksResponse extends ActionResponse implements ToXContentObject {
 
     private Map<String, LockModel> locks;
-    private static final DateFormatter STRICT_DATE_TIME_FORMATTER = DateFormatter.forPattern("strict_date_time");
 
     public GetLocksResponse() {
         this.locks = new HashMap<>();
@@ -56,14 +53,8 @@ public class GetLocksResponse extends ActionResponse implements ToXContentObject
         builder.field("total_locks", locks.size());
         builder.startObject("locks");
         for (Map.Entry<String, LockModel> entry : locks.entrySet()) {
-            LockModel lock = entry.getValue();
-            builder.startObject(entry.getKey())
-                .field("job_index_name", lock.getJobIndexName())
-                .field("job_id", lock.getJobId())
-                .field("lock_aquired_time", STRICT_DATE_TIME_FORMATTER.format(lock.getLockTime().atOffset(ZoneOffset.UTC)))
-                .field("lock_duration_seconds", lock.getLockDurationSeconds())
-                .field("released", lock.isReleased())
-                .endObject();
+            builder.field(entry.getKey());
+            entry.getValue().toXContent(builder, params);
         }
         builder.endObject();
         builder.endObject();
