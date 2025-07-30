@@ -32,6 +32,9 @@ import java.util.function.Function;
 
 public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
+    public static final String LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks";
+    public static final String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs?by_node";
+
     public void testJobCreateWithCorrectParams() throws IOException {
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-it");
@@ -160,8 +163,6 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
     public void testRunThenListJobs() throws Exception {
 
-        String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs?by_node";
-
         String index = createTestIndex();
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-it");
@@ -208,6 +209,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         for (String id : jobIds) {
             deleteWatcherJob(id);
         }
+        // Cleanup
         deleteWatcherJob(jobId);
     }
 
@@ -239,10 +241,12 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         waitUntilLockIsAcquiredAndReleased(jobId);
         Assert.assertEquals(2, countRecordsInTestIndex(index));
+
+        // Cleanup
+        deleteWatcherJob(jobId);
     }
 
-    public void testActiveLockTransport() throws Exception {
-        String LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks";
+    public void testSampleJobAcquiresALock() throws Exception {
 
         // Checks ability to return no locks
         Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
@@ -252,7 +256,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
             response.getEntity().getContent()
         ).map();
 
-        assertTrue(isLockReleased.apply(responseJson));
+        assertEquals(0, responseJson.get("total_locks"));
 
         String index = createTestIndex();
         SampleJobParameter jobParameter = new SampleJobParameter();
@@ -278,10 +282,20 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         // Asserts that "released" is true
         assertTrue(isLockReleased.apply(responseJson));
 
+        // Cleanup
+        deleteWatcherJob(jobId);
     }
 
-    public void testActiveLockTransportPathParameter() throws Exception {
-        String LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks";
+    public void testSampleJobAcquiresALockPathParameter() throws Exception {
+
+        Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+
+        assertEquals(0, responseJson.get("total_locks"));
 
         String index = createTestIndex();
         SampleJobParameter jobParameter = new SampleJobParameter();
@@ -298,10 +312,10 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         // Call the scheduled info API
         // Checks lock is released
-        LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks/" + ".scheduler_sample_extension" + "-" + jobId;
+        String lock_info_URI_PathParameter = LOCK_INFO_URI + "/.scheduler_sample_extension" + "-" + jobId;
 
-        Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+        response = makeRequest(client(), "GET", lock_info_URI_PathParameter, Map.of(), null);
+        responseJson = JsonXContent.jsonXContent.createParser(
             NamedXContentRegistry.EMPTY,
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
@@ -309,6 +323,9 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         // Asserts that "released" is true
         assertTrue(isLockReleased.apply(responseJson));
+
+        // Cleanup
+        deleteWatcherJob(jobId);
     }
 
     protected void waitUntilLockIsAcquiredAndReleased(
