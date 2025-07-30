@@ -193,11 +193,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         Assert.assertEquals(1, countRecordsInTestIndex(index));
 
         Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI, Map.of(), null);
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
+        Map<String, Object> responseJson = parseResponse(response);
 
         List<Map<String, Object>> nodes = (List<Map<String, Object>>) responseJson.get("nodes");
         assertNotNull("Nodes list should not be null", nodes);
@@ -250,11 +246,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         // Checks ability to return no locks
         Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
+        Map<String, Object> responseJson = parseResponse(response);
 
         assertEquals(0, responseJson.get("total_locks"));
 
@@ -273,11 +265,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         // Checks lock is released
         response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
-        responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
+        responseJson = parseResponse(response);
 
         // Asserts that "released" is true
         assertTrue(isLockReleased.apply(responseJson));
@@ -289,11 +277,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
     public void testSampleJobAcquiresALockPathParameter() throws Exception {
 
         Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
+        Map<String, Object> responseJson = parseResponse(response);
 
         assertEquals(0, responseJson.get("total_locks"));
 
@@ -315,11 +299,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         String lock_info_URI_PathParameter = LOCK_INFO_URI + "/.scheduler_sample_extension" + "-" + jobId;
 
         response = makeRequest(client(), "GET", lock_info_URI_PathParameter, Map.of(), null);
-        responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
+        responseJson = parseResponse(response);
 
         // Asserts that "released" is true
         assertTrue(isLockReleased.apply(responseJson));
@@ -353,11 +333,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         });
 
         Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
+        Map<String, Object> responseJson = parseResponse(response);
 
         // Asserts that "released" is false
         assertFalse(navigationFunction.apply(responseJson));
@@ -382,4 +358,12 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         }
         return true; // Default to true if structure is unexpected
     };
+
+    private Map<String, Object> parseResponse(Response response) throws IOException {
+        return JsonXContent.jsonXContent.createParser(
+                NamedXContentRegistry.EMPTY,
+                LoggingDeprecationHandler.INSTANCE,
+                response.getEntity().getContent()
+        ).map();
+    }
 }
