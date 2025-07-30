@@ -361,9 +361,9 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
     private Map<String, Object> parseResponse(Response response) throws IOException {
         return JsonXContent.jsonXContent.createParser(
-                NamedXContentRegistry.EMPTY,
-                LoggingDeprecationHandler.INSTANCE,
-                response.getEntity().getContent()
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
         ).map();
     }
 }
