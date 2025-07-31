@@ -12,6 +12,7 @@ import org.opensearch.common.lifecycle.LifecycleListener;
 import org.opensearch.jobscheduler.JobSchedulerSettings;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
+import org.opensearch.jobscheduler.scheduler.JobSchedulingInfo;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
@@ -256,7 +257,9 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                 return currentJobDocVersion;
             }
 
+            JobSchedulingInfo existingJobInfo = null;
             if (this.scheduler.getScheduledJobIds(shardId.getIndexName()).contains(docId)) {
+                existingJobInfo = this.scheduler.getScheduledJobInfo().getJobInfo(shardId.getIndexName(), docId);
                 this.scheduler.deschedule(shardId.getIndexName(), docId);
             }
             if (jobSource != null) {
@@ -277,7 +280,13 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                     if (jobParameter.isEnabled()) {
                         this.scheduler.schedule(shardId.getIndexName(), docId, jobParameter, jobRunner, jobDocVersion, jitterLimit);
                     } else {
-                        this.scheduler.addDisabledjob(shardId.getIndexName(), docId, jobParameter, jobRunner, jobDocVersion, jitterLimit);
+                        JobSchedulingInfo disabledJobInfo = new JobSchedulingInfo(shardId.getIndexName(), docId, jobParameter);
+                        if (existingJobInfo != null) {
+                            disabledJobInfo.setActualPreviousExecutionTime(existingJobInfo.getActualPreviousExecutionTime());
+                            disabledJobInfo.setExpectedPreviousExecutionTime(existingJobInfo.getExpectedPreviousExecutionTime());
+                        }
+                        disabledJobInfo.setDescheduled(true);
+                        this.scheduler.getScheduledJobInfo().addDisabledJob(shardId.getIndexName(), docId, disabledJobInfo);
                     }
                     return jobDocVersion;
                 } catch (Exception e) {

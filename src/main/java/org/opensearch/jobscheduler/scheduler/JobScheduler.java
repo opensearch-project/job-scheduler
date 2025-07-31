@@ -96,31 +96,6 @@ public class JobScheduler {
         return true;
     }
 
-    public boolean addDisabledjob(
-        String indexName,
-        String docId,
-        ScheduledJobParameter scheduledJobParameter,
-        ScheduledJobRunner jobRunner,
-        JobDocVersion version,
-        Double jitterLimit
-    ) {
-        if (scheduledJobParameter.isEnabled()) {
-            return false;
-        }
-        log.info("Adding disabled job id {} for index {} .", docId, indexName);
-        JobSchedulingInfo jobInfo;
-        synchronized (this.scheduledJobInfo.getDisabledJobsByIndex(indexName)) {
-            jobInfo = this.scheduledJobInfo.getDisabledJobInfo(indexName, docId);
-            if (jobInfo == null) {
-                jobInfo = new JobSchedulingInfo(indexName, docId, scheduledJobParameter);
-                jobInfo.setDescheduled(true);
-                this.scheduledJobInfo.addDisabledJob(indexName, docId, jobInfo);
-            }
-        }
-
-        return true;
-    }
-
     public List<String> bulkDeschedule(String indexName, Collection<String> ids) {
         if (ids == null) {
             return new ArrayList<>();
@@ -144,8 +119,8 @@ public class JobScheduler {
 
         log.info("Descheduling jobId: {}", id);
         jobInfo.setDescheduled(true);
-        jobInfo.setActualPreviousExecutionTime(null);
-        jobInfo.setExpectedPreviousExecutionTime(null);
+        // jobInfo.setActualPreviousExecutionTime(null);
+        // jobInfo.setExpectedPreviousExecutionTime(null);
         Scheduler.ScheduledCancellable scheduledCancellable = jobInfo.getScheduledCancellable();
 
         if (scheduledCancellable != null && !scheduledCancellable.cancel()) {
