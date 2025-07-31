@@ -63,6 +63,10 @@ public class JobScheduler {
         return this.scheduledJobInfo.getJobsByIndex(indexName).keySet();
     }
 
+    public Set<String> getDeScheduledJobIds(String indexName) {
+        return this.scheduledJobInfo.getDisabledJobsByIndex(indexName).keySet();
+    }
+
     public boolean schedule(
         String indexName,
         String docId,
@@ -115,6 +119,26 @@ public class JobScheduler {
 
         log.info("Descheduling jobId: {}", id);
         jobInfo.setDescheduled(true);
+        Scheduler.ScheduledCancellable scheduledCancellable = jobInfo.getScheduledCancellable();
+
+        if (scheduledCancellable != null && !scheduledCancellable.cancel()) {
+            return false;
+        }
+        this.scheduledJobInfo.removeJob(indexName, id);
+
+        return true;
+    }
+
+    public boolean removeDeScheduledJob(String indexName, String id) {
+
+        JobSchedulingInfo jobInfo = this.scheduledJobInfo.getDisabledJobInfo(indexName, id);
+
+        if (jobInfo == null) {
+            log.debug("DeScheduled JobId {} doesn't not exist, skip descheduling.", id);
+            return true;
+        }
+
+        jobInfo.setDescheduled(true);
         jobInfo.setActualPreviousExecutionTime(null);
         jobInfo.setExpectedPreviousExecutionTime(null);
         Scheduler.ScheduledCancellable scheduledCancellable = jobInfo.getScheduledCancellable();
@@ -122,7 +146,10 @@ public class JobScheduler {
         if (scheduledCancellable != null && !scheduledCancellable.cancel()) {
             return false;
         }
-        this.scheduledJobInfo.removeJob(indexName, id);
+
+        log.info("Removing DeScheduled jobId: {}", id);
+
+        this.scheduledJobInfo.removeDisabledJob(indexName, id);
 
         return true;
     }
