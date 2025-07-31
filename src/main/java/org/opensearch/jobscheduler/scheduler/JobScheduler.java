@@ -119,8 +119,6 @@ public class JobScheduler {
 
         log.info("Descheduling jobId: {}", id);
         jobInfo.setDescheduled(true);
-        // jobInfo.setActualPreviousExecutionTime(null);
-        // jobInfo.setExpectedPreviousExecutionTime(null);
         Scheduler.ScheduledCancellable scheduledCancellable = jobInfo.getScheduledCancellable();
 
         if (scheduledCancellable != null && !scheduledCancellable.cancel()) {
