@@ -34,6 +34,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
     public static final String LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks";
     public static final String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs?by_node";
+    public static final String SCHEDULER_INFO_URI_CLUSTER = "/_plugins/_job_scheduler/api/jobs";
 
     public void testJobCreateWithCorrectParams() throws IOException {
         SampleJobParameter jobParameter = new SampleJobParameter();
@@ -306,6 +307,44 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         // Cleanup
         deleteWatcherJob(jobId);
+    }
+
+    public void testDisabledJobPersistance() throws Exception {
+        String index = createTestIndex();
+        SampleJobParameter jobParameter = new SampleJobParameter();
+        jobParameter.setJobName("sample-job-it");
+        jobParameter.setIndexToWatch(index);
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(5L);
+
+        // Creates a new watcher job.
+        String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
+        createWatcherJob(jobId, jobParameter);
+
+        waitUntilLockIsAcquiredAndReleased(jobId);
+
+        Response response = makeRequest(client(), "GET", SCHEDULER_INFO_URI_CLUSTER, Map.of(), null);
+        Map<String, Object> responseJson = parseResponse(response);
+
+        waitUntilLockIsAcquiredAndReleased(jobId);
+        // get last update time
+
+        response = makeRequest(client(), "GET", SCHEDULER_INFO_URI_CLUSTER, Map.of(), null);
+        Map<String, Object> responseJson1 = parseResponse(response);
+
+        waitUntilLockIsAcquiredAndReleased(jobId);
+        // get last update time
+
+        response = makeRequest(client(), "GET", SCHEDULER_INFO_URI_CLUSTER, Map.of(), null);
+        Map<String, Object> responseJson2 = parseResponse(response);
+
+        disableWatcherJob(jobId, jobParameter);
+        Thread.sleep(1000);
+
+        response = makeRequest(client(), "GET", SCHEDULER_INFO_URI_CLUSTER, Map.of(), null);
+        Map<String, Object> responseJson3 = parseResponse(response);
+        //compare enabled/ last execution and last update
+
     }
 
     protected void waitUntilLockIsAcquiredAndReleased(
