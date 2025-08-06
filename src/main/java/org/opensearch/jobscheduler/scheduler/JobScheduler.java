@@ -87,6 +87,11 @@ public class JobScheduler {
             if (jobInfo.getScheduledCancellable() != null) {
                 return true;
             }
+            if (!scheduledJobParameter.isEnabled()) {
+                log.info("Job {} is disabled, do not call reSchedule.", docId);
+                jobInfo.setDescheduled(true);
+                return false;
+            }
 
             this.reschedule(scheduledJobParameter, jobInfo, jobRunner, version, jitterLimit);
         }
