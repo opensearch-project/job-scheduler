@@ -79,13 +79,13 @@ public class JobScheduler {
                 jobInfo = new JobSchedulingInfo(indexName, docId, scheduledJobParameter);
                 this.scheduledJobInfo.addJob(indexName, docId, jobInfo);
             }
-            if (jobInfo.getScheduledCancellable() != null) {
-                return true;
-            }
             if (!scheduledJobParameter.isEnabled()) {
                 log.info("Job {} is disabled, do not call reSchedule.", docId);
                 jobInfo.setDescheduled(true);
                 return false;
+            }
+            if (jobInfo.getScheduledCancellable() != null) {
+                return true;
             }
 
             this.reschedule(scheduledJobParameter, jobInfo, jobRunner, version, jitterLimit);
