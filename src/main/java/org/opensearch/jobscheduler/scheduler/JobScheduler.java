@@ -71,9 +71,6 @@ public class JobScheduler {
         JobDocVersion version,
         Double jitterLimit
     ) {
-        if (!scheduledJobParameter.isEnabled()) {
-            return false;
-        }
         log.info("Scheduling job id {} for index {} .", docId, indexName);
         JobSchedulingInfo jobInfo;
         synchronized (this.scheduledJobInfo.getJobsByIndex(indexName)) {
@@ -84,6 +81,11 @@ public class JobScheduler {
             }
             if (jobInfo.getScheduledCancellable() != null) {
                 return true;
+            }
+            if (!scheduledJobParameter.isEnabled()) {
+                log.info("Job {} is disabled, do not call reSchedule.", docId);
+                jobInfo.setDescheduled(true);
+                return false;
             }
 
             this.reschedule(scheduledJobParameter, jobInfo, jobRunner, version, jitterLimit);
@@ -115,8 +117,6 @@ public class JobScheduler {
 
         log.info("Descheduling jobId: {}", id);
         jobInfo.setDescheduled(true);
-        jobInfo.setActualPreviousExecutionTime(null);
-        jobInfo.setExpectedPreviousExecutionTime(null);
         Scheduler.ScheduledCancellable scheduledCancellable = jobInfo.getScheduledCancellable();
 
         if (scheduledCancellable != null && !scheduledCancellable.cancel()) {
