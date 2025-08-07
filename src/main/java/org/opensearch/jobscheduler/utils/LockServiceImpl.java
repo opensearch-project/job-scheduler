@@ -75,7 +75,6 @@ public final class LockServiceImpl implements LockService {
         }
     }
 
-    @Override
     public boolean lockIndexExist() {
         return clusterService.state().routingTable().hasIndex(LOCK_INDEX_NAME);
     }

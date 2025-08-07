@@ -15,8 +15,6 @@ import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 
 public interface LockService {
 
-    boolean lockIndexExist();
-
     /**
      * Attempts to acquire lock the job. If the lock does not exists it attempts to create the lock document.
      * If the Lock document exists, it will try to update and acquire lock.
