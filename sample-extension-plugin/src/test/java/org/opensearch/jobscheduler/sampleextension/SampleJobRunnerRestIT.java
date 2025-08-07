@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
@@ -281,6 +282,17 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         // Asserts that "released" is true
         assertTrue(isLockReleased.apply(responseJson));
+
+        // Check that .opendistro-job-scheduler-lock index is green
+        Response catResponse = makeRequest(
+            client(),
+            "GET",
+            "/_cat/indices/.opendistro-job-scheduler-lock?v&h=index,health",
+            Map.of(),
+            null
+        );
+        String catResponseBody = EntityUtils.toString(catResponse.getEntity());
+        assertTrue("Lock index should be green", catResponseBody.contains("green"));
 
         // Cleanup
         deleteWatcherJob(jobId);
