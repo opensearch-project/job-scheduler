@@ -251,6 +251,10 @@ public final class LockServiceImpl implements LockService {
 
     @Override
     public void findLock(final String lockId, ActionListener<LockModel> listener) {
+        if (!lockIndexExist()) {
+            listener.onResponse(null);
+            return;
+        }
         try {
             GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
             client.get(getRequest, ActionListener.wrap(response -> {

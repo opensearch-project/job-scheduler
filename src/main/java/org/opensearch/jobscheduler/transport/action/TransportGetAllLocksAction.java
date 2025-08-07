@@ -25,7 +25,6 @@ import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.jobscheduler.spi.LockModel;
-import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.request.GetLocksRequest;
 import org.opensearch.jobscheduler.transport.response.GetLocksResponse;
 import org.opensearch.index.query.QueryBuilders;
@@ -38,6 +37,8 @@ import org.opensearch.transport.client.Client;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.opensearch.jobscheduler.utils.LockServiceImpl.LOCK_INDEX_NAME;
 
 public class TransportGetAllLocksAction extends HandledTransportAction<GetLocksRequest, GetLocksResponse> {
     private static final Logger log = LogManager.getLogger(TransportGetAllLocksAction.class);
@@ -78,7 +79,7 @@ public class TransportGetAllLocksAction extends HandledTransportAction<GetLocksR
             String jobIndexName = parts[0];
             String jobId = parts[1];
 
-            SearchRequest searchRequest = new SearchRequest(LockService.LOCK_INDEX_NAME);
+            SearchRequest searchRequest = new SearchRequest(LOCK_INDEX_NAME);
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.query(
                 QueryBuilders.boolQuery()
@@ -116,7 +117,7 @@ public class TransportGetAllLocksAction extends HandledTransportAction<GetLocksR
 
     private void getAllLocks(ActionListener<Map<String, LockModel>> listener) {
         try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
-            SearchRequest searchRequest = new SearchRequest(LockService.LOCK_INDEX_NAME);
+            SearchRequest searchRequest = new SearchRequest(LOCK_INDEX_NAME);
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.size(1000); // Set a reasonable batch size
             searchRequest.scroll(TimeValue.timeValueMinutes(1)); // Set scroll timeout
