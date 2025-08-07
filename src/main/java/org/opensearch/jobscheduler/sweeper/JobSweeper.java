@@ -265,9 +265,9 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                         return null;
                     }
                     ScheduledJobRunner jobRunner = this.indexToProviders.get(shardId.getIndexName()).getJobRunner();
-                    if (jobParameter.isEnabled()) {
-                        this.scheduler.schedule(shardId.getIndexName(), docId, jobParameter, jobRunner, jobDocVersion, jitterLimit);
-                    }
+
+                    this.scheduler.schedule(shardId.getIndexName(), docId, jobParameter, jobRunner, jobDocVersion, jitterLimit);
+
                     return jobDocVersion;
                 } catch (Exception e) {
                     log.warn("Unable to parse job {}, error message: {}", docId, e.getMessage());
@@ -333,6 +333,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
 
     private void sweepIndex(String indexName) {
         ClusterState clusterState = this.clusterService.state();
+        // checks to see if index no longer exists
         if (!clusterState.routingTable().hasIndex(indexName)) {
             // deschedule jobs for this index
             for (ShardId shardId : this.sweptJobs.keySet()) {

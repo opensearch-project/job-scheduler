@@ -219,6 +219,20 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         return getJobParameter(client(), responseJson.get("_id").toString());
     }
 
+    protected SampleJobParameter enableWatcherJob(String jobId, SampleJobParameter jobParameter) throws IOException {
+        jobParameter.setEnabled(true);
+        Map<String, String> params = getJobParameterAsMap(jobId, jobParameter);
+        Response response = makeRequest(client(), "POST", SampleExtensionRestHandler.WATCH_INDEX_URI, params, null);
+        Assert.assertEquals("Unable to create a watcher job", RestStatus.OK, RestStatus.fromCode(response.getStatusLine().getStatusCode()));
+
+        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
+        return getJobParameter(client(), responseJson.get("_id").toString());
+    }
+
     protected Response makeRequest(
         RestClient client,
         String method,

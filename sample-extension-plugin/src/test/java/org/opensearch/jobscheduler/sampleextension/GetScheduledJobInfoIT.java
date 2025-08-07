@@ -29,9 +29,16 @@ import java.util.HashSet;
 
 public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
 
+    Set<String> expectedJobIds = Set.of("test-job-1", "test-job-2", "test-job-3", "test-job-4");
+
+    private SampleJobParameter jobParam1;
+    private SampleJobParameter jobParam2;
+    private SampleJobParameter jobParam3;
+    private SampleJobParameter jobParam4;
+
     @Before
     public void setupJobs() throws IOException, InterruptedException {
-        SampleJobParameter jobParam1 = new SampleJobParameter(
+        jobParam1 = new SampleJobParameter(
             "test-job-1",
             "Test Job 1",
             "test-index-1",
@@ -40,7 +47,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
             0.1
         );
 
-        SampleJobParameter jobParam2 = new SampleJobParameter(
+        jobParam2 = new SampleJobParameter(
             "test-job-2",
             "Test Job 2",
             "test-index-2",
@@ -49,7 +56,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
             0.2
         );
 
-        SampleJobParameter jobParam3 = new SampleJobParameter(
+        jobParam3 = new SampleJobParameter(
             "test-job-3",
             "Test Job 3",
             "test-index-3",
@@ -58,7 +65,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
             0.3
         );
 
-        SampleJobParameter jobParam4 = new SampleJobParameter(
+        jobParam4 = new SampleJobParameter(
             "test-job-4",
             "Test Job 4",
             "test-index-4",
@@ -80,15 +87,8 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
 
         Response response = makeRequest(client(), "GET", "/_plugins/_job_scheduler/api/jobs", Collections.emptyMap(), null);
 
-        assertEquals(200, response.getStatusLine().getStatusCode());
+        Map<String, Object> responseJson = parseResponse(response);
 
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
-
-        assertNotNull(responseJson);
         assertTrue("Response should contain scheduled job information", responseJson.containsKey("jobs"));
         assertEquals("Should have 4 total jobs", 4, responseJson.get("total_jobs"));
 
@@ -99,31 +99,9 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         assertEquals("Should have 4 jobs in the list", 4, jobs.size());
 
         // Check that all expected job IDs are present and validate job fields
-        Set<String> expectedJobIds = Set.of("test-job-1", "test-job-2", "test-job-3", "test-job-4");
         Set<String> actualJobIds = new HashSet<>();
         for (Map<String, Object> job : jobs) {
-            actualJobIds.add((String) job.get("job_id"));
-
-            // Validate required fields are present
-            assertEquals("job_type should be scheduler_sample_extension", "scheduler_sample_extension", job.get("job_type"));
-            assertNotNull("job_id should not be null", job.get("job_id"));
-            assertEquals("index_name should not be .scheduler_sample_extension", ".scheduler_sample_extension", job.get("index_name"));
-            assertNotNull("name should not be null", job.get("name"));
-            assertFalse("descheduled should be False", (Boolean) job.get("descheduled"));
-            assertTrue("enabled should be True", (Boolean) job.get("enabled"));
-            assertNotNull("enabled_time should not be null", job.get("enabled_time"));
-            assertNotNull("last_update_time should not be null", job.get("last_update_time"));
-            assertNotNull("schedule should not be null", job.get("schedule"));
-            assertEquals("none", job.get("jitter"));
-
-            // Validate schedule object
-            @SuppressWarnings("unchecked")
-            Map<String, Object> schedule = (Map<String, Object>) job.get("schedule");
-            assertTrue(
-                "schedule should be interval or Cron",
-                ((schedule.get("type").equals("interval")) || (schedule.get("type").equals("cron")))
-            );
-            assertNotNull("none", ((Map<String, Object>) job.get("schedule")).get("delay"));
+            validateJobFields(job, true, false, actualJobIds);
         }
         assertEquals("All expected job IDs should be present", expectedJobIds, actualJobIds);
     }
@@ -132,15 +110,8 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
 
         Response response = makeRequest(client(), "GET", "/_plugins/_job_scheduler/api/jobs?by_node", Collections.emptyMap(), null);
 
-        assertEquals(200, response.getStatusLine().getStatusCode());
+        Map<String, Object> responseJson = parseResponse(response);
 
-        Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
-            NamedXContentRegistry.EMPTY,
-            LoggingDeprecationHandler.INSTANCE,
-            response.getEntity().getContent()
-        ).map();
-
-        assertNotNull(responseJson);
         assertTrue("Response should contain scheduled job information", responseJson.containsKey("nodes"));
         assertEquals("Should have 4 total jobs", 4, responseJson.get("total_jobs"));
 
@@ -151,7 +122,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         assertFalse("Should have at least one node", nodes.isEmpty());
 
         // Collect all job IDs across all nodes
-        Set<String> allJobIds = new HashSet<>();
+        Set<String> actualJobIds = new HashSet<>();
         for (Map<String, Object> node : nodes) {
 
             @SuppressWarnings("unchecked")
@@ -160,38 +131,167 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
             );
             if (nodeJobs != null) {
                 for (Map<String, Object> job : nodeJobs) {
-                    allJobIds.add((String) job.get("job_id"));
-                    assertEquals("job_type should be scheduler_sample_extension", "scheduler_sample_extension", job.get("job_type"));
-                    assertNotNull("job_id should not be null", job.get("job_id"));
-                    assertEquals(
-                        "index_name should not be .scheduler_sample_extension",
-                        ".scheduler_sample_extension",
-                        job.get("index_name")
-                    );
-                    assertNotNull("name should not be null", job.get("name"));
-                    assertFalse("descheduled should be False", (Boolean) job.get("descheduled"));
-                    assertTrue("enabled should be True", (Boolean) job.get("enabled"));
-                    assertNotNull("enabled_time should not be null", job.get("enabled_time"));
-                    assertNotNull("last_update_time should not be null", job.get("last_update_time"));
-                    assertNotNull("schedule should not be null", job.get("schedule"));
-                    assertEquals("none", job.get("jitter"));
-                    // Validate schedule object
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> schedule = (Map<String, Object>) job.get("schedule");
-                    assertTrue(
-                        "schedule should be interval or Cron",
-                        ((schedule.get("type").equals("interval")) || (schedule.get("type").equals("cron")))
-                    );
-                    assertNotNull("none", ((Map<String, Object>) job.get("schedule")).get("delay"));
+                    validateJobFields(job, true, false, actualJobIds);
                 }
             }
         }
 
-        java.util.Set<String> expectedJobIds = java.util.Set.of("test-job-1", "test-job-2", "test-job-3", "test-job-4");
-        assertEquals("All expected job IDs should be present across nodes", expectedJobIds, allJobIds);
+        assertEquals("All expected job IDs should be present across nodes", expectedJobIds, actualJobIds);
+    }
 
-        // Validate job fields across all nodes
+    public void testDeScheduledJobInfo() throws IOException {
 
+        Response response = makeRequest(client(), "GET", "/_plugins/_job_scheduler/api/jobs", Collections.emptyMap(), null);
+
+        Map<String, Object> responseJson = parseResponse(response);
+
+        assertTrue("Response should contain scheduled job information", responseJson.containsKey("jobs"));
+        assertEquals("Should have 4 total jobs", 4, responseJson.get("total_jobs"));
+
+        disableWatcherJob("test-job-1", jobParam1);
+        disableWatcherJob("test-job-2", jobParam2);
+        disableWatcherJob("test-job-3", jobParam3);
+        disableWatcherJob("test-job-4", jobParam4);
+
+        response = makeRequest(client(), "GET", "/_plugins/_job_scheduler/api/jobs", Collections.emptyMap(), null);
+
+        responseJson = parseResponse(response);
+
+        assertTrue("Response should contain scheduled job information", responseJson.containsKey("jobs"));
+        assertEquals("Should have 4 total jobs", 4, responseJson.get("total_jobs"));
+
+        // Verify all disabled test jobs are present
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> jobs = (List<Map<String, Object>>) responseJson.get("jobs");
+        assertNotNull("Jobs list should not be null", jobs);
+        assertEquals("Should have 4 jobs in the list", 4, jobs.size());
+
+        // Check that all expected job IDs are present and validate job fields
+        Set<String> actualJobIds = new HashSet<>();
+        for (Map<String, Object> job : jobs) {
+            validateJobFields(job, false, true, actualJobIds);
+        }
+        assertEquals("All expected job IDs should be present", expectedJobIds, actualJobIds);
+    }
+
+    public void testDeleteDeScheduledJobInfo() throws IOException {
+        Response response = makeRequest(client(), "GET", "/_plugins/_job_scheduler/api/jobs", Collections.emptyMap(), null);
+
+        Map<String, Object> responseJson = parseResponse(response);
+
+        assertTrue("Response should contain scheduled job information", responseJson.containsKey("jobs"));
+        assertEquals("Should have 4 total jobs", 4, responseJson.get("total_jobs"));
+
+        // Only disables jobs 1 and 2
+        disableWatcherJob("test-job-1", jobParam1);
+        disableWatcherJob("test-job-2", jobParam2);
+
+        response = makeRequest(client(), "GET", "/_plugins/_job_scheduler/api/jobs", Collections.emptyMap(), null);
+
+        responseJson = parseResponse(response);
+
+        assertTrue("Response should contain scheduled job information", responseJson.containsKey("jobs"));
+        assertEquals("Should have 4 total jobs", 4, responseJson.get("total_jobs"));
+
+        // Deletes and removes a scheduled job and a DeScheduled job
+        deleteWatcherJob("test-job-1");
+        deleteWatcherJob("test-job-3");
+
+        response = makeRequest(client(), "GET", "/_plugins/_job_scheduler/api/jobs", Collections.emptyMap(), null);
+
+        responseJson = parseResponse(response);
+
+        // Ensures that both deleted jobs are removed from the Scheduled/DeScheduled list and other jobs persist
+        assertTrue("Response should contain scheduled job information", responseJson.containsKey("jobs"));
+        assertEquals("Should have 2 total jobs", 2, responseJson.get("total_jobs"));
+    }
+
+    public void testDisableThenEnableJobInfo() throws IOException {
+        Response response = makeRequest(client(), "GET", "/_plugins/_job_scheduler/api/jobs", Collections.emptyMap(), null);
+
+        Map<String, Object> responseJson = parseResponse(response);
+
+        // verify all jobs are enabled and scheduled
+        List<Map<String, Object>> jobs = (List<Map<String, Object>>) responseJson.get("jobs");
+        Set<String> actualJobIds = new HashSet<>();
+        for (Map<String, Object> job : jobs) {
+            validateJobFields(job, true, false, actualJobIds);
+        }
+        assertEquals("All expected job IDs should be present", expectedJobIds, actualJobIds);
+        assertEquals("Should have 4 total jobs", 4, responseJson.get("total_jobs"));
+
+        disableWatcherJob("test-job-1", jobParam1);
+        disableWatcherJob("test-job-2", jobParam2);
+        disableWatcherJob("test-job-3", jobParam3);
+        disableWatcherJob("test-job-4", jobParam4);
+
+        response = makeRequest(client(), "GET", "/_plugins/_job_scheduler/api/jobs", Collections.emptyMap(), null);
+        responseJson = parseResponse(response);
+
+        assertEquals("Should have 4 total jobs", 4, responseJson.get("total_jobs"));
+
+        // Verify all jobs are disabled and descheduled
+        jobs = (List<Map<String, Object>>) responseJson.get("jobs");
+        assertNotNull("Jobs list should not be null", jobs);
+        assertEquals("Should have 4 jobs in the list", 4, jobs.size());
+
+        // Check that all expected job IDs are present and validate job fields
+        actualJobIds = new HashSet<>();
+        for (Map<String, Object> job : jobs) {
+            validateJobFields(job, false, true, actualJobIds);
+        }
+        assertEquals("All expected job IDs should be present", expectedJobIds, actualJobIds);
+
+        // verify all jobs are enabled and scheduled without duplication
+        enableWatcherJob("test-job-1", jobParam1);
+        enableWatcherJob("test-job-2", jobParam2);
+        enableWatcherJob("test-job-3", jobParam3);
+        enableWatcherJob("test-job-4", jobParam4);
+
+        response = makeRequest(client(), "GET", "/_plugins/_job_scheduler/api/jobs", Collections.emptyMap(), null);
+        responseJson = parseResponse(response);
+
+        jobs = (List<Map<String, Object>>) responseJson.get("jobs");
+        assertNotNull("Jobs list should not be null", jobs);
+        assertEquals("Should have 4 jobs in the list", 4, jobs.size());
+
+        actualJobIds = new HashSet<>();
+        for (Map<String, Object> job : jobs) {
+            validateJobFields(job, true, false, actualJobIds);
+        }
+        assertEquals("All expected job IDs should be present", expectedJobIds, actualJobIds);
+    }
+
+    private void validateJobFields(
+        Map<String, Object> job,
+        boolean expectedEnabled,
+        boolean expectedDescheduled,
+        Set<String> actualJobIds
+    ) {
+        assertEquals("scheduler_sample_extension", job.get("job_type"));
+        assertNotNull(job.get("job_id"));
+        actualJobIds.add((String) job.get("job_id"));
+        assertEquals(".scheduler_sample_extension", job.get("index_name"));
+        assertNotNull(job.get("name"));
+        assertEquals(expectedDescheduled, job.get("descheduled"));
+        assertEquals(expectedEnabled, job.get("enabled"));
+        assertNotNull(job.get("enabled_time"));
+        assertNotNull(job.get("last_update_time"));
+        assertNotNull(job.get("schedule"));
+        assertEquals("none", job.get("jitter"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> schedule = (Map<String, Object>) job.get("schedule");
+        assertTrue(schedule.get("type").equals("interval") || schedule.get("type").equals("cron"));
+        assertNotNull(schedule.get("delay"));
+    }
+
+    private Map<String, Object> parseResponse(Response response) throws IOException {
+        return JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            response.getEntity().getContent()
+        ).map();
     }
 
     @After
