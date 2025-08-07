@@ -51,6 +51,8 @@ apply plugin: 'opensearch.rest-test'
 apply from: 'build-tools/opensearchplugin-coverage.gradle'
 apply from: 'gradle/formatting.gradle'
 
+tasks.test.finalizedBy(jacocoTestReport)
+
 ext {
     projectSubstitutions = [:]
     licenseFile = rootProject.file('LICENSE.txt')

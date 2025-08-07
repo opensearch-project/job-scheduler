@@ -43,6 +43,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Map;
 
 public final class LockServiceImpl implements LockService {
     private static final Logger logger = LogManager.getLogger(LockServiceImpl.class);
@@ -50,6 +51,7 @@ public final class LockServiceImpl implements LockService {
 
     private final Client client;
     private final ClusterService clusterService;
+    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
 
     // This is used in tests to control time.
     private Instant testInstant = null;
@@ -82,10 +84,8 @@ public final class LockServiceImpl implements LockService {
         if (lockIndexExist()) {
             listener.onResponse(true);
         } else {
-            final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(
-                lockMapping(),
-                (MediaType) XContentType.JSON
-            );
+            final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(lockMapping(), (MediaType) XContentType.JSON)
+                .settings(INDEX_SETTINGS);
             client.admin()
                 .indices()
                 .create(request, ActionListener.wrap(response -> listener.onResponse(response.isAcknowledged()), exception -> {
