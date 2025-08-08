@@ -14,9 +14,11 @@ import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.utils.JobHistoryService;
 import org.opensearch.jobscheduler.utils.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.common.Randomness;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.threadpool.Scheduler;
@@ -41,12 +43,14 @@ public class JobScheduler {
     private ScheduledJobInfo scheduledJobInfo;
     private Clock clock;
     private final LockService lockService;
+    private final JobHistoryService jobHistoryService;
 
-    public JobScheduler(ThreadPool threadPool, final LockService lockService) {
+    public JobScheduler(ThreadPool threadPool, final LockService lockService, final JobHistoryService jobHistoryService) {
         this.threadPool = threadPool;
         this.scheduledJobInfo = new ScheduledJobInfo();
         this.clock = Clock.systemDefaultZone();
         this.lockService = lockService;
+        this.jobHistoryService = jobHistoryService;
     }
 
     @VisibleForTesting
@@ -205,6 +209,18 @@ public class JobScheduler {
             );
 
             jobRunner.runJob(jobParameter, context);
+            log.info("Recording job history for index: {}, jobId: {}", jobInfo.getIndexName(), jobInfo.getJobId());
+            jobHistoryService.recordJobHistory(
+                jobInfo.getIndexName(),
+                jobInfo.getJobId(),
+                jobInfo.getActualPreviousExecutionTime(),
+                clock.instant(),
+                0,
+                ActionListener.wrap(
+                    success -> log.info("Successfully recorded history for index: {}, jobId: {}", jobInfo.getIndexName(), jobInfo.getJobId()),
+                    failure -> log.error("Failed to record job history for index: {}, jobId: {}", jobInfo.getIndexName(), jobInfo.getJobId(), failure)
+                )
+            );
         };
 
         if (jobInfo.isDescheduled()) {

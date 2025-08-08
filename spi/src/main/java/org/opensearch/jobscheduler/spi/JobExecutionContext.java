@@ -22,6 +22,7 @@ public class JobExecutionContext implements Writeable {
     private final LockService lockService;
     private final String jobIndexName;
     private final String jobId;
+    private Integer jobStatus;
 
     public JobExecutionContext(
         Instant expectedExecutionTime,
@@ -35,6 +36,7 @@ public class JobExecutionContext implements Writeable {
         this.lockService = lockService;
         this.jobIndexName = jobIndexName;
         this.jobId = jobId;
+        this.jobStatus = null;
     }
 
     public JobExecutionContext(StreamInput in) throws IOException {
@@ -43,6 +45,7 @@ public class JobExecutionContext implements Writeable {
         this.lockService = null;
         this.jobIndexName = in.readString();
         this.jobId = in.readString();
+        this.jobStatus = 0;
     }
 
     @Override
@@ -73,4 +76,11 @@ public class JobExecutionContext implements Writeable {
         return this.jobId;
     }
 
+    public Integer getJobStatus() {
+        return jobStatus;
+    }
+
+    public void setJobStatus(Integer jobStatus) {
+        this.jobStatus = jobStatus;
+    }
 }

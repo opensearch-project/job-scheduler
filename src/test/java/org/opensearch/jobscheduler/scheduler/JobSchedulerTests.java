@@ -43,7 +43,7 @@ public class JobSchedulerTests extends OpenSearchTestCase {
     @Before
     public void setup() {
         this.threadPool = Mockito.mock(ThreadPool.class);
-        this.scheduler = new JobScheduler(this.threadPool, null);
+        this.scheduler = new JobScheduler(this.threadPool, null, null);
     }
 
     public void testSchedule() {
