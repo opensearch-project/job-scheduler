@@ -45,7 +45,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
     GetScheduledInfoNodeRequest,
     GetScheduledInfoNodeResponse> {
 
-    private static final Logger log = LogManager.getLogger(JobScheduler.class);
+    private static final Logger log = LogManager.getLogger(TransportGetScheduledInfoAction.class);
     private final JobScheduler jobScheduler;
     private final JobDetailsService jobDetailsService;
     private static final DateFormatter STRICT_DATE_TIME_FORMATTER = DateFormatter.forPattern("strict_date_time");
@@ -67,7 +67,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
             actionFilters,
             GetScheduledInfoRequest::new,
             GetScheduledInfoNodeRequest::new,
-            ThreadPool.Names.MANAGEMENT,
+            ThreadPool.Names.GENERIC,
             GetScheduledInfoNodeResponse.class
         );
         this.jobScheduler = jobScheduler;
