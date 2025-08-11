@@ -22,7 +22,7 @@ public class JobExecutionContext implements Writeable {
     private final LockService lockService;
     private final String jobIndexName;
     private final String jobId;
-    private int jobStatus;
+    private Integer jobStatus;
 
     public JobExecutionContext(
         Instant expectedExecutionTime,
@@ -77,7 +77,7 @@ public class JobExecutionContext implements Writeable {
         return this.jobId;
     }
 
-    public int getJobStatus() {
+    public Integer getJobStatus() {
         return this.jobStatus;
     }
 
