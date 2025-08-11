@@ -122,7 +122,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         this.lockService = new LockService(client, clusterService);
         this.jobHistoryService = new JobHistoryService(client, clusterService);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
-        this.scheduler = new JobScheduler(threadPool, this.lockService, this.jobHistoryService);
+        this.scheduler = new JobScheduler(threadPool, this.lockService, this.jobHistoryService, environment.settings());
         this.sweeper = initSweeper(
             environment.settings(),
             client,
@@ -154,6 +154,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         settingList.add(JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT);
         settingList.add(JobSchedulerSettings.SWEEP_PERIOD);
         settingList.add(JobSchedulerSettings.JITTER_LIMIT);
+        settingList.add(JobSchedulerSettings.STATUS_HISTORY);
         return settingList;
     }
 
