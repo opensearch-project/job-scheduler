@@ -18,6 +18,7 @@ import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.test.OpenSearchTestCase;
 import org.opensearch.threadpool.Scheduler;
 import org.opensearch.threadpool.ThreadPool;
+import org.opensearch.common.settings.Settings;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -43,7 +44,7 @@ public class JobSchedulerTests extends OpenSearchTestCase {
     @Before
     public void setup() {
         this.threadPool = Mockito.mock(ThreadPool.class);
-        this.scheduler = new JobScheduler(this.threadPool, null, null);
+        this.scheduler = new JobScheduler(this.threadPool, null, null, Settings.EMPTY);
     }
 
     public void testSchedule() {

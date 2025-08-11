@@ -8,7 +8,9 @@
  */
 package org.opensearch.jobscheduler.scheduler;
 
+import org.opensearch.common.settings.Settings;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
+import org.opensearch.jobscheduler.JobSchedulerSettings;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
@@ -44,13 +46,20 @@ public class JobScheduler {
     private Clock clock;
     private final LockService lockService;
     private final JobHistoryService jobHistoryService;
+    private final org.opensearch.common.settings.Settings settings;
 
-    public JobScheduler(ThreadPool threadPool, final LockService lockService, final JobHistoryService jobHistoryService) {
+    public JobScheduler(
+        ThreadPool threadPool,
+        final LockService lockService,
+        final JobHistoryService jobHistoryService,
+        final Settings settings
+    ) {
         this.threadPool = threadPool;
         this.scheduledJobInfo = new ScheduledJobInfo();
         this.clock = Clock.systemDefaultZone();
         this.lockService = lockService;
         this.jobHistoryService = jobHistoryService;
+        this.settings = settings;
     }
 
     @VisibleForTesting
@@ -209,18 +218,29 @@ public class JobScheduler {
             );
 
             jobRunner.runJob(jobParameter, context);
-            log.info("Recording job history for index: {}, jobId: {}", jobInfo.getIndexName(), jobInfo.getJobId());
-            jobHistoryService.recordJobHistory(
-                jobInfo.getIndexName(),
-                jobInfo.getJobId(),
-                jobInfo.getActualPreviousExecutionTime(),
-                clock.instant(),
-                0,
-                ActionListener.wrap(
-                    success -> log.info("Successfully recorded history for index: {}, jobId: {}", jobInfo.getIndexName(), jobInfo.getJobId()),
-                    failure -> log.error("Failed to record job history for index: {}, jobId: {}", jobInfo.getIndexName(), jobInfo.getJobId(), failure)
-                )
-            );
+            if (JobSchedulerSettings.STATUS_HISTORY.get(this.settings)) {
+                log.info("Recording job history for index: {}, jobId: {}", jobInfo.getIndexName(), jobInfo.getJobId());
+                jobHistoryService.recordJobHistory(
+                    jobInfo.getIndexName(),
+                    jobInfo.getJobId(),
+                    jobInfo.getActualPreviousExecutionTime(),
+                    clock.instant(),
+                    context.getJobStatus(),
+                    ActionListener.wrap(
+                        success -> log.info(
+                            "Successfully recorded history for index: {}, jobId: {}",
+                            jobInfo.getIndexName(),
+                            jobInfo.getJobId()
+                        ),
+                        failure -> log.error(
+                            "Failed to record job history for index: {}, jobId: {}",
+                            jobInfo.getIndexName(),
+                            jobInfo.getJobId(),
+                            failure
+                        )
+                    )
+                );
+            }
         };
 
         if (jobInfo.isDescheduled()) {
