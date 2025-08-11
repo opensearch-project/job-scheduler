@@ -111,7 +111,7 @@ public class JobHistoryService {
         final String jobId,
         final Instant startTime,
         final Instant endTime,
-        final int status,
+        final Integer status,
         ActionListener<Boolean> listener
     ) {
         if (jobIndexName == null || jobId == null || startTime == null) {
