@@ -8,14 +8,22 @@
  */
 package org.opensearch.jobscheduler.scheduler;
 
+import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.core.common.io.stream.Writeable;
+import org.opensearch.core.xcontent.ToXContentObject;
+import org.opensearch.core.xcontent.XContentBuilder;
+import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.threadpool.Scheduler;
 
+import java.io.IOException;
 import java.time.Instant;
 
-public class JobSchedulingInfo {
+public class JobSchedulingInfo implements Writeable, ToXContentObject {
 
     private String indexName;
+    private String jobType;
     private String jobId;
     private ScheduledJobParameter jobParameter;
     private boolean descheduled = false;
@@ -24,10 +32,18 @@ public class JobSchedulingInfo {
     private Instant expectedExecutionTime;
     private Scheduler.ScheduledCancellable scheduledCancellable;
 
-    public JobSchedulingInfo(String indexName, String jobId, ScheduledJobParameter jobParameter) {
-        this.indexName = indexName;
+    public JobSchedulingInfo(ScheduledJobProvider provider, String jobId, ScheduledJobParameter jobParameter) {
+        this.indexName = provider.getJobIndexName();
+        this.jobType = provider.getJobType();
         this.jobId = jobId;
         this.jobParameter = jobParameter;
+    }
+
+    public JobSchedulingInfo(StreamInput in) throws IOException {
+        this.indexName = in.readString();
+        this.jobType = in.readString();
+        this.jobId = in.readString();
+        this.jobParameter = new ScheduledJobParameter(in);
     }
 
     public String getIndexName() {
@@ -82,4 +98,29 @@ public class JobSchedulingInfo {
         this.scheduledCancellable = scheduledCancellable;
     }
 
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeString(indexName);
+        out.writeString(jobType);
+        out.writeString(jobId);
+        jobParameter.writeTo(out);
+    }
+
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.startObject();
+        builder.field("index_name", indexName);
+        builder.field("job_type", jobType);
+        builder.field("job_id", jobId);
+        builder.field("descheduled", descheduled);
+        builder.field("actual_previous_execution_time", actualPreviousExecutionTime);
+        builder.field("expected_previous_execution_time", expectedPreviousExecutionTime);
+        builder.field("expected_execution_time", expectedExecutionTime);
+        builder.field("job_parameter");
+        jobParameter.toXContent(builder, params);
+
+        // builder.field("job_parameter", jobParameter.toXContent(builder, params));
+        builder.endObject();
+        return builder;
+    }
 }

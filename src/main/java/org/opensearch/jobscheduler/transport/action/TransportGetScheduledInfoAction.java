@@ -20,34 +20,27 @@ import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.scheduler.JobSchedulingInfo;
-import org.opensearch.jobscheduler.scheduler.ScheduledJobInfo;
 import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
-import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.transport.TransportService;
 import org.opensearch.jobscheduler.transport.request.GetScheduledInfoRequest;
 import org.opensearch.jobscheduler.transport.response.GetScheduledInfoResponse;
-import org.opensearch.jobscheduler.transport.request.GetScheduledInfoNodeRequest;
-import org.opensearch.jobscheduler.transport.response.GetScheduledInfoNodeResponse;
 
 import java.io.IOException;
 import java.time.ZoneOffset;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 
 public class TransportGetScheduledInfoAction extends TransportNodesAction<
     GetScheduledInfoRequest,
     GetScheduledInfoResponse,
-    GetScheduledInfoNodeRequest,
-    GetScheduledInfoNodeResponse> {
+    GetScheduledInfoRequest.NodeRequest,
+    GetScheduledInfoResponse.NodeResponse> {
 
-    private static final Logger log = LogManager.getLogger(JobScheduler.class);
+    private static final Logger log = LogManager.getLogger(TransportGetScheduledInfoAction.class);
     private final JobScheduler jobScheduler;
-    private final JobDetailsService jobDetailsService;
     private static final DateFormatter STRICT_DATE_TIME_FORMATTER = DateFormatter.forPattern("strict_date_time");
 
     @Inject
@@ -56,8 +49,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
         ClusterService clusterService,
         TransportService transportService,
         ActionFilters actionFilters,
-        JobScheduler jobScheduler,
-        JobDetailsService jobDetailsService
+        JobScheduler jobScheduler
     ) {
         super(
             GetScheduledInfoAction.NAME,
@@ -66,66 +58,37 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
             transportService,
             actionFilters,
             GetScheduledInfoRequest::new,
-            GetScheduledInfoNodeRequest::new,
-            ThreadPool.Names.MANAGEMENT,
-            GetScheduledInfoNodeResponse.class
+            GetScheduledInfoRequest.NodeRequest::new,
+            ThreadPool.Names.GENERIC,
+            GetScheduledInfoResponse.NodeResponse.class
         );
         this.jobScheduler = jobScheduler;
-        this.jobDetailsService = jobDetailsService;
     }
 
     @Override
     protected GetScheduledInfoResponse newResponse(
         GetScheduledInfoRequest request,
-        List<GetScheduledInfoNodeResponse> nodeResponses,
+        List<GetScheduledInfoResponse.NodeResponse> nodeResponses,
         List<FailedNodeException> failures
     ) {
         return new GetScheduledInfoResponse(clusterService.getClusterName(), nodeResponses, failures);
     }
 
     @Override
-    protected GetScheduledInfoNodeRequest newNodeRequest(GetScheduledInfoRequest request) {
-        return new GetScheduledInfoNodeRequest(request);
+    protected GetScheduledInfoRequest.NodeRequest newNodeRequest(GetScheduledInfoRequest request) {
+        return new GetScheduledInfoRequest.NodeRequest();
     }
 
     @Override
-    protected GetScheduledInfoNodeResponse newNodeResponse(StreamInput in) throws IOException {
-        return new GetScheduledInfoNodeResponse(in);
+    protected GetScheduledInfoResponse.NodeResponse newNodeResponse(StreamInput in) throws IOException {
+        return new GetScheduledInfoResponse.NodeResponse(in);
     }
 
     @Override
-    protected GetScheduledInfoNodeResponse nodeOperation(GetScheduledInfoNodeRequest request) {
-        GetScheduledInfoNodeResponse response = new GetScheduledInfoNodeResponse(clusterService.localNode());
-        Map<String, Object> scheduledJobInfo = new HashMap<>();
-        Map<String, ScheduledJobProvider> indexToJobProvider = jobDetailsService.getIndexToJobProviders();
+    protected GetScheduledInfoResponse.NodeResponse nodeOperation(GetScheduledInfoRequest.NodeRequest request) {
+        GetScheduledInfoResponse.NodeResponse response = new GetScheduledInfoResponse.NodeResponse(clusterService.localNode());
 
-        try {
-            // Create a list to hold all job details
-            List<Map<String, Object>> jobs = new ArrayList<>();
-
-            // Get scheduled job information from the job scheduler
-            if (jobScheduler != null) {
-                ScheduledJobInfo scheduledJobInfoLocal = jobScheduler.getScheduledJobInfo();
-
-                if (scheduledJobInfoLocal != null) {
-                    // Process scheduled jobs
-                    if (scheduledJobInfoLocal.getJobInfoMap() != null) {
-                        processJobsFromMap(scheduledJobInfoLocal.getJobInfoMap(), indexToJobProvider, jobs);
-                    }
-                }
-            }
-
-            // Add jobs list and total count
-            scheduledJobInfo.put("jobs", jobs);
-            scheduledJobInfo.put("total_jobs", jobs.size());
-        } catch (Exception e) {
-            // If any exception occurs, return an empty jobs list
-            scheduledJobInfo.put("jobs", new java.util.ArrayList<>());
-            scheduledJobInfo.put("total_jobs", 0);
-            scheduledJobInfo.put("error", e.getMessage());
-        }
-
-        response.setScheduledJobInfo(scheduledJobInfo);
+        response.setJobs(jobScheduler.getJobsAsList());
         return response;
     }
 

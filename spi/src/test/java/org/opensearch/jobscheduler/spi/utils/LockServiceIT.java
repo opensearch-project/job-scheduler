@@ -13,15 +13,12 @@ import org.junit.Ignore;
 import org.mockito.Mockito;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
-import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import org.opensearch.test.OpenSearchIntegTestCase;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -39,43 +36,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
     static final String JOB_ID = "test_job_id";
     static final String JOB_INDEX_NAME = "test_job_index_name";
     static final long LOCK_DURATION_SECONDS = 60;
-    static final ScheduledJobParameter TEST_SCHEDULED_JOB_PARAM = new ScheduledJobParameter() {
-
-        @Override
-        public XContentBuilder toXContent(final XContentBuilder builder, final Params params) throws IOException {
-            return builder;
-        }
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public Instant getLastUpdateTime() {
-            return null;
-        }
-
-        @Override
-        public Instant getEnabledTime() {
-            return null;
-        }
-
-        @Override
-        public Schedule getSchedule() {
-            return null;
-        }
-
-        @Override
-        public boolean isEnabled() {
-            return false;
-        }
-
-        @Override
-        public Long getLockDurationSeconds() {
-            return LOCK_DURATION_SECONDS;
-        }
-    };
+    static final ScheduledJobParameter TEST_SCHEDULED_JOB_PARAM = new ScheduledJobParameter(null, null, 60L, null);
 
     private ClusterService clusterService;
 
