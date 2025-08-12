@@ -13,6 +13,7 @@ import org.junit.Ignore;
 import org.mockito.Mockito;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.LockModel;
@@ -30,13 +31,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 public class LockServiceIT extends OpenSearchIntegTestCase {
 
     static final String JOB_ID = "test_job_id";
     static final String JOB_INDEX_NAME = "test_job_index_name";
     static final long LOCK_DURATION_SECONDS = 60;
-    static final ScheduledJobParameter TEST_SCHEDULED_JOB_PARAM = new ScheduledJobParameter(null, null, 60L, null);
+    static final ScheduledJobParameter TEST_SCHEDULED_JOB_PARAM = new ScheduledJobParameter(null, null, 60L, null) {
+        @Override
+        public Function<StreamInput, ScheduledJobParameter> getParameterReader() {
+            return (in) -> null;
+        }
+    };
 
     private ClusterService clusterService;
 

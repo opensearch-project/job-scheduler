@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.scheduler;
 
+import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -29,6 +30,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @RunWith(RandomizedRunner.class)
 @SuppressWarnings({ "rawtypes" })
@@ -87,7 +89,14 @@ public class JobSchedulerTests extends OpenSearchTestCase {
     }
 
     public void testDeschedule_singleJob() {
-        JobSchedulingInfo jobInfo = new JobSchedulingInfo(provider, "job-id", null);
+        ScheduledJobParameter jobParameter = buildScheduledJobParameter(
+            "dummy job name",
+            Instant.now().minus(1, ChronoUnit.HOURS),
+            Instant.now(),
+            new CronSchedule("* * * * *", ZoneId.systemDefault()),
+            false
+        );
+        JobSchedulingInfo jobInfo = new JobSchedulingInfo(provider, "job-id", jobParameter);
         Scheduler.ScheduledCancellable scheduledCancellable = Mockito.mock(Scheduler.ScheduledCancellable.class);
         jobInfo.setScheduledCancellable(scheduledCancellable);
         Mockito.when(scheduledCancellable.cancel()).thenReturn(false);
@@ -108,15 +117,22 @@ public class JobSchedulerTests extends OpenSearchTestCase {
     }
 
     public void testDeschedule_bulk() {
+        ScheduledJobParameter jobParameter = buildScheduledJobParameter(
+            "dummy job name",
+            Instant.now().minus(1, ChronoUnit.HOURS),
+            Instant.now(),
+            new CronSchedule("* * * * *", ZoneId.systemDefault()),
+            false
+        );
         Assert.assertTrue(this.scheduler.bulkDeschedule("index-name", null).isEmpty());
 
-        JobSchedulingInfo jobInfo1 = new JobSchedulingInfo(provider, "job-id-1", null);
+        JobSchedulingInfo jobInfo1 = new JobSchedulingInfo(provider, "job-id-1", jobParameter);
         Scheduler.ScheduledCancellable scheduledCancellable1 = Mockito.mock(Scheduler.ScheduledCancellable.class);
         jobInfo1.setScheduledCancellable(scheduledCancellable1);
         Mockito.when(scheduledCancellable1.cancel()).thenReturn(false);
         this.scheduler.getScheduledJobInfo().addJob("index-name", "job-id-1", jobInfo1);
 
-        JobSchedulingInfo jobInfo2 = new JobSchedulingInfo(provider, "job-id-2", null);
+        JobSchedulingInfo jobInfo2 = new JobSchedulingInfo(provider, "job-id-2", jobParameter);
         Scheduler.ScheduledCancellable scheduledCancellable2 = Mockito.mock(Scheduler.ScheduledCancellable.class);
         jobInfo2.setScheduledCancellable(scheduledCancellable2);
         Mockito.when(scheduledCancellable2.cancel()).thenReturn(true);
@@ -199,8 +215,6 @@ public class JobSchedulerTests extends OpenSearchTestCase {
             false,
             0.6
         );
-        System.out.println("jobParameter: " + jobParameter);
-        System.out.println("schedule: " + jobParameter.getSchedule());
 
         JobSchedulingInfo jobSchedulingInfo = new JobSchedulingInfo(provider, "job-id", jobParameter);
         Instant now = Instant.now();
@@ -236,7 +250,12 @@ public class JobSchedulerTests extends OpenSearchTestCase {
         boolean enabled,
         Double jitter
     ) {
-        ScheduledJobParameter parameter = new ScheduledJobParameter(name, schedule, 60L, jitter, enabled);
+        ScheduledJobParameter parameter = new ScheduledJobParameter(name, schedule, 60L, jitter, enabled) {
+            @Override
+            public Function<StreamInput, ScheduledJobParameter> getParameterReader() {
+                return (in) -> null;
+            }
+        };
         parameter.setEnabledTime(enableTime);
         parameter.setLastUpdateTime(updateTime);
         return parameter;

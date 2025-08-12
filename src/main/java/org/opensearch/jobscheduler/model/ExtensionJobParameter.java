@@ -8,8 +8,11 @@
  */
 package org.opensearch.jobscheduler.model;
 
+import java.io.IOException;
 import java.time.Instant;
+import java.util.function.Function;
 
+import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.Writeable;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
@@ -52,4 +55,18 @@ public class ExtensionJobParameter extends ScheduledJobParameter implements Writ
         }
     }
 
+    public ExtensionJobParameter(StreamInput in) throws IOException {
+        super(in);
+    }
+
+    @Override
+    public Function<StreamInput, ScheduledJobParameter> getParameterReader() {
+        return (in) -> {
+            try {
+                return new ExtensionJobParameter(in);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
 }

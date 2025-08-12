@@ -10,21 +10,22 @@ package org.opensearch.jobscheduler.spi;
 
 import org.opensearch.common.time.DateFormatter;
 import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.core.common.io.stream.Writeable;
 import org.opensearch.core.xcontent.ToXContentFragment;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import org.opensearch.core.common.io.stream.StreamInput;
-import org.opensearch.core.common.io.stream.Writeable;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.function.Function;
 
 /**
  * Job parameters that being used by the JobScheduler.
  */
-public class ScheduledJobParameter implements ToXContentFragment, Writeable {
+public abstract class ScheduledJobParameter implements ToXContentFragment, Writeable {
 
     /**
      * Enum for Schedule types used to indicate which Schedule constructor to use to read from/write to the stream. Job schedules can be set via cron expression or interval.
@@ -145,6 +146,8 @@ public class ScheduledJobParameter implements ToXContentFragment, Writeable {
     public void setEnabledTime(Instant enabledTime) {
         this.enabledTime = enabledTime;
     }
+
+    public abstract Function<StreamInput, ScheduledJobParameter> getParameterReader();
 
     /**
      * Job will be delayed randomly with range of (0, jitter)*interval for the

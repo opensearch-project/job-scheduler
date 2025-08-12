@@ -12,6 +12,7 @@ import org.junit.Before;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.common.xcontent.json.JsonXContent;
+import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -22,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
+import java.util.function.Function;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -191,6 +193,11 @@ public class ExtensionJobParameterTests extends OpenSearchTestCase {
             @Override
             public boolean isEnabled() {
                 return false;
+            }
+
+            @Override
+            public Function<StreamInput, ScheduledJobParameter> getParameterReader() {
+                return (in) -> null;
             }
         };
         ExtensionJobParameter extensionJobParameter = new ExtensionJobParameter(jobParameter);

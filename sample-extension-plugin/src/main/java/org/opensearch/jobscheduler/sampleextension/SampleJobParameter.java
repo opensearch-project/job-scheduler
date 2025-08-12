@@ -8,12 +8,15 @@
  */
 package org.opensearch.jobscheduler.sampleextension;
 
+import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.core.common.io.stream.StreamOutput;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import org.opensearch.core.xcontent.XContentBuilder;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.function.Function;
 
 /**
  * A sample job parameter.
@@ -31,6 +34,11 @@ public class SampleJobParameter extends ScheduledJobParameter {
     public SampleJobParameter(String name, String indexToWatch, Schedule schedule, Long lockDurationSeconds, Double jitter) {
         super(name, schedule, lockDurationSeconds, jitter);
         this.indexToWatch = indexToWatch;
+    }
+
+    public SampleJobParameter(StreamInput in) throws IOException {
+        super(in);
+        this.indexToWatch = in.readString();
     }
 
     public String getIndexToWatch() {
@@ -76,5 +84,22 @@ public class SampleJobParameter extends ScheduledJobParameter {
         builder.field(INDEX_NAME_FIELD, this.indexToWatch);
         builder.endObject();
         return builder;
+    }
+
+    @Override
+    public Function<StreamInput, ScheduledJobParameter> getParameterReader() {
+        return (in) -> {
+            try {
+                return new SampleJobParameter(in);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        super.writeTo(out);
+        out.writeString(indexToWatch);
     }
 }

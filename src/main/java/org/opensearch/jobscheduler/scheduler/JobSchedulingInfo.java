@@ -19,8 +19,17 @@ import org.opensearch.threadpool.Scheduler;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 public class JobSchedulingInfo implements Writeable, ToXContentObject {
+
+    private static final Map<String, Function<StreamInput, ScheduledJobParameter>> PARAMETER_READERS = new ConcurrentHashMap<>();
+
+    public static void registerParameterReader(String jobType, Function<StreamInput, ScheduledJobParameter> reader) {
+        PARAMETER_READERS.put(jobType, reader);
+    }
 
     private String indexName;
     private String jobType;
@@ -37,13 +46,22 @@ public class JobSchedulingInfo implements Writeable, ToXContentObject {
         this.jobType = provider.getJobType();
         this.jobId = jobId;
         this.jobParameter = jobParameter;
+        registerParameterReader(this.jobType, jobParameter.getParameterReader());
     }
 
     public JobSchedulingInfo(StreamInput in) throws IOException {
         this.indexName = in.readString();
         this.jobType = in.readString();
         this.jobId = in.readString();
-        this.jobParameter = new ScheduledJobParameter(in);
+
+        // Use registry to deserialize the proper subclass
+        Function<StreamInput, ScheduledJobParameter> reader = PARAMETER_READERS.get(jobType);
+        if (reader != null) {
+            this.jobParameter = reader.apply(in);
+        } else {
+            // Fallback to base class
+            this.jobParameter = null;
+        }
     }
 
     public String getIndexName() {

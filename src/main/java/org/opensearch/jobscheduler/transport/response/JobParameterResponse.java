@@ -13,6 +13,7 @@ import java.io.IOException;
 import org.opensearch.core.action.ActionResponse;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 
 /**
@@ -41,7 +42,7 @@ public class JobParameterResponse extends ActionResponse {
      * @throws IOException IOException when message de-serialization fails.
      */
     public JobParameterResponse(StreamInput in) throws IOException {
-        this.jobParameter = new ScheduledJobParameter(in);
+        this.jobParameter = new ExtensionJobParameter(in);
     }
 
     /**
