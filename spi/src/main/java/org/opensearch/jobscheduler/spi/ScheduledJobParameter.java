@@ -83,8 +83,8 @@ public class ScheduledJobParameter implements ToXContentFragment, Writeable {
     public ScheduledJobParameter(StreamInput in) throws IOException {
         this.name = in.readString();
         this.isEnabled = in.readBoolean();
-        this.lockDurationSeconds = in.readLong();
-        this.jitter = in.readDouble();
+        this.lockDurationSeconds = in.readOptionalLong();
+        this.jitter = in.readOptionalDouble();
         this.enabledTime = in.readInstant();
         this.lastUpdateTime = in.readInstant();
         if (in.readEnum(ScheduleType.class) == ScheduleType.CRON) {
@@ -169,8 +169,8 @@ public class ScheduledJobParameter implements ToXContentFragment, Writeable {
     public void writeTo(StreamOutput out) throws IOException {
         out.writeString(name);
         out.writeBoolean(isEnabled);
-        out.writeLong(lockDurationSeconds);
-        out.writeDouble(jitter);
+        out.writeOptionalLong(lockDurationSeconds);
+        out.writeOptionalDouble(jitter);
         out.writeInstant(enabledTime);
         out.writeInstant(lastUpdateTime);
         if (this.schedule instanceof CronSchedule) {
