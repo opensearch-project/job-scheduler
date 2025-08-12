@@ -218,7 +218,7 @@ public class JobScheduler {
             );
 
             jobRunner.runJob(jobParameter, context);
-            if (JobSchedulerSettings.STATUS_HISTORY.get(this.settings)) {
+            if (JobSchedulerSettings.STATUS_HISTORY.get(this.settings) & context.getJobStatus() != -2) {
                 log.info("Recording job history for index: {}, jobId: {}", jobInfo.getIndexName(), jobInfo.getJobId());
                 jobHistoryService.recordJobHistory(
                     jobInfo.getIndexName(),

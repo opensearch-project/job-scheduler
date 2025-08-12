@@ -247,7 +247,13 @@ public class JobHistoryService {
                         listener.onResponse(null);
                     }
                 }
-            }, listener::onFailure));
+            }, exception -> {
+                if (exception.getMessage() != null && exception.getMessage().contains("no such index")) {
+                    listener.onResponse(null);
+                } else {
+                    listener.onFailure(exception);
+                }
+            }));
         } catch (Exception e) {
             listener.onFailure(e);
         }
