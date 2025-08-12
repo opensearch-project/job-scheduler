@@ -53,6 +53,7 @@ public class JobSchedulingInfo implements Writeable, ToXContentObject {
         this.indexName = in.readString();
         this.jobType = in.readString();
         this.jobId = in.readString();
+        this.descheduled = in.readBoolean();
 
         // Use registry to deserialize the proper subclass
         Function<StreamInput, ScheduledJobParameter> reader = PARAMETER_READERS.get(jobType);
@@ -121,6 +122,7 @@ public class JobSchedulingInfo implements Writeable, ToXContentObject {
         out.writeString(indexName);
         out.writeString(jobType);
         out.writeString(jobId);
+        out.writeBoolean(descheduled);
         jobParameter.writeTo(out);
     }
 
