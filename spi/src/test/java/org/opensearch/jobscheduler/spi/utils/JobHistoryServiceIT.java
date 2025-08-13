@@ -1,17 +1,14 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
- *
- * The OpenSearch Contributors require contributions made to
- * this file be licensed under the Apache-2.0 license or a
- * compatible open source license.
  */
-package org.opensearch.jobscheduler.utils;
+package org.opensearch.jobscheduler.spi.utils;
 
 import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.jobscheduler.spi.StatusHistoryModel;
 import org.opensearch.test.OpenSearchIntegTestCase;
 
 import java.time.Instant;
@@ -21,6 +18,8 @@ import java.util.concurrent.TimeUnit;
 public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
 
     private ClusterService clusterService;
+    static final String JOB_ID = "test_job_id";
+    static final String JOB_INDEX_NAME = "test_job_index_name";
 
     @Before
     public void setup() {
@@ -33,14 +32,13 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
     public void testRecordJobHistorySanity() throws Exception {
         String uniqSuffix = "_record_sanity";
         CountDownLatch latch = new CountDownLatch(1);
-        JobHistoryService jobHistoryService = new JobHistoryService(client(), this.clusterService);
-
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         String jobIndexName = "test-job-index" + uniqSuffix;
         String jobId = "test-job-id" + uniqSuffix;
         Instant startTime = Instant.now();
         Integer status = 1;
 
-        jobHistoryService.recordJobHistory(jobIndexName, jobId, startTime, null, status, ActionListener.wrap(result -> {
+        historyService.recordJobHistory(jobIndexName, jobId, startTime, null, status, ActionListener.wrap(result -> {
             assertTrue("Failed to record job history", result);
             latch.countDown();
         }, exception -> fail("Exception occurred: " + exception.getMessage())));
@@ -51,19 +49,19 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
     public void testUpdateJobHistory() throws Exception {
         String uniqSuffix = "_update_history";
         CountDownLatch latch = new CountDownLatch(1);
-        JobHistoryService jobHistoryService = new JobHistoryService(client(), this.clusterService);
 
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         String jobIndexName = "test-job-index" + uniqSuffix;
         String jobId = "test-job-id" + uniqSuffix;
         Instant startTime = Instant.now();
         Instant endTime = startTime.plusSeconds(60);
 
         // First record
-        jobHistoryService.recordJobHistory(jobIndexName, jobId, startTime, null, 1, ActionListener.wrap(result -> {
+        historyService.recordJobHistory(jobIndexName, jobId, startTime, null, 1, ActionListener.wrap(result -> {
             assertTrue("Failed to record initial job history", result);
 
             // Update with end time
-            jobHistoryService.recordJobHistory(jobIndexName, jobId, startTime, endTime, 2, ActionListener.wrap(updateResult -> {
+            historyService.recordJobHistory(jobIndexName, jobId, startTime, endTime, 2, ActionListener.wrap(updateResult -> {
                 assertTrue("Failed to update job history", updateResult);
                 latch.countDown();
             }, exception -> fail("Exception during update: " + exception.getMessage())));
@@ -75,18 +73,18 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
     public void testFindHistoryRecord() throws Exception {
         String uniqSuffix = "_find_record";
         CountDownLatch latch = new CountDownLatch(1);
-        JobHistoryService jobHistoryService = new JobHistoryService(client(), this.clusterService);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
 
         String jobIndexName = "test-job-index" + uniqSuffix;
         String jobId = "test-job-id" + uniqSuffix;
         Instant startTime = Instant.now();
 
         // Record first
-        jobHistoryService.recordJobHistory(jobIndexName, jobId, startTime, null, 1, ActionListener.wrap(result -> {
+        historyService.recordJobHistory(jobIndexName, jobId, startTime, null, 1, ActionListener.wrap(result -> {
             assertTrue("Failed to record job history", result);
 
             // Find the record
-            jobHistoryService.findHistoryRecord(jobIndexName, jobId, startTime, ActionListener.wrap(historyModel -> {
+            historyService.findHistoryRecord(jobIndexName, jobId, startTime, ActionListener.wrap(historyModel -> {
                 assertNotNull("History record should exist", historyModel);
                 assertEquals("Job index name mismatch", jobIndexName, historyModel.getJobIndexName());
                 assertEquals("Job ID mismatch", jobId, historyModel.getJobId());
@@ -101,9 +99,9 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
 
     public void testFindNonExistentRecord() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        JobHistoryService jobHistoryService = new JobHistoryService(client(), this.clusterService);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
 
-        jobHistoryService.findHistoryRecord("non-existent-index", "non-existent-job", Instant.now(), ActionListener.wrap(historyModel -> {
+        historyService.findHistoryRecord("non-existent-index", "non-existent-job", Instant.now(), ActionListener.wrap(historyModel -> {
             assertNull("Non-existent record should return null", historyModel);
             latch.countDown();
         }, exception -> fail("Exception should not occur for non-existent record: " + exception.getMessage())));
@@ -112,10 +110,11 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
     }
 
     public void testRecordJobHistoryWithNullJobIndexName() throws Exception {
+        String uniqSuffix = "_nullIndex";
         CountDownLatch latch = new CountDownLatch(1);
-        JobHistoryService jobHistoryService = new JobHistoryService(client(), this.clusterService);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
 
-        jobHistoryService.recordJobHistory(
+        historyService.recordJobHistory(
             null,
             "test-job",
             Instant.now(),
@@ -132,10 +131,11 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
     }
 
     public void testRecordJobHistoryWithNullJobId() throws Exception {
+        String uniqSuffix = "nullJobId";
         CountDownLatch latch = new CountDownLatch(1);
-        JobHistoryService jobHistoryService = new JobHistoryService(client(), this.clusterService);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
 
-        jobHistoryService.recordJobHistory(
+        historyService.recordJobHistory(
             "test-index",
             null,
             Instant.now(),
@@ -152,10 +152,11 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
     }
 
     public void testRecordJobHistoryWithNullStartTime() throws Exception {
+        String uniqSuffix = "nullJobId";
         CountDownLatch latch = new CountDownLatch(1);
-        JobHistoryService jobHistoryService = new JobHistoryService(client(), this.clusterService);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
 
-        jobHistoryService.recordJobHistory(
+        historyService.recordJobHistory(
             "test-index",
             "test-job",
             null,
@@ -173,9 +174,9 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
 
     public void testHistoryIndexCreation() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        JobHistoryService jobHistoryService = new JobHistoryService(client(), this.clusterService);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
 
-        jobHistoryService.createHistoryIndex(ActionListener.wrap(created -> {
+        historyService.createHistoryIndex(ActionListener.wrap(created -> {
             assertTrue("History index should be created", created);
             latch.countDown();
         }, exception -> fail("Exception during index creation: " + exception.getMessage())));
@@ -186,19 +187,18 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
     public void testRecordJobHistoryWithEndTime() throws Exception {
         String uniqSuffix = "_with_end_time";
         CountDownLatch latch = new CountDownLatch(1);
-        JobHistoryService jobHistoryService = new JobHistoryService(client(), this.clusterService);
-
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         String jobIndexName = "test-job-index" + uniqSuffix;
         String jobId = "test-job-id" + uniqSuffix;
         Instant startTime = Instant.now();
         Instant endTime = startTime.plusSeconds(30);
         Integer status = 2;
 
-        jobHistoryService.recordJobHistory(jobIndexName, jobId, startTime, endTime, status, ActionListener.wrap(result -> {
+        historyService.recordJobHistory(jobIndexName, jobId, startTime, endTime, status, ActionListener.wrap(result -> {
             assertTrue("Failed to record job history with end time", result);
 
             // Verify the record was created with end time
-            jobHistoryService.findHistoryRecord(jobIndexName, jobId, startTime, ActionListener.wrap(historyModel -> {
+            historyService.findHistoryRecord(jobIndexName, jobId, startTime, ActionListener.wrap(historyModel -> {
                 assertNotNull("History record should exist", historyModel);
                 assertEquals("End time mismatch", endTime.getEpochSecond(), historyModel.getEndTime().getEpochSecond());
                 assertEquals("Status mismatch", status.intValue(), historyModel.getStatus());
@@ -212,18 +212,17 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
     public void testUpdateHistoryRecordDirectly() throws Exception {
         String uniqSuffix = "_direct_update";
         CountDownLatch latch = new CountDownLatch(1);
-        JobHistoryService jobHistoryService = new JobHistoryService(client(), this.clusterService);
-
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         String jobIndexName = "test-job-index" + uniqSuffix;
         String jobId = "test-job-id" + uniqSuffix;
         Instant startTime = Instant.now();
 
         // First create a record
-        jobHistoryService.recordJobHistory(jobIndexName, jobId, startTime, null, 1, ActionListener.wrap(result -> {
+        historyService.recordJobHistory(jobIndexName, jobId, startTime, null, 1, ActionListener.wrap(result -> {
             assertTrue("Failed to record initial job history", result);
 
             // Find the record to get seq_no and primary_term
-            jobHistoryService.findHistoryRecord(jobIndexName, jobId, startTime, ActionListener.wrap(historyModel -> {
+            historyService.findHistoryRecord(jobIndexName, jobId, startTime, ActionListener.wrap(historyModel -> {
                 assertNotNull("History record should exist", historyModel);
 
                 // Create updated model
@@ -238,7 +237,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
                 );
 
                 // Update directly
-                jobHistoryService.updateHistoryRecord(updatedModel, ActionListener.wrap(updatedHistoryModel -> {
+                historyService.updateHistoryRecord(updatedModel, ActionListener.wrap(updatedHistoryModel -> {
                     assertNotNull("Updated history model should not be null", updatedHistoryModel);
                     assertEquals("Status should be updated", 3, updatedHistoryModel.getStatus());
                     assertNotNull("End time should be set", updatedHistoryModel.getEndTime());

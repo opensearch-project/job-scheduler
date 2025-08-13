@@ -83,8 +83,6 @@ public class SampleJobRunner implements ScheduledJobRunner {
 
     @Override
     public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
-        log.info("Starting job: {}, lockDurationSeconds: {}", jobParameter.getName(), jobParameter.getLockDurationSeconds());
-        
         if (!(jobParameter instanceof SampleJobParameter)) {
             throw new IllegalStateException(
                 "Job parameter is not instance of SampleJobParameter, type: " + jobParameter.getClass().getCanonicalName()
@@ -101,36 +99,44 @@ public class SampleJobRunner implements ScheduledJobRunner {
 
         final LockService lockService = context.getLockService();
 
-        if (jobParameter.getLockDurationSeconds() != null) {
-            lockService.acquireLock(jobParameter, context, ActionListener.wrap(lock -> {
-                if (lock == null) {
-                    context.setJobStatus(-2);
-                    return;
-                }
+        Runnable runnable = () -> {
+            if (jobParameter.getLockDurationSeconds() != null) {
+                lockService.acquireLock(jobParameter, context, ActionListener.wrap(lock -> {
+                    if (lock == null) {
+                        return;
+                    }
 
-                SampleJobParameter parameter = (SampleJobParameter) jobParameter;
-                StringBuilder msg = new StringBuilder();
-                msg.append("Watching index ").append(parameter.getIndexToWatch()).append("\n");
+                    SampleJobParameter parameter = (SampleJobParameter) jobParameter;
+                    StringBuilder msg = new StringBuilder();
+                    msg.append("Watching index ").append(parameter.getIndexToWatch()).append("\n");
 
-                List<ShardRouting> shardRoutingList = this.clusterService.state().routingTable().allShards(parameter.getIndexToWatch());
-                for (ShardRouting shardRouting : shardRoutingList) {
-                    msg.append(shardRouting.shardId().getId())
-                        .append("\t")
-                        .append(shardRouting.currentNodeId())
-                        .append("\t")
-                        .append(shardRouting.active() ? "active" : "inactive")
-                        .append("\n");
-                }
-                log.info(msg.toString());
-                runTaskForLockIntegrationTests(parameter);
-                runTaskForIntegrationTests(parameter, ActionListener.wrap(idxResponse -> {
-                    lockService.release(lock, ActionListener.wrap(released -> {
-                        context.setJobStatus(0);
-                        log.info("Released lock for job {}, setting status to 0", jobParameter.getName());
-                    }, exception -> { context.setJobStatus(-2); throw new IllegalStateException("Failed to release lock."); }));
-                }, exception -> { context.setJobStatus(-2); throw new IllegalStateException("Failed to index sample doc."); }));
-            }, exception -> { context.setJobStatus(-2); throw new IllegalStateException("Failed to acquire lock."); }));
-        }
+                    List<ShardRouting> shardRoutingList = this.clusterService.state().routingTable().allShards(parameter.getIndexToWatch());
+                    for (ShardRouting shardRouting : shardRoutingList) {
+                        msg.append(shardRouting.shardId().getId())
+                            .append("\t")
+                            .append(shardRouting.currentNodeId())
+                            .append("\t")
+                            .append(shardRouting.active() ? "active" : "inactive")
+                            .append("\n");
+                    }
+                    log.info(msg.toString());
+                    runTaskForLockIntegrationTests(parameter);
+                    runTaskForIntegrationTests(parameter, ActionListener.wrap(idxResponse -> {
+                        lockService.release(
+                            lock,
+                            ActionListener.wrap(
+                                released -> { log.info("Released lock for job {}", jobParameter.getName()); },
+                                exception -> {
+                                    throw new IllegalStateException("Failed to release lock.");
+                                }
+                            )
+                        );
+                    }, exception -> { throw new IllegalStateException("Failed to index sample doc."); }));
+                }, exception -> { throw new IllegalStateException("Failed to acquire lock."); }));
+            }
+        };
+
+        threadPool.generic().submit(runnable);
     }
 
     private void runTaskForIntegrationTests(SampleJobParameter jobParameter, ActionListener<IndexResponse> listener) {

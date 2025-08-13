@@ -46,7 +46,7 @@ import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
 import org.opensearch.indices.SystemIndexDescriptor;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
-import org.opensearch.jobscheduler.utils.JobHistoryService;
+import org.opensearch.jobscheduler.spi.utils.JobHistoryService;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.plugins.Plugin;
@@ -79,7 +79,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private JobSweeper sweeper;
     private JobScheduler scheduler;
     private LockService lockService;
-    private JobHistoryService jobHistoryService;
+    private JobHistoryService historyService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
 
@@ -119,10 +119,12 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
-        this.lockService = new LockService(client, clusterService);
-        this.jobHistoryService = new JobHistoryService(client, clusterService);
+        this.historyService = JobSchedulerSettings.STATUS_HISTORY.get(environment.settings())
+            ? new JobHistoryService(client, clusterService)
+            : null;
+        this.lockService = new LockService(client, clusterService, historyService);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
-        this.scheduler = new JobScheduler(threadPool, this.lockService, this.jobHistoryService, environment.settings());
+        this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
             environment.settings(),
             client,
