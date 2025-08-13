@@ -86,8 +86,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         // thus the OpenSearchIntegTestCase.clusterService() will throw exception.
         this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(this.clusterService.state().routingTable().hasIndex(".opendistro-job-scheduler-lock"))
-                .thenReturn(false)
-                .thenReturn(true);
+            .thenReturn(false)
+            .thenReturn(true);
     }
 
     public void testSanity() throws Exception {
@@ -95,11 +95,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
-                Instant.now(),
-                new JobDocVersion(0, 0, 0),
-                lockService,
-                JOB_INDEX_NAME + uniqSuffix,
-                JOB_ID + uniqSuffix
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
         );
         Instant testTime = Instant.now();
         lockService.setTime(testTime);
@@ -108,9 +108,9 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             assertEquals("job_id does not match.", JOB_ID + uniqSuffix, lock.getJobId());
             assertEquals("job_index_name does not match.", JOB_INDEX_NAME + uniqSuffix, lock.getJobIndexName());
             assertEquals(
-                    "lock_id does not match.",
-                    LockModel.generateLockId(JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix),
-                    lock.getLockId()
+                "lock_id does not match.",
+                LockModel.generateLockId(JOB_INDEX_NAME + uniqSuffix, JOB_ID + uniqSuffix),
+                lock.getLockId()
             );
             assertEquals("lock_duration_seconds does not match.", LOCK_DURATION_SECONDS, lock.getLockDurationSeconds());
             assertEquals("lock_time does not match.", testTime.getEpochSecond(), lock.getLockTime().getEpochSecond());
@@ -133,11 +133,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
-                Instant.now(),
-                new JobDocVersion(0, 0, 0),
-                lockService,
-                JOB_INDEX_NAME + uniqSuffix,
-                JOB_ID + uniqSuffix
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
         );
         Instant testTime = Instant.now();
         lockService.setTime(testTime);
@@ -167,11 +167,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
-                Instant.now(),
-                new JobDocVersion(0, 0, 0),
-                lockService,
-                JOB_INDEX_NAME + uniqSuffix,
-                JOB_ID + uniqSuffix
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
         );
 
         lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
@@ -196,11 +196,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
-                Instant.now(),
-                new JobDocVersion(0, 0, 0),
-                lockService,
-                JOB_INDEX_NAME + uniqSuffix,
-                JOB_ID + uniqSuffix
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
         );
 
         lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
@@ -218,11 +218,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
-                Instant.now(),
-                new JobDocVersion(0, 0, 0),
-                lockService,
-                JOB_INDEX_NAME + uniqSuffix,
-                JOB_ID + uniqSuffix
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
         );
 
         lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
@@ -252,11 +252,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         // Set lock time in the past.
         lockService.setTime(Instant.now().minus(Duration.ofSeconds(LOCK_DURATION_SECONDS + LOCK_DURATION_SECONDS)));
         final JobExecutionContext context = new JobExecutionContext(
-                Instant.now(),
-                new JobDocVersion(0, 0, 0),
-                lockService,
-                JOB_INDEX_NAME + uniqSuffix,
-                JOB_ID + uniqSuffix
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
         );
 
         lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
@@ -316,11 +316,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         final LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
-                Instant.now(),
-                new JobDocVersion(0, 0, 0),
-                lockService,
-                JOB_INDEX_NAME + uniqSuffix,
-                JOB_ID + uniqSuffix
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
         );
 
         lockService.createLockIndex(ActionListener.wrap(created -> {
@@ -379,11 +379,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         final LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
-                Instant.now(),
-                new JobDocVersion(0, 0, 0),
-                lockService,
-                JOB_INDEX_NAME + uniqSuffix,
-                JOB_ID + uniqSuffix
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
         );
 
         lockService.createLockIndex(ActionListener.wrap(created -> {
@@ -400,16 +400,16 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                     Callable<Boolean> callable = () -> {
                         CountDownLatch callableLatch = new CountDownLatch(1);
                         lockService.acquireLockWithId(
-                                context.getJobIndexName(),
-                                LOCK_DURATION_SECONDS,
-                                lockID,
-                                ActionListener.wrap(lock -> {
-                                    if (lock != null) {
-                                        lockModelAtomicReference.set(lock);
-                                        Integer test = multiThreadAcquireLockCounter.getAndAdd(1);
-                                    }
-                                    callableLatch.countDown();
-                                }, exception -> fail(exception.getMessage()))
+                            context.getJobIndexName(),
+                            LOCK_DURATION_SECONDS,
+                            lockID,
+                            ActionListener.wrap(lock -> {
+                                if (lock != null) {
+                                    lockModelAtomicReference.set(lock);
+                                    Integer test = multiThreadAcquireLockCounter.getAndAdd(1);
+                                }
+                                callableLatch.countDown();
+                            }, exception -> fail(exception.getMessage()))
                         );
                         callableLatch.await(5L, TimeUnit.SECONDS);
                         return true;
@@ -446,11 +446,11 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         LockService lockService = new LockService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
-                Instant.now(),
-                new JobDocVersion(0, 0, 0),
-                lockService,
-                JOB_INDEX_NAME + uniqSuffix,
-                JOB_ID + uniqSuffix
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
         );
 
         lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockID, ActionListener.wrap(lock -> {
@@ -463,9 +463,9 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                 assertNotNull("Expected to successfully renew lock", renewedLock);
                 assertEquals("lock_time is expected to be the renewal time.", now, renewedLock.getLockTime());
                 assertEquals(
-                        "lock_duration is expected to be unchanged.",
-                        lock.getLockDurationSeconds(),
-                        renewedLock.getLockDurationSeconds()
+                    "lock_duration is expected to be unchanged.",
+                    lock.getLockDurationSeconds(),
+                    renewedLock.getLockDurationSeconds()
                 );
                 lockService.release(lock, ActionListener.wrap(released -> {
                     assertTrue("Failed to release lock.", released);
