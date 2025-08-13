@@ -93,7 +93,9 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
     public void testSanity() throws Exception {
         String uniqSuffix = "_sanity";
         CountDownLatch latch = new CountDownLatch(1);
-        LockService lockService = new LockService(client(), this.clusterService);
+
+        LockService lockService = new LockService(client(), this.clusterService, null);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),
@@ -131,7 +133,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         String lockID = "sanity_test_lock";
         String uniqSuffix = "_sanity";
         CountDownLatch latch = new CountDownLatch(1);
-        LockService lockService = new LockService(client(), this.clusterService);
+        LockService lockService = new LockService(client(), this.clusterService, null);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),
@@ -165,7 +168,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         String uniqSuffix = "_second_acquire";
         String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
-        LockService lockService = new LockService(client(), this.clusterService);
+        LockService lockService = new LockService(client(), this.clusterService, null);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),
@@ -194,7 +198,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         String uniqSuffix = "_long_lock_id";
         String lockID = randomAlphaOfLengthBetween(513, 1000);
         CountDownLatch latch = new CountDownLatch(1);
-        LockService lockService = new LockService(client(), this.clusterService);
+        LockService lockService = new LockService(client(), this.clusterService, null);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),
@@ -216,7 +221,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         String uniqSuffix = "_lock_release+acquire";
         String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
-        LockService lockService = new LockService(client(), this.clusterService);
+        LockService lockService = new LockService(client(), this.clusterService, null);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),
@@ -248,7 +254,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         String uniqSuffix = "_lock_expire";
         String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
-        LockService lockService = new LockService(client(), this.clusterService);
+        LockService lockService = new LockService(client(), this.clusterService, null);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         // Set lock time in the past.
         lockService.setTime(Instant.now().minus(Duration.ofSeconds(LOCK_DURATION_SECONDS + LOCK_DURATION_SECONDS)));
         final JobExecutionContext context = new JobExecutionContext(
@@ -282,7 +289,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
 
     public void testDeleteLockWithOutIndexCreation() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        LockService lockService = new LockService(client(), this.clusterService);
+        LockService lockService = new LockService(client(), this.clusterService, null);
         lockService.deleteLock("NonExistingLockId", ActionListener.wrap(deleted -> {
             assertTrue("Failed to delete lock.", deleted);
             latch.countDown();
@@ -292,7 +299,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
 
     public void testDeleteNonExistingLock() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        LockService lockService = new LockService(client(), this.clusterService);
+        LockService lockService = new LockService(client(), this.clusterService, null);
         lockService.createLockIndex(ActionListener.wrap(created -> {
             if (created) {
                 lockService.deleteLock("NonExistingLockId", ActionListener.wrap(deleted -> {
@@ -314,7 +321,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         String uniqSuffix = "_multi_thread_create";
         String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
-        final LockService lockService = new LockService(client(), this.clusterService);
+        final LockService lockService = new LockService(client(), this.clusterService, null);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),
@@ -377,7 +385,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         String uniqSuffix = "_multi_thread_acquire";
         String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
-        final LockService lockService = new LockService(client(), this.clusterService);
+        final LockService lockService = new LockService(client(), this.clusterService, null);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),
@@ -444,7 +453,8 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         String uniqSuffix = "_lock_renew";
         String lockID = randomAlphaOfLengthBetween(6, 15);
         CountDownLatch latch = new CountDownLatch(1);
-        LockService lockService = new LockService(client(), this.clusterService);
+        LockService lockService = new LockService(client(), this.clusterService, null);
+        JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         final JobExecutionContext context = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),

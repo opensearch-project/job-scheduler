@@ -1,12 +1,8 @@
 /*
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
- *
- * The OpenSearch Contributors require contributions made to
- * this file be licensed under the Apache-2.0 license or a
- * compatible open source license.
  */
-package org.opensearch.jobscheduler.utils;
+package org.opensearch.jobscheduler.spi.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,6 +24,7 @@ import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.jobscheduler.spi.StatusHistoryModel;
 import org.opensearch.transport.client.Client;
 
 import java.io.BufferedReader;
@@ -69,7 +66,6 @@ public class JobHistoryService {
         return clusterService.state().routingTable().hasIndex(JOB_HISTORY_INDEX_NAME);
     }
 
-    @VisibleForTesting
     void createHistoryIndex(ActionListener<Boolean> listener) {
         try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
             if (historyIndexExist()) {
@@ -99,8 +95,6 @@ public class JobHistoryService {
     /**
      * Records job execution history to the history index.
      *
-     * @param jobIndexName the index name where the job is defined
-     * @param jobId the unique identifier of the job
      * @param startTime the time when job execution started
      * @param endTime the time when job execution ended (can be null for ongoing jobs)
      * @param status the execution status (e.g., "RUNNING", "SUCCESS", "FAILED")

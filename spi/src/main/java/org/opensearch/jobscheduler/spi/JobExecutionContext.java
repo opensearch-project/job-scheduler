@@ -76,12 +76,4 @@ public class JobExecutionContext implements Writeable {
     public String getJobId() {
         return this.jobId;
     }
-
-    public Integer getJobStatus() {
-        return this.jobStatus;
-    }
-
-    public void setJobStatus(Integer jobStatus) {
-        this.jobStatus = jobStatus;
-    }
 }

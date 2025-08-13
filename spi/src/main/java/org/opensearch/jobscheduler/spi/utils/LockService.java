@@ -53,13 +53,21 @@ public class LockService {
     private final Client client;
     private final ClusterService clusterService;
     final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
+    private final JobHistoryService historyService;
 
     // This is used in tests to control time.
     private Instant testInstant = null;
 
+    public LockService(final Client client, final ClusterService clusterService, JobHistoryService historyService) {
+        this.client = client;
+        this.clusterService = clusterService;
+        this.historyService = historyService;
+    }
+
     public LockService(final Client client, final ClusterService clusterService) {
         this.client = client;
         this.clusterService = clusterService;
+        this.historyService = null;
     }
 
     private String lockMapping() {
@@ -125,7 +133,25 @@ public class LockService {
         final String jobIndexName = context.getJobIndexName();
         final String jobId = context.getJobId();
         final long lockDurationSeconds = jobParameter.getLockDurationSeconds();
-        acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, listener);
+
+        acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, ActionListener.wrap(lock -> {
+            if (lock != null) {
+                if (historyService != null) {
+                    historyService.recordJobHistory(
+                        jobIndexName,
+                        jobId,
+                        lock.getLockTime(),
+                        null,
+                        1,
+                        ActionListener.wrap(success -> listener.onResponse(lock), failure -> listener.onResponse(lock))
+                    );
+                } else {
+                    listener.onResponse(lock);
+                }
+            } else {
+                listener.onResponse(null);
+            }
+        }, listener::onFailure));
     }
 
     /**
@@ -303,6 +329,16 @@ public class LockService {
         } else {
             logger.debug("Releasing lock: " + lock);
             final LockModel lockToRelease = new LockModel(lock, true);
+            if (historyService != null) {
+                historyService.recordJobHistory(
+                    lock.getJobIndexName(),
+                    lock.getJobId(),
+                    lock.getLockTime(),
+                    Instant.now(),
+                    0,
+                    ActionListener.wrap(success -> {}, listener::onFailure)
+                );
+            }
             updateLock(lockToRelease, ActionListener.wrap(releasedLock -> listener.onResponse(releasedLock != null), listener::onFailure));
         }
     }
