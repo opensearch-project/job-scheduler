@@ -61,15 +61,7 @@ public final class StatusHistoryModel implements ToXContentObject, Writeable {
     }
 
     public StatusHistoryModel(StreamInput in) throws IOException {
-        this(
-            in.readString(),
-            in.readString(),
-            in.readInstant(),
-            in.readOptionalInstant(),
-            in.readInt(),
-            SequenceNumbers.UNASSIGNED_SEQ_NO,
-            SequenceNumbers.UNASSIGNED_PRIMARY_TERM
-        );
+        this(in.readString(), in.readString(), in.readInstant(), in.readOptionalInstant(), in.readInt(), in.readLong(), in.readLong());
     }
 
     public static StatusHistoryModel parse(final XContentParser parser, long seqNo, long primaryTerm) throws IOException {

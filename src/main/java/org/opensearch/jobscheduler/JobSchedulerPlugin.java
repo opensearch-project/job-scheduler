@@ -119,10 +119,9 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
-        this.historyService = JobSchedulerSettings.STATUS_HISTORY.get(environment.settings())
-            ? new JobHistoryService(client, clusterService)
-            : null;
-        this.lockService = new LockService(client, clusterService, historyService);
+        Supplier<Boolean> statusHistoryEnabled = () -> JobSchedulerSettings.STATUS_HISTORY.get(environment.settings());
+        this.historyService = new JobHistoryService(client, clusterService);
+        this.lockService = new LockService(client, clusterService, historyService, statusHistoryEnabled);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(

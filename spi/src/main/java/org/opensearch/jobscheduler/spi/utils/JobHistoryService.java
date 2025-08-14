@@ -153,7 +153,7 @@ public class JobHistoryService {
     }
 
     private void createHistoryRecord(final StatusHistoryModel historyModel, ActionListener<Boolean> listener) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
+        try {
             String historyId = generateHistoryId(historyModel.getJobIndexName(), historyModel.getJobId(), historyModel.getStartTime());
 
             final IndexRequest request = new IndexRequest(JOB_HISTORY_INDEX_NAME).id(historyId)

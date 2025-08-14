@@ -45,6 +45,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class LockService {
     private static final Logger logger = LogManager.getLogger(LockService.class);
@@ -52,22 +53,30 @@ public class LockService {
 
     private final Client client;
     private final ClusterService clusterService;
-    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
+    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-all");
     private final JobHistoryService historyService;
+    private final Supplier<Boolean> statusHistoryEnabled;
 
     // This is used in tests to control time.
     private Instant testInstant = null;
 
-    public LockService(final Client client, final ClusterService clusterService, JobHistoryService historyService) {
+    public LockService(
+        final Client client,
+        final ClusterService clusterService,
+        JobHistoryService historyService,
+        Supplier<Boolean> statusHistoryEnabled
+    ) {
         this.client = client;
         this.clusterService = clusterService;
         this.historyService = historyService;
+        this.statusHistoryEnabled = statusHistoryEnabled;
     }
 
     public LockService(final Client client, final ClusterService clusterService) {
         this.client = client;
         this.clusterService = clusterService;
         this.historyService = null;
+        this.statusHistoryEnabled = null;
     }
 
     private String lockMapping() {
@@ -135,22 +144,21 @@ public class LockService {
         final long lockDurationSeconds = jobParameter.getLockDurationSeconds();
 
         acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, ActionListener.wrap(lock -> {
-            if (lock != null) {
-                if (historyService != null) {
-                    historyService.recordJobHistory(
-                        jobIndexName,
-                        jobId,
-                        lock.getLockTime(),
-                        null,
-                        1,
-                        ActionListener.wrap(success -> listener.onResponse(lock), failure -> listener.onResponse(lock))
-                    );
-                } else {
-                    listener.onResponse(lock);
-                }
+
+            assert statusHistoryEnabled != null;
+            if (lock != null && statusHistoryEnabled.get() && historyService != null) {
+                historyService.recordJobHistory(
+                    jobIndexName,
+                    jobId,
+                    lock.getLockTime(),
+                    null,
+                    1,
+                    ActionListener.wrap(success -> listener.onResponse(lock), failure -> listener.onResponse(lock))
+                );
             } else {
-                listener.onResponse(null);
+                listener.onResponse(lock);
             }
+
         }, listener::onFailure));
     }
 
@@ -329,7 +337,8 @@ public class LockService {
         } else {
             logger.debug("Releasing lock: " + lock);
             final LockModel lockToRelease = new LockModel(lock, true);
-            if (historyService != null) {
+            assert statusHistoryEnabled != null;
+            if (statusHistoryEnabled.get() && historyService != null) {
                 historyService.recordJobHistory(
                     lock.getJobIndexName(),
                     lock.getJobId(),
