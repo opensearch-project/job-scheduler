@@ -57,7 +57,7 @@ public class JobSchedulerSettings {
     public static final Setting<Boolean> STATUS_HISTORY = Setting.boolSetting(
         "plugins.jobscheduler.status_history",
         false,
-        Setting.Property.NodeScope,
+        Setting.Property.Consistent,
         Setting.Property.Dynamic
     );
 }

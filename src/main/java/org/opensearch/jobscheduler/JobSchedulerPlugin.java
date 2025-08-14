@@ -21,10 +21,13 @@ import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestGetScheduledInfoAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
+import org.opensearch.jobscheduler.rest.action.RestGetHistoryAction;
 import org.opensearch.jobscheduler.transport.action.GetAllLocksAction;
 import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetAllLocksAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetScheduledInfoAction;
+import org.opensearch.jobscheduler.transport.action.TransportGetHistoryAction;
+import org.opensearch.jobscheduler.transport.action.GetHistoryAction;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
@@ -260,20 +263,23 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         RestReleaseLockAction restReleaseLockAction = new RestReleaseLockAction(lockService);
         RestGetScheduledInfoAction restGetScheduledInfoAction = new RestGetScheduledInfoAction();
         RestGetLocksAction restGetAllLocksAction = new RestGetLocksAction();
+        RestGetHistoryAction restGetHistoryAction = new RestGetHistoryAction();
         return List.of(
             restGetJobDetailsAction,
             restGetLockAction,
             restReleaseLockAction,
             restGetScheduledInfoAction,
-            restGetAllLocksAction
+            restGetAllLocksAction,
+            restGetHistoryAction
         );
     }
 
     @Override
     public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
-        List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> actions = new ArrayList<>(2);
+        List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> actions = new ArrayList<>(3);
         actions.add(new ActionHandler<>(GetScheduledInfoAction.INSTANCE, TransportGetScheduledInfoAction.class));
         actions.add(new ActionHandler<>(GetAllLocksAction.INSTANCE, TransportGetAllLocksAction.class));
+        actions.add(new ActionHandler<>(GetHistoryAction.INSTANCE, TransportGetHistoryAction.class));
         return actions;
     }
 
