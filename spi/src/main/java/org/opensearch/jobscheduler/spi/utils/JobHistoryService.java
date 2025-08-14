@@ -45,7 +45,7 @@ public class JobHistoryService {
 
     private final Client client;
     private final ClusterService clusterService;
-    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
+    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-all");
 
     public JobHistoryService(final Client client, final ClusterService clusterService) {
         this.client = client;
@@ -159,8 +159,6 @@ public class JobHistoryService {
             final IndexRequest request = new IndexRequest(JOB_HISTORY_INDEX_NAME).id(historyId)
                 .source(historyModel.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
-                .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
-                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .create(true);
 
             client.index(request, ActionListener.wrap(response -> {
