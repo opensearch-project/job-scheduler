@@ -76,7 +76,7 @@ public class LockService {
         this.client = client;
         this.clusterService = clusterService;
         this.historyService = null;
-        this.statusHistoryEnabled = null;
+        this.statusHistoryEnabled = () -> false;
     }
 
     private String lockMapping() {
@@ -145,7 +145,6 @@ public class LockService {
 
         acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, ActionListener.wrap(lock -> {
 
-            assert statusHistoryEnabled != null;
             if (lock != null && statusHistoryEnabled.get() && historyService != null) {
                 historyService.recordJobHistory(
                     jobIndexName,
@@ -337,7 +336,7 @@ public class LockService {
         } else {
             logger.debug("Releasing lock: " + lock);
             final LockModel lockToRelease = new LockModel(lock, true);
-            assert statusHistoryEnabled != null;
+
             if (statusHistoryEnabled.get() && historyService != null) {
                 historyService.recordJobHistory(
                     lock.getJobIndexName(),
