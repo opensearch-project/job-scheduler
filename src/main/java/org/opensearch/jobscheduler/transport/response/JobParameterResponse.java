@@ -14,6 +14,7 @@ import org.opensearch.core.action.ActionResponse;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
 import org.opensearch.jobscheduler.model.ExtensionJobParameter;
+import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 
 /**
  * Response from extensions to parse a ScheduledJobParameter
@@ -23,14 +24,14 @@ public class JobParameterResponse extends ActionResponse {
     /**
      * jobParameter is job index entry intended to be used to validate prior to job execution
      */
-    private final ExtensionJobParameter jobParameter;
+    private final ScheduledJobParameter jobParameter;
 
     /**
      * Instantiates a new Job Parameter Response
      *
      * @param jobParameter the job parameter parsed from the extension
      */
-    public JobParameterResponse(ExtensionJobParameter jobParameter) {
+    public JobParameterResponse(ScheduledJobParameter jobParameter) {
         this.jobParameter = jobParameter;
     }
 
@@ -59,7 +60,7 @@ public class JobParameterResponse extends ActionResponse {
         this.jobParameter.writeTo(out);
     }
 
-    public ExtensionJobParameter getJobParameter() {
+    public ScheduledJobParameter getJobParameter() {
         return this.jobParameter;
     }
 }

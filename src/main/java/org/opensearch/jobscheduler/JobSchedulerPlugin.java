@@ -119,7 +119,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     ) {
         this.lockService = new LockService(client, clusterService);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
-        this.scheduler = new JobScheduler(threadPool, this.lockService);
+        this.scheduler = new JobScheduler(threadPool, this.lockService, this.indexToJobProviders);
         this.sweeper = initSweeper(
             environment.settings(),
             client,

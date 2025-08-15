@@ -16,7 +16,6 @@ import org.opensearch.action.admin.cluster.node.info.PluginsAndModules;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
 import org.opensearch.jobscheduler.transport.request.GetScheduledInfoRequest;
-import org.opensearch.jobscheduler.transport.response.GetScheduledInfoNodeResponse;
 import org.opensearch.jobscheduler.transport.response.GetScheduledInfoResponse;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.plugins.PluginInfo;
@@ -60,11 +59,8 @@ public class GetScheduledInfoMultiNodeTransportIT extends OpenSearchIntegTestCas
 
         // Count total jobs across all nodes
         int totalJobs = 0;
-        for (GetScheduledInfoNodeResponse nodeResponse : response.getNodes()) {
-            Object totalJobsObj = nodeResponse.getScheduledJobInfo().get("total_jobs");
-            if (totalJobsObj instanceof Integer) {
-                totalJobs += (Integer) totalJobsObj;
-            }
+        for (GetScheduledInfoResponse.NodeResponse nodeResponse : response.getNodes()) {
+            totalJobs += nodeResponse.getJobs().size();
         }
         assertEquals(0, totalJobs);
     }
