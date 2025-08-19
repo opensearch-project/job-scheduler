@@ -53,7 +53,7 @@ public class LockService {
 
     private final Client client;
     private final ClusterService clusterService;
-    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-all");
+    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
     private final JobHistoryService historyService;
     private final Supplier<Boolean> statusHistoryEnabled;
 

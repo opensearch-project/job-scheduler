@@ -41,11 +41,11 @@ import java.util.Map;
 
 public class JobHistoryService {
     private static final Logger logger = LogManager.getLogger(JobHistoryService.class);
-    public static final String JOB_HISTORY_INDEX_NAME = ".opendistro-job-scheduler-history";
+    public static final String JOB_HISTORY_INDEX_NAME = ".job-scheduler-history";
 
     private final Client client;
     private final ClusterService clusterService;
-    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-all");
+    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
 
     public JobHistoryService(final Client client, final ClusterService clusterService) {
         this.client = client;
@@ -54,7 +54,7 @@ public class JobHistoryService {
 
     private String historyMapping() {
         try {
-            InputStream in = JobHistoryService.class.getResourceAsStream("opensearch_job_scheduler_history.json");
+            InputStream in = JobHistoryService.class.getResourceAsStream("job_scheduler_history.json");
             StringBuilder stringBuilder = new StringBuilder();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             for (String line; (line = bufferedReader.readLine()) != null;) {
