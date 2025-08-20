@@ -7,6 +7,7 @@
  * compatible open source license.
  */
 package org.opensearch.jobscheduler.spi.utils;
+
 import org.junit.Before;
 import org.mockito.Mockito;
 import org.opensearch.core.action.ActionListener;
@@ -23,13 +24,15 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
     private ClusterService clusterService;
     static final String JOB_ID = "test_job_id";
     static final String JOB_INDEX_NAME = "test_job_index_name";
+
     @Before
     public void setup() {
         this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(this.clusterService.state().routingTable().hasIndex(JobHistoryService.JOB_HISTORY_INDEX_NAME))
-                .thenReturn(false)
-                .thenReturn(true);
+            .thenReturn(false)
+            .thenReturn(true);
     }
+
     public void testRecordJobHistorySanity() throws Exception {
         String uniqSuffix = "_record_sanity";
         CountDownLatch latch = new CountDownLatch(1);
@@ -107,16 +110,16 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         historyService.recordJobHistory(
-                null,
-                "test-job",
-                Instant.now(),
-                null,
-                1,
-                ActionListener.wrap(result -> fail("Should have failed with null job index name"), exception -> {
-                    assertTrue("Should be IllegalArgumentException", exception instanceof IllegalArgumentException);
-                    assertTrue("Should mention null parameter", exception.getMessage().contains("cannot be null"));
-                    latch.countDown();
-                })
+            null,
+            "test-job",
+            Instant.now(),
+            null,
+            1,
+            ActionListener.wrap(result -> fail("Should have failed with null job index name"), exception -> {
+                assertTrue("Should be IllegalArgumentException", exception instanceof IllegalArgumentException);
+                assertTrue("Should mention null parameter", exception.getMessage().contains("cannot be null"));
+                latch.countDown();
+            })
         );
 
         latch.await(10L, TimeUnit.SECONDS);
@@ -127,16 +130,16 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         historyService.recordJobHistory(
-                "test-index",
-                null,
-                Instant.now(),
-                null,
-                1,
-                ActionListener.wrap(result -> fail("Should have failed with null job id"), exception -> {
-                    assertTrue("Should be IllegalArgumentException", exception instanceof IllegalArgumentException);
-                    assertTrue("Should mention null parameter", exception.getMessage().contains("cannot be null"));
-                    latch.countDown();
-                })
+            "test-index",
+            null,
+            Instant.now(),
+            null,
+            1,
+            ActionListener.wrap(result -> fail("Should have failed with null job id"), exception -> {
+                assertTrue("Should be IllegalArgumentException", exception instanceof IllegalArgumentException);
+                assertTrue("Should mention null parameter", exception.getMessage().contains("cannot be null"));
+                latch.countDown();
+            })
         );
 
         latch.await(10L, TimeUnit.SECONDS);
@@ -147,16 +150,16 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         JobHistoryService historyService = new JobHistoryService(client(), this.clusterService);
         historyService.recordJobHistory(
-                "test-index",
-                "test-job",
-                null,
-                null,
-                1,
-                ActionListener.wrap(result -> fail("Should have failed with null start time"), exception -> {
-                    assertTrue("Should be IllegalArgumentException", exception instanceof IllegalArgumentException);
-                    assertTrue("Should mention null parameter", exception.getMessage().contains("cannot be null"));
-                    latch.countDown();
-                })
+            "test-index",
+            "test-job",
+            null,
+            null,
+            1,
+            ActionListener.wrap(result -> fail("Should have failed with null start time"), exception -> {
+                assertTrue("Should be IllegalArgumentException", exception instanceof IllegalArgumentException);
+                assertTrue("Should mention null parameter", exception.getMessage().contains("cannot be null"));
+                latch.countDown();
+            })
         );
 
         latch.await(10L, TimeUnit.SECONDS);
@@ -211,13 +214,13 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
                 assertNotNull("History record should exist", historyModel);
                 // Create updated model
                 StatusHistoryModel updatedModel = new StatusHistoryModel(
-                        jobIndexName,
-                        jobId,
-                        startTime,
-                        Instant.now(),
-                        3,
-                        historyModel.getSeqNo(),
-                        historyModel.getPrimaryTerm()
+                    jobIndexName,
+                    jobId,
+                    startTime,
+                    Instant.now(),
+                    3,
+                    historyModel.getSeqNo(),
+                    historyModel.getPrimaryTerm()
                 );
                 // Update directly
                 historyService.updateHistoryRecord(updatedModel, ActionListener.wrap(updatedHistoryModel -> {
