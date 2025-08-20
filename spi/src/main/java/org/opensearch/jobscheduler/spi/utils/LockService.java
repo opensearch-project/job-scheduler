@@ -47,6 +47,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.function.Supplier;
 
+
 public class LockService {
     private static final Logger logger = LogManager.getLogger(LockService.class);
     public static final String LOCK_INDEX_NAME = ".opendistro-job-scheduler-lock";
@@ -56,6 +57,7 @@ public class LockService {
     final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
     private final JobHistoryService historyService;
     private final Supplier<Boolean> statusHistoryEnabled;
+
 
     // This is used in tests to control time.
     private Instant testInstant = null;

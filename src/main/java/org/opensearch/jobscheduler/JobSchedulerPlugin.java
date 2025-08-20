@@ -271,6 +271,8 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
             restGetScheduledInfoAction,
             restGetAllLocksAction,
             restGetHistoryAction
+            restGetAllLocksAction
+
         );
     }
 
@@ -280,6 +282,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         actions.add(new ActionHandler<>(GetScheduledInfoAction.INSTANCE, TransportGetScheduledInfoAction.class));
         actions.add(new ActionHandler<>(GetAllLocksAction.INSTANCE, TransportGetAllLocksAction.class));
         actions.add(new ActionHandler<>(GetHistoryAction.INSTANCE, TransportGetHistoryAction.class));
+
         return actions;
     }
 
