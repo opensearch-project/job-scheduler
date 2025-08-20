@@ -22,7 +22,6 @@ public class JobExecutionContext implements Writeable {
     private final LockService lockService;
     private final String jobIndexName;
     private final String jobId;
-    private Integer jobStatus;
 
     public JobExecutionContext(
         Instant expectedExecutionTime,
