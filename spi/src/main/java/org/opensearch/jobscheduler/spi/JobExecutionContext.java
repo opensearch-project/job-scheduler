@@ -36,7 +36,6 @@ public class JobExecutionContext implements Writeable {
         this.lockService = lockService;
         this.jobIndexName = jobIndexName;
         this.jobId = jobId;
-        this.jobStatus = 1;
     }
 
     public JobExecutionContext(StreamInput in) throws IOException {
@@ -45,7 +44,6 @@ public class JobExecutionContext implements Writeable {
         this.lockService = null;
         this.jobIndexName = in.readString();
         this.jobId = in.readString();
-        this.jobStatus = in.readInt();
     }
 
     @Override
@@ -54,7 +52,6 @@ public class JobExecutionContext implements Writeable {
         this.jobVersion.writeTo(out);
         out.writeString(this.jobIndexName);
         out.writeString(this.jobId);
-        out.writeInt(this.jobStatus);
     }
 
     public Instant getExpectedExecutionTime() {
