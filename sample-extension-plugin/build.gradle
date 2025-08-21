@@ -129,6 +129,7 @@ testClusters.integTest {
     }
     setting 'path.repo', repo.absolutePath
     setting 'plugins.jobscheduler.sweeper.period', '1s'
+    setting 'plugins.jobscheduler.history.enabled', 'true'
 }
 
 String baseName = "jobSchedulerBwcCluster"

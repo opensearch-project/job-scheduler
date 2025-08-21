@@ -87,6 +87,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private Set<String> indicesToListen;
 
     private JobDetailsService jobDetailsService;
+    private ClusterService clusterService;
 
     public JobSchedulerPlugin() {
         this.indicesToListen = new HashSet<>();
@@ -103,8 +104,9 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
 
     @Override
     public Collection<SystemIndexDescriptor> getSystemIndexDescriptors(Settings settings) {
-        return Collections.singletonList(
-            new SystemIndexDescriptor(LockService.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution")
+        return List.of(
+            new SystemIndexDescriptor(LockService.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution"),
+            new SystemIndexDescriptor(JobHistoryService.JOB_HISTORY_INDEX_NAME, "Stores job execution history")
         );
     }
 
@@ -122,7 +124,8 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
-        Supplier<Boolean> statusHistoryEnabled = () -> JobSchedulerSettings.STATUS_HISTORY.get(environment.settings());
+        this.clusterService = clusterService;
+        Supplier<Boolean> statusHistoryEnabled = () -> clusterService.getClusterSettings().get(JobSchedulerSettings.STATUS_HISTORY);
         this.historyService = new JobHistoryService(client, clusterService);
         this.lockService = new LockService(client, clusterService, historyService, statusHistoryEnabled);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
@@ -270,8 +273,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
             restReleaseLockAction,
             restGetScheduledInfoAction,
             restGetAllLocksAction,
-            restGetHistoryAction,
-            restGetAllLocksAction
+            restGetHistoryAction
         );
     }
 

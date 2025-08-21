@@ -190,6 +190,14 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
         assertEquals(expectedIndices, actualIndices);
     }
 
+    public void testGetSystemIndexDescriptors() {
+        var descriptors = plugin.getSystemIndexDescriptors(settings);
+        assertEquals(2, descriptors.size());
+        var indexNames = descriptors.stream().map(d -> d.getIndexPattern()).toList();
+        assertTrue(indexNames.contains(".opendistro-job-scheduler-lock"));
+        assertTrue(indexNames.contains(".job-scheduler-history"));
+    }
+
     public void testGetIndexToJobProviders() {
         Map<String, ScheduledJobProvider> expectedProviders = plugin.getIndexToJobProviders();
         ScheduledJobParser mockParser = mock(ScheduledJobParser.class);

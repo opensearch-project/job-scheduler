@@ -36,6 +36,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
     public static final String LOCK_INFO_URI = "/_plugins/_job_scheduler/api/locks";
     public static final String SCHEDULER_INFO_URI = "/_plugins/_job_scheduler/api/jobs?by_node";
     public static final String SCHEDULER_INFO_URI_CLUSTER = "/_plugins/_job_scheduler/api/jobs";
+    public static final String HISTORY_INFO_URI = "/_plugins/_job_scheduler/api/history";
 
     public void testJobCreateWithCorrectParams() throws IOException {
         SampleJobParameter jobParameter = new SampleJobParameter();
@@ -210,6 +211,50 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         // Cleanup
         deleteWatcherJob(jobId);
     }
+
+    public void testJobHistoryService() throws Exception{
+        String index = createTestIndex();
+        SampleJobParameter jobParameter = new SampleJobParameter();
+        jobParameter.setJobName("sample-job-lock-test-it");
+        jobParameter.setIndexToWatch(index);
+        // ensures that the next job tries to run even before the previous job finished & released its lock. Also look at
+        // SampleJobRunner.runTaskForLockIntegrationTests
+        jobParameter.setSchedule(new IntervalSchedule(Instant.now(), 5, ChronoUnit.SECONDS));
+        jobParameter.setLockDurationSeconds(10L);
+
+        // Creates a new watcher job.
+        String jobId = OpenSearchRestTestCase.randomAlphaOfLength(10);
+        createWatcherJob(jobId, jobParameter);
+
+        waitUntilLockIsAcquiredAndReleased(jobId);
+
+        Response response = makeRequest(client(), "GET", HISTORY_INFO_URI, Map.of(), null);
+        Map<String, Object> responseJson = parseResponse(response);
+        
+        Assert.assertTrue("Response should contain total_history", responseJson.containsKey("total_history"));
+        Assert.assertTrue("Response should contain history", responseJson.containsKey("history"));
+        
+        Integer totalHistory = (Integer) responseJson.get("total_history");
+        Assert.assertTrue("Total history should be greater than 0", totalHistory > 0);
+        
+        Map<String, Object> history = (Map<String, Object>) responseJson.get("history");
+        Assert.assertFalse("History should not be empty", history.isEmpty());
+        
+        for (Map.Entry<String, Object> entry : history.entrySet()) {
+            Map<String, Object> historyRecord = (Map<String, Object>) entry.getValue();
+            Assert.assertTrue("History record should contain job_index_name", historyRecord.containsKey("job_index_name"));
+            Assert.assertTrue("History record should contain job_id", historyRecord.containsKey("job_id"));
+            Assert.assertTrue("History record should contain start_time", historyRecord.containsKey("start_time"));
+            Assert.assertTrue("History record should contain completion_status", historyRecord.containsKey("completion_status"));
+            Assert.assertTrue("History record should contain end_time", historyRecord.containsKey("end_time"));
+            
+            Assert.assertEquals("Job ID should match", jobId, historyRecord.get("job_id"));
+            Assert.assertEquals("Completion status should be 0", 0, historyRecord.get("completion_status"));
+        }
+        
+        deleteWatcherJob(jobId);
+    }
+
 
     public void testAcquiredLockPreventExecOfTasks() throws Exception {
         String index = createTestIndex();
