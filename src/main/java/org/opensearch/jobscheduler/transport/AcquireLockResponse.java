@@ -24,14 +24,10 @@ import static java.util.Objects.requireNonNull;
 public class AcquireLockResponse implements ToXContentObject {
     private final LockModel lock;
     private final String lockId;
-    private final long seqNo;
-    private final long primaryTerm;
 
-    public AcquireLockResponse(final LockModel lock, final String lockId, final long seqNo, final long primaryTerm) {
+    public AcquireLockResponse(final LockModel lock, final String lockId) {
         this.lock = lock;
         this.lockId = lockId;
-        this.seqNo = seqNo;
-        this.primaryTerm = primaryTerm;
     }
 
     public LockModel getLock() {
@@ -40,14 +36,6 @@ public class AcquireLockResponse implements ToXContentObject {
 
     public String getLockId() {
         return this.lockId;
-    }
-
-    public long getSeqNo() {
-        return this.seqNo;
-    }
-
-    public long getPrimaryTerm() {
-        return this.primaryTerm;
     }
 
     public static AcquireLockResponse parse(final XContentParser parser) throws IOException {
@@ -64,33 +52,20 @@ public class AcquireLockResponse implements ToXContentObject {
                 case LockModel.LOCK_ID:
                     lockId = parser.text();
                     break;
-                case LockModel.SEQUENCE_NUMBER:
-                    seqNo = parser.longValue();
-                    break;
-                case LockModel.PRIMARY_TERM:
-                    primaryTerm = parser.longValue();
-                    break;
                 case LockModel.LOCK_MODEL:
-                    lock = LockModel.parse(parser, seqNo, primaryTerm);
+                    lock = LockModel.parse(parser);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown field " + fieldName);
             }
         }
-        return new AcquireLockResponse(
-            requireNonNull(lock, "LockModel cannot be null"),
-            requireNonNull(lockId, "LockId cannot be null"),
-            requireNonNull(seqNo, "Sequence Number cannot be null"),
-            requireNonNull(primaryTerm, "Primary Term cannot be null")
-        );
+        return new AcquireLockResponse(requireNonNull(lock, "LockModel cannot be null"), requireNonNull(lockId, "LockId cannot be null"));
     }
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject();
         builder.field(LockModel.LOCK_ID, lockId);
-        builder.field(LockModel.SEQUENCE_NUMBER, seqNo);
-        builder.field(LockModel.PRIMARY_TERM, primaryTerm);
         builder.field(LockModel.LOCK_MODEL, lock);
         builder.endObject();
         return builder;

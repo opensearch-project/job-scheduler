@@ -19,7 +19,6 @@ import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.core.xcontent.XContentParserUtils;
 import org.opensearch.common.xcontent.json.JsonXContent;
-import org.opensearch.index.seqno.SequenceNumbers;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -37,8 +36,6 @@ public final class LockModel implements ToXContentObject, Writeable {
 
     // Rest Fields
     public static final String GET_LOCK_ACTION = "get_lock_action";
-    public static final String SEQUENCE_NUMBER = "seq_no";
-    public static final String PRIMARY_TERM = "primary_term";
     public static final String LOCK_ID = "lock_id";
     public static final String LOCK_MODEL = "lock_model";
 
@@ -48,18 +45,14 @@ public final class LockModel implements ToXContentObject, Writeable {
     private final Instant lockTime;
     private final long lockDurationSeconds;
     private final boolean released;
-    private final long seqNo;
-    private final long primaryTerm;
 
     /**
      * Use this constructor to copy existing lock and update the seqNo and primaryTerm.
      *
      * @param copyLock    JobSchedulerLockModel to copy from.
-     * @param seqNo       sequence number from OpenSearch document.
-     * @param primaryTerm primary term from OpenSearch document.
      */
-    public LockModel(final LockModel copyLock, long seqNo, long primaryTerm) {
-        this(copyLock.jobIndexName, copyLock.jobId, copyLock.lockTime, copyLock.lockDurationSeconds, copyLock.released, seqNo, primaryTerm);
+    public LockModel(final LockModel copyLock) {
+        this(copyLock.jobIndexName, copyLock.jobId, copyLock.lockTime, copyLock.lockDurationSeconds, copyLock.released);
     }
 
     /**
@@ -69,15 +62,7 @@ public final class LockModel implements ToXContentObject, Writeable {
      * @param released boolean flag to indicate if the lock is released
      */
     public LockModel(final LockModel copyLock, final boolean released) {
-        this(
-            copyLock.jobIndexName,
-            copyLock.jobId,
-            copyLock.lockTime,
-            copyLock.lockDurationSeconds,
-            released,
-            copyLock.seqNo,
-            copyLock.primaryTerm
-        );
+        this(copyLock.jobIndexName, copyLock.jobId, copyLock.lockTime, copyLock.lockDurationSeconds, released);
     }
 
     /**
@@ -89,30 +74,10 @@ public final class LockModel implements ToXContentObject, Writeable {
      * @param released            boolean flag to indicate if the lock is released
      */
     public LockModel(final LockModel copyLock, final Instant updateLockTime, final long lockDurationSeconds, final boolean released) {
-        this(copyLock.jobIndexName, copyLock.jobId, updateLockTime, lockDurationSeconds, released, copyLock.seqNo, copyLock.primaryTerm);
+        this(copyLock.jobIndexName, copyLock.jobId, updateLockTime, lockDurationSeconds, released);
     }
 
     public LockModel(String jobIndexName, String jobId, Instant lockTime, long lockDurationSeconds, boolean released) {
-        this(
-            jobIndexName,
-            jobId,
-            lockTime,
-            lockDurationSeconds,
-            released,
-            SequenceNumbers.UNASSIGNED_SEQ_NO,
-            SequenceNumbers.UNASSIGNED_PRIMARY_TERM
-        );
-    }
-
-    public LockModel(
-        String jobIndexName,
-        String jobId,
-        Instant lockTime,
-        long lockDurationSeconds,
-        boolean released,
-        long seqNo,
-        long primaryTerm
-    ) {
         this.lockId = jobIndexName + LOCK_ID_DELIMITER + jobId;
         this.jobIndexName = jobIndexName;
         // The jobId parameter does not necessarily need to represent the id of a job scheduler job, as it is being used
@@ -121,27 +86,17 @@ public final class LockModel implements ToXContentObject, Writeable {
         this.lockTime = lockTime;
         this.lockDurationSeconds = lockDurationSeconds;
         this.released = released;
-        this.seqNo = seqNo;
-        this.primaryTerm = primaryTerm;
     }
 
     public LockModel(StreamInput in) throws IOException {
-        this(
-            in.readString(),
-            in.readString(),
-            in.readInstant(),
-            in.readLong(),
-            in.readBoolean(),
-            SequenceNumbers.UNASSIGNED_SEQ_NO,
-            SequenceNumbers.UNASSIGNED_PRIMARY_TERM
-        );
+        this(in.readString(), in.readString(), in.readInstant(), in.readLong(), in.readBoolean());
     }
 
     public static String generateLockId(String jobIndexName, String jobId) {
         return jobIndexName + LOCK_ID_DELIMITER + jobId;
     }
 
-    public static LockModel parse(final XContentParser parser, long seqNo, long primaryTerm) throws IOException {
+    public static LockModel parse(final XContentParser parser) throws IOException {
         String jobIndexName = null;
         String jobId = null;
         Instant lockTime = null;
@@ -178,9 +133,7 @@ public final class LockModel implements ToXContentObject, Writeable {
             requireNonNull(jobId, "JobId cannot be null"),
             requireNonNull(lockTime, "lockTime cannot be null"),
             requireNonNull(lockDurationSecond, "lockDurationSeconds cannot be null"),
-            requireNonNull(released, "released cannot be null"),
-            seqNo,
-            primaryTerm
+            requireNonNull(released, "released cannot be null")
         );
     }
 
@@ -241,14 +194,6 @@ public final class LockModel implements ToXContentObject, Writeable {
         return released;
     }
 
-    public long getSeqNo() {
-        return seqNo;
-    }
-
-    public long getPrimaryTerm() {
-        return primaryTerm;
-    }
-
     public boolean isExpired() {
         return lockTime.getEpochSecond() + lockDurationSeconds < Instant.now().getEpochSecond();
     }
@@ -260,8 +205,6 @@ public final class LockModel implements ToXContentObject, Writeable {
         LockModel lockModel = (LockModel) o;
         return lockDurationSeconds == lockModel.lockDurationSeconds
             && released == lockModel.released
-            && seqNo == lockModel.seqNo
-            && primaryTerm == lockModel.primaryTerm
             && lockId.equals(lockModel.lockId)
             && jobIndexName.equals(lockModel.jobIndexName)
             && jobId.equals(lockModel.jobId)
@@ -270,7 +213,7 @@ public final class LockModel implements ToXContentObject, Writeable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(lockId, jobIndexName, jobId, lockTime, lockDurationSeconds, released, seqNo, primaryTerm);
+        return Objects.hash(lockId, jobIndexName, jobId, lockTime, lockDurationSeconds, released);
     }
 
     @Override
@@ -281,7 +224,5 @@ public final class LockModel implements ToXContentObject, Writeable {
         out.writeInstant(this.lockTime);
         out.writeLong(this.lockDurationSeconds);
         out.writeBoolean(this.released);
-        out.writeLong(this.seqNo);
-        out.writeLong(this.primaryTerm);
     }
 }

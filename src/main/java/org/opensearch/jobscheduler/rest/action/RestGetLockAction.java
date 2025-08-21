@@ -114,9 +114,7 @@ public class RestGetLockAction extends BaseRestHandler {
                     // Create Response
                     AcquireLockResponse acquireLockResponse = new AcquireLockResponse(
                         lockModelResponseHolder,
-                        LockModel.generateLockId(jobIndexName, jobId),
-                        lockModelResponseHolder.getSeqNo(),
-                        lockModelResponseHolder.getPrimaryTerm()
+                        LockModel.generateLockId(jobIndexName, jobId)
                     );
                     acquireLockResponse.toXContent(builder, ToXContent.EMPTY_PARAMS);
 

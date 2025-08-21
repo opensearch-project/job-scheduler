@@ -35,7 +35,6 @@ import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.index.IndexNotFoundException;
 import org.opensearch.index.engine.DocumentMissingException;
 import org.opensearch.index.engine.VersionConflictEngineException;
-import org.opensearch.index.seqno.SequenceNumbers;
 import org.opensearch.transport.client.Client;
 
 import java.io.BufferedReader;
@@ -229,33 +228,25 @@ public class LockService {
         try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
             UpdateRequest updateRequest = new UpdateRequest().index(LOCK_INDEX_NAME)
                 .id(updateLock.getLockId())
-                .setIfSeqNo(updateLock.getSeqNo())
-                .setIfPrimaryTerm(updateLock.getPrimaryTerm())
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .doc(updateLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .fetchSource(true);
 
-            client.update(
-                updateRequest,
-                ActionListener.wrap(
-                    response -> listener.onResponse(new LockModel(updateLock, response.getSeqNo(), response.getPrimaryTerm())),
-                    exception -> {
-                        if (exception instanceof VersionConflictEngineException) {
-                            logger.debug("could not acquire lock {}", exception.getMessage());
-                        }
-                        if (exception instanceof DocumentMissingException) {
-                            logger.debug(
-                                "Document is deleted. This happens if the job is already removed and" + " this is the last run." + "{}",
-                                exception.getMessage()
-                            );
-                        }
-                        if (exception instanceof IOException) {
-                            logger.error("IOException occurred updating lock.", exception);
-                        }
-                        listener.onResponse(null);
-                    }
-                )
-            );
+            client.update(updateRequest, ActionListener.wrap(response -> listener.onResponse(new LockModel(updateLock)), exception -> {
+                if (exception instanceof VersionConflictEngineException) {
+                    logger.debug("could not acquire lock {}", exception.getMessage());
+                }
+                if (exception instanceof DocumentMissingException) {
+                    logger.debug(
+                        "Document is deleted. This happens if the job is already removed and" + " this is the last run." + "{}",
+                        exception.getMessage()
+                    );
+                }
+                if (exception instanceof IOException) {
+                    logger.error("IOException occurred updating lock.", exception);
+                }
+                listener.onResponse(null);
+            }));
         } catch (IOException e) {
             logger.error("IOException occurred updating lock.", e);
             listener.onResponse(null);
@@ -269,24 +260,16 @@ public class LockService {
         try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
             final IndexRequest request = new IndexRequest(LOCK_INDEX_NAME).id(tempLock.getLockId())
                 .source(tempLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
-                .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
-                .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .create(true);
-            client.index(
-                request,
-                ActionListener.wrap(
-                    response -> listener.onResponse(new LockModel(tempLock, response.getSeqNo(), response.getPrimaryTerm())),
-                    exception -> {
-                        if (exception instanceof VersionConflictEngineException) {
-                            logger.debug("Lock is already created. {}", exception.getMessage());
-                            listener.onResponse(null);
-                            return;
-                        }
-                        listener.onFailure(exception);
-                    }
-                )
-            );
+            client.index(request, ActionListener.wrap(response -> listener.onResponse(new LockModel(tempLock)), exception -> {
+                if (exception instanceof VersionConflictEngineException) {
+                    logger.debug("Lock is already created. {}", exception.getMessage());
+                    listener.onResponse(null);
+                    return;
+                }
+                listener.onFailure(exception);
+            }));
         } catch (IOException e) {
             logger.error("IOException occurred creating lock", e);
             listener.onFailure(e);
@@ -304,7 +287,7 @@ public class LockService {
                         XContentParser parser = XContentType.JSON.xContent()
                             .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
                         parser.nextToken();
-                        listener.onResponse(LockModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
+                        listener.onResponse(LockModel.parse(parser));
                     } catch (IOException e) {
                         logger.error("IOException occurred finding lock", e);
                         listener.onResponse(null);

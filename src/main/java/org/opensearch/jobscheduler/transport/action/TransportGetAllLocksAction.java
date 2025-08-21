@@ -96,7 +96,7 @@ public class TransportGetAllLocksAction extends HandledTransportAction<GetLocksR
                             XContentParser parser = XContentType.JSON.xContent()
                                 .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, hit.getSourceAsString());
                             parser.nextToken();
-                            LockModel lock = LockModel.parse(parser, hit.getSeqNo(), hit.getPrimaryTerm());
+                            LockModel lock = LockModel.parse(parser);
                             result.put(lock.getLockId(), lock);
                         } catch (IOException e) {
                             log.error("Error parsing lock from search hit", e);
@@ -151,7 +151,7 @@ public class TransportGetAllLocksAction extends HandledTransportAction<GetLocksR
                 XContentParser parser = XContentType.JSON.xContent()
                     .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, hit.getSourceAsString());
                 parser.nextToken();
-                LockModel lock = LockModel.parse(parser, hit.getSeqNo(), hit.getPrimaryTerm());
+                LockModel lock = LockModel.parse(parser);
                 allLocks.put(lock.getLockId(), lock);
             } catch (IOException e) {
                 log.error("Error parsing lock from search hit", e);
