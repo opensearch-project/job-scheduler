@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.jobscheduler.spi.utils;
+package org.opensearch.jobscheduler.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +22,6 @@ import org.opensearch.index.seqno.SequenceNumbers;
 import org.opensearch.action.admin.indices.create.CreateIndexRequest;
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.xcontent.MediaType;
@@ -54,7 +53,7 @@ public class JobHistoryService {
 
     private String historyMapping() {
         try {
-            InputStream in = JobHistoryService.class.getResourceAsStream("job_scheduler_history.json");
+            InputStream in = JobHistoryService.class.getResourceAsStream("/mappings/job_scheduler_history.json");
             StringBuilder stringBuilder = new StringBuilder();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             for (String line; (line = bufferedReader.readLine()) != null;) {
@@ -71,28 +70,23 @@ public class JobHistoryService {
     }
 
     void createHistoryIndex(ActionListener<Boolean> listener) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
-            if (historyIndexExist()) {
-                listener.onResponse(true);
-            } else {
-                final CreateIndexRequest request = new CreateIndexRequest(JOB_HISTORY_INDEX_NAME).mapping(
-                    historyMapping(),
-                    (MediaType) XContentType.JSON
-                ).settings(INDEX_SETTINGS);
-                client.admin()
-                    .indices()
-                    .create(request, ActionListener.wrap(response -> listener.onResponse(response.isAcknowledged()), exception -> {
-                        if (exception instanceof ResourceAlreadyExistsException
-                            || exception.getCause() instanceof ResourceAlreadyExistsException) {
-                            listener.onResponse(true);
-                        } else {
-                            listener.onFailure(exception);
-                        }
-                    }));
-            }
-        } catch (Exception e) {
-            logger.error(e);
-            listener.onFailure(e);
+        if (historyIndexExist()) {
+            listener.onResponse(true);
+        } else {
+            final CreateIndexRequest request = new CreateIndexRequest(JOB_HISTORY_INDEX_NAME).mapping(
+                historyMapping(),
+                (MediaType) XContentType.JSON
+            ).settings(INDEX_SETTINGS);
+            client.admin()
+                .indices()
+                .create(request, ActionListener.wrap(response -> listener.onResponse(response.isAcknowledged()), exception -> {
+                    if (exception instanceof ResourceAlreadyExistsException
+                        || exception.getCause() instanceof ResourceAlreadyExistsException) {
+                        listener.onResponse(true);
+                    } else {
+                        listener.onFailure(exception);
+                    }
+                }));
         }
     }
 
@@ -159,6 +153,7 @@ public class JobHistoryService {
             final IndexRequest request = new IndexRequest(JOB_HISTORY_INDEX_NAME).id(historyId)
                 .source(historyModel.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .create(true);
 
             client.index(request, ActionListener.wrap(response -> {
@@ -177,7 +172,7 @@ public class JobHistoryService {
     }
 
     public void updateHistoryRecord(final StatusHistoryModel historyModelupdate, ActionListener<StatusHistoryModel> listener) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
+        try {
             String documentId = generateHistoryId(
                 historyModelupdate.getJobIndexName(),
                 historyModelupdate.getJobId(),
@@ -225,34 +220,30 @@ public class JobHistoryService {
         final Instant startTime,
         ActionListener<StatusHistoryModel> listener
     ) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
-            String historyId = generateHistoryId(jobIndexName, jobId, startTime);
-            GetRequest getRequest = new GetRequest(JOB_HISTORY_INDEX_NAME).id(historyId);
+        String historyId = generateHistoryId(jobIndexName, jobId, startTime);
+        GetRequest getRequest = new GetRequest(JOB_HISTORY_INDEX_NAME).id(historyId);
 
-            client.get(getRequest, ActionListener.wrap(response -> {
-                if (!response.isExists()) {
+        client.get(getRequest, ActionListener.wrap(response -> {
+            if (!response.isExists()) {
+                listener.onResponse(null);
+            } else {
+                try {
+                    XContentParser parser = XContentType.JSON.xContent()
+                        .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
+                    parser.nextToken();
+                    listener.onResponse(StatusHistoryModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
+                } catch (IOException e) {
+                    logger.error("IOException occurred parsing history record", e);
                     listener.onResponse(null);
-                } else {
-                    try {
-                        XContentParser parser = XContentType.JSON.xContent()
-                            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
-                        parser.nextToken();
-                        listener.onResponse(StatusHistoryModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
-                    } catch (IOException e) {
-                        logger.error("IOException occurred parsing history record", e);
-                        listener.onResponse(null);
-                    }
                 }
-            }, exception -> {
-                if (exception.getMessage() != null && exception.getMessage().contains("no such index")) {
-                    listener.onResponse(null);
-                } else {
-                    listener.onFailure(exception);
-                }
-            }));
-        } catch (Exception e) {
-            listener.onFailure(e);
-        }
+            }
+        }, exception -> {
+            if (exception.getMessage() != null && exception.getMessage().contains("no such index")) {
+                listener.onResponse(null);
+            } else {
+                listener.onFailure(exception);
+            }
+        }));
     }
 
     private String generateHistoryId(String jobIndexName, String jobId, Instant startTime) {

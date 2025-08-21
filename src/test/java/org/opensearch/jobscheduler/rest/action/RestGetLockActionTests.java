@@ -28,7 +28,7 @@ import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.TestHelpers;
 import org.opensearch.jobscheduler.spi.LockModel;
-import org.opensearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.utils.LockServiceImpl;
 import org.opensearch.jobscheduler.transport.AcquireLockRequest;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.test.OpenSearchTestCase;
@@ -41,7 +41,7 @@ import org.opensearch.transport.client.node.NodeClient;
 public class RestGetLockActionTests extends OpenSearchTestCase {
 
     private ClusterService clusterService;
-    private LockService lockService;
+    private LockServiceImpl lockService;
     private RestGetLockAction getLockAction;
     private String getLockPath;
     private String testJobId;
@@ -54,7 +54,7 @@ public class RestGetLockActionTests extends OpenSearchTestCase {
         super.setUp();
         this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(this.clusterService.state().routingTable().hasIndex(".opendistro-job-scheduler-lock")).thenReturn(true);
-        this.lockService = new LockService(Mockito.mock(NodeClient.class), clusterService);
+        this.lockService = new LockServiceImpl(Mockito.mock(NodeClient.class), clusterService);
         this.getLockAction = new RestGetLockAction(this.lockService);
         this.getLockPath = String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_lock");
         this.testJobId = "testJobId";
