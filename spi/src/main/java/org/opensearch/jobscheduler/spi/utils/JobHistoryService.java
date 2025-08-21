@@ -225,7 +225,7 @@ public class JobHistoryService {
                         XContentParser parser = XContentType.JSON.xContent()
                             .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
                         parser.nextToken();
-                        listener.onResponse(StatusHistoryModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
+                        listener.onResponse(StatusHistoryModel.parse(parser));
                     } catch (IOException e) {
                         logger.error("IOException occurred parsing history record", e);
                         listener.onResponse(null);

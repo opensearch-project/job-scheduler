@@ -47,7 +47,7 @@ public final class StatusHistoryModel implements ToXContentObject, Writeable {
         this(in.readString(), in.readString(), in.readInstant(), in.readOptionalInstant(), in.readInt());
     }
 
-    public static StatusHistoryModel parse(final XContentParser parser, long seqNo, long primaryTerm) throws IOException {
+    public static StatusHistoryModel parse(final XContentParser parser) throws IOException {
         String jobIndexName = null;
         String jobId = null;
         Instant startTime = null;

@@ -87,8 +87,6 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
         // Validate response map fields
         assertNotNull(acquireLockResponse.getLockId());
-        assertNotNull(acquireLockResponse.getSeqNo());
-        assertNotNull(acquireLockResponse.getPrimaryTerm());
         assertNotNull(acquireLockResponse.getLock());
 
         return acquireLockResponse.getLockId();
