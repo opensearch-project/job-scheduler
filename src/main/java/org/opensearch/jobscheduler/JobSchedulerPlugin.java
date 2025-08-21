@@ -270,7 +270,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
             restReleaseLockAction,
             restGetScheduledInfoAction,
             restGetAllLocksAction,
-            restGetHistoryAction
+            restGetHistoryAction,
             restGetAllLocksAction
 
         );
