@@ -212,7 +212,7 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         deleteWatcherJob(jobId);
     }
 
-    public void testJobHistoryService() throws Exception{
+    public void testJobHistoryService() throws Exception {
         String index = createTestIndex();
         SampleJobParameter jobParameter = new SampleJobParameter();
         jobParameter.setJobName("sample-job-lock-test-it");
@@ -230,16 +230,16 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         Response response = makeRequest(client(), "GET", HISTORY_INFO_URI, Map.of(), null);
         Map<String, Object> responseJson = parseResponse(response);
-        
+
         Assert.assertTrue("Response should contain total_history", responseJson.containsKey("total_history"));
         Assert.assertTrue("Response should contain history", responseJson.containsKey("history"));
-        
+
         Integer totalHistory = (Integer) responseJson.get("total_history");
         Assert.assertTrue("Total history should be greater than 0", totalHistory > 0);
-        
+
         Map<String, Object> history = (Map<String, Object>) responseJson.get("history");
         Assert.assertFalse("History should not be empty", history.isEmpty());
-        
+
         for (Map.Entry<String, Object> entry : history.entrySet()) {
             Map<String, Object> historyRecord = (Map<String, Object>) entry.getValue();
             Assert.assertTrue("History record should contain job_index_name", historyRecord.containsKey("job_index_name"));
@@ -247,14 +247,13 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
             Assert.assertTrue("History record should contain start_time", historyRecord.containsKey("start_time"));
             Assert.assertTrue("History record should contain completion_status", historyRecord.containsKey("completion_status"));
             Assert.assertTrue("History record should contain end_time", historyRecord.containsKey("end_time"));
-            
+
             Assert.assertEquals("Job ID should match", jobId, historyRecord.get("job_id"));
             Assert.assertEquals("Completion status should be 0", 0, historyRecord.get("completion_status"));
         }
-        
+
         deleteWatcherJob(jobId);
     }
-
 
     public void testAcquiredLockPreventExecOfTasks() throws Exception {
         String index = createTestIndex();
