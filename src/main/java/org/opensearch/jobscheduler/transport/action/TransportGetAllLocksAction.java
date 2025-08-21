@@ -18,13 +18,13 @@ import org.opensearch.action.support.ActionFilters;
 import org.opensearch.action.support.HandledTransportAction;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.common.unit.TimeValue;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.jobscheduler.spi.LockModel;
+import org.opensearch.jobscheduler.transport.PluginClient;
 import org.opensearch.jobscheduler.transport.request.GetLocksRequest;
 import org.opensearch.jobscheduler.transport.response.GetLocksResponse;
 import org.opensearch.index.query.QueryBuilders;
@@ -49,7 +49,7 @@ public class TransportGetAllLocksAction extends HandledTransportAction<GetLocksR
     public TransportGetAllLocksAction(
         TransportService transportService,
         ActionFilters actionFilters,
-        Client client,
+        PluginClient client,
         ThreadPool threadPool
     ) {
         super(GetAllLocksAction.NAME, transportService, actionFilters, GetLocksRequest::new);
@@ -70,74 +70,70 @@ public class TransportGetAllLocksAction extends HandledTransportAction<GetLocksR
     }
 
     private void getLockById(String lockId, ActionListener<Map<String, LockModel>> listener) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
-            String[] parts = lockId.split("-", 2);
-            if (parts.length != 2) {
-                listener.onFailure(new IllegalArgumentException("Lock ID must be in format 'index-jobid'"));
-                return;
-            }
-            String jobIndexName = parts[0];
-            String jobId = parts[1];
-
-            SearchRequest searchRequest = new SearchRequest(LOCK_INDEX_NAME);
-            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-            searchSourceBuilder.query(
-                QueryBuilders.boolQuery()
-                    .must(QueryBuilders.termQuery("job_index_name", jobIndexName))
-                    .must(QueryBuilders.termQuery("job_id", jobId))
-            );
-            searchRequest.source(searchSourceBuilder);
-
-            client.search(searchRequest, new ActionListener<SearchResponse>() {
-                @Override
-                public void onResponse(SearchResponse searchResponse) {
-                    Map<String, LockModel> result = new HashMap<>();
-                    searchResponse.getHits().forEach(hit -> {
-                        try {
-                            XContentParser parser = XContentType.JSON.xContent()
-                                .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, hit.getSourceAsString());
-                            parser.nextToken();
-                            LockModel lock = LockModel.parse(parser, hit.getSeqNo(), hit.getPrimaryTerm());
-                            result.put(lock.getLockId(), lock);
-                        } catch (IOException e) {
-                            log.error("Error parsing lock from search hit", e);
-                        }
-                    });
-                    listener.onResponse(result);
-                }
-
-                @Override
-                public void onFailure(Exception e) {
-                    log.debug("Error in finding lock by ID {}", lockId, e);
-                    listener.onResponse(new HashMap<>());
-                }
-            });
+        String[] parts = lockId.split("-", 2);
+        if (parts.length != 2) {
+            listener.onFailure(new IllegalArgumentException("Lock ID must be in format 'index-jobid'"));
+            return;
         }
+        String jobIndexName = parts[0];
+        String jobId = parts[1];
+
+        SearchRequest searchRequest = new SearchRequest(LOCK_INDEX_NAME);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(
+            QueryBuilders.boolQuery()
+                .must(QueryBuilders.termQuery("job_index_name", jobIndexName))
+                .must(QueryBuilders.termQuery("job_id", jobId))
+        );
+        searchRequest.source(searchSourceBuilder);
+
+        client.search(searchRequest, new ActionListener<SearchResponse>() {
+            @Override
+            public void onResponse(SearchResponse searchResponse) {
+                Map<String, LockModel> result = new HashMap<>();
+                searchResponse.getHits().forEach(hit -> {
+                    try {
+                        XContentParser parser = XContentType.JSON.xContent()
+                            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, hit.getSourceAsString());
+                        parser.nextToken();
+                        LockModel lock = LockModel.parse(parser, hit.getSeqNo(), hit.getPrimaryTerm());
+                        result.put(lock.getLockId(), lock);
+                    } catch (IOException e) {
+                        log.error("Error parsing lock from search hit", e);
+                    }
+                });
+                listener.onResponse(result);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                log.debug("Error in finding lock by ID {}", lockId, e);
+                listener.onResponse(new HashMap<>());
+            }
+        });
     }
 
     private void getAllLocks(ActionListener<Map<String, LockModel>> listener) {
-        try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
-            SearchRequest searchRequest = new SearchRequest(LOCK_INDEX_NAME);
-            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-            searchSourceBuilder.size(1000); // Set a reasonable batch size
-            searchRequest.scroll(TimeValue.timeValueMinutes(1)); // Set scroll timeout
-            searchRequest.source(searchSourceBuilder);
+        SearchRequest searchRequest = new SearchRequest(LOCK_INDEX_NAME);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.size(1000); // Set a reasonable batch size
+        searchRequest.scroll(TimeValue.timeValueMinutes(1)); // Set scroll timeout
+        searchRequest.source(searchSourceBuilder);
 
-            client.search(searchRequest, new ActionListener<SearchResponse>() {
-                @Override
-                public void onResponse(SearchResponse searchResponse) {
-                    Map<String, LockModel> allLocks = new HashMap<>();
-                    String scrollId = searchResponse.getScrollId();
-                    processScrollResults(scrollId, searchResponse, allLocks, listener);
-                }
+        client.search(searchRequest, new ActionListener<SearchResponse>() {
+            @Override
+            public void onResponse(SearchResponse searchResponse) {
+                Map<String, LockModel> allLocks = new HashMap<>();
+                String scrollId = searchResponse.getScrollId();
+                processScrollResults(scrollId, searchResponse, allLocks, listener);
+            }
 
-                @Override
-                public void onFailure(Exception e) {
-                    log.debug("Error in obtaining all locks", e);
-                    listener.onResponse(new HashMap<>());
-                }
-            });
-        }
+            @Override
+            public void onFailure(Exception e) {
+                log.debug("Error in obtaining all locks", e);
+                listener.onResponse(new HashMap<>());
+            }
+        });
     }
 
     private void processScrollResults(

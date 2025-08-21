@@ -44,21 +44,38 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
+import java.util.function.Supplier;
 
-public final class LockServiceImpl implements LockService {
+public class LockServiceImpl implements LockService {
     private static final Logger logger = LogManager.getLogger(LockServiceImpl.class);
     public static final String LOCK_INDEX_NAME = ".opendistro-job-scheduler-lock";
 
     private final Client client;
     private final ClusterService clusterService;
     final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
+    private final JobHistoryService historyService;
+    private final Supplier<Boolean> statusHistoryEnabled;
 
     // This is used in tests to control time.
     private Instant testInstant = null;
 
+    public LockServiceImpl(
+        final Client client,
+        final ClusterService clusterService,
+        JobHistoryService historyService,
+        Supplier<Boolean> statusHistoryEnabled
+    ) {
+        this.client = client;
+        this.clusterService = clusterService;
+        this.historyService = historyService;
+        this.statusHistoryEnabled = statusHistoryEnabled;
+    }
+
     public LockServiceImpl(final Client client, final ClusterService clusterService) {
         this.client = client;
         this.clusterService = clusterService;
+        this.historyService = null;
+        this.statusHistoryEnabled = () -> false;
     }
 
     private String lockMapping() {
@@ -79,6 +96,7 @@ public final class LockServiceImpl implements LockService {
         return clusterService.state().routingTable().hasIndex(LOCK_INDEX_NAME);
     }
 
+    @VisibleForTesting
     void createLockIndex(ActionListener<Boolean> listener) {
         if (lockIndexExist()) {
             listener.onResponse(true);
@@ -92,6 +110,7 @@ public final class LockServiceImpl implements LockService {
                         || exception.getCause() instanceof ResourceAlreadyExistsException) {
                         listener.onResponse(true);
                     } else {
+                        System.out.println("exception: " + exception.getMessage());
                         listener.onFailure(exception);
                     }
                 }));
@@ -108,7 +127,6 @@ public final class LockServiceImpl implements LockService {
      *                 or else null. Passes {@code IllegalArgumentException} to onFailure if the {@code ScheduledJobParameter} does not
      *                 have {@code LockDurationSeconds}.
      */
-    @Override
     public void acquireLock(
         final ScheduledJobParameter jobParameter,
         final JobExecutionContext context,
@@ -117,7 +135,23 @@ public final class LockServiceImpl implements LockService {
         final String jobIndexName = context.getJobIndexName();
         final String jobId = context.getJobId();
         final long lockDurationSeconds = jobParameter.getLockDurationSeconds();
-        acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, listener);
+
+        acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, ActionListener.wrap(lock -> {
+
+            if (lock != null && statusHistoryEnabled.get() && historyService != null) {
+                historyService.recordJobHistory(
+                    jobIndexName,
+                    jobId,
+                    lock.getLockTime(),
+                    null,
+                    1,
+                    ActionListener.wrap(success -> listener.onResponse(lock), failure -> listener.onResponse(lock))
+                );
+            } else {
+                listener.onResponse(lock);
+            }
+
+        }, listener::onFailure));
     }
 
     /**
@@ -133,7 +167,6 @@ public final class LockServiceImpl implements LockService {
      *                 or else null. Passes {@code IllegalArgumentException} to onFailure if the {@code ScheduledJobParameter} does not
      *                 have {@code LockDurationSeconds}.
      */
-    @Override
     public void acquireLockWithId(
         final String jobIndexName,
         final Long lockDurationSeconds,
@@ -191,6 +224,7 @@ public final class LockServiceImpl implements LockService {
                 .id(updateLock.getLockId())
                 .setIfSeqNo(updateLock.getSeqNo())
                 .setIfPrimaryTerm(updateLock.getPrimaryTerm())
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .doc(updateLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .fetchSource(true);
 
@@ -216,8 +250,8 @@ public final class LockServiceImpl implements LockService {
                 )
             );
         } catch (IOException e) {
-            logger.error("IOException occurred creating lock", e);
-            listener.onFailure(e);
+            logger.error("IOException occurred updating lock.", e);
+            listener.onResponse(null);
         }
     }
 
@@ -225,9 +259,9 @@ public final class LockServiceImpl implements LockService {
         try {
             final IndexRequest request = new IndexRequest(LOCK_INDEX_NAME).id(tempLock.getLockId())
                 .source(tempLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
-                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
                 .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .create(true);
             client.index(
                 request,
@@ -249,36 +283,26 @@ public final class LockServiceImpl implements LockService {
         }
     }
 
-    @Override
     public void findLock(final String lockId, ActionListener<LockModel> listener) {
-        if (!lockIndexExist()) {
-            listener.onResponse(null);
-            return;
-        }
-        try {
-            GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
-            client.get(getRequest, ActionListener.wrap(response -> {
-                if (!response.isExists()) {
+        GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
+        client.get(getRequest, ActionListener.wrap(response -> {
+            if (!response.isExists()) {
+                listener.onResponse(null);
+            } else {
+                try {
+                    XContentParser parser = XContentType.JSON.xContent()
+                        .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
+                    parser.nextToken();
+                    listener.onResponse(LockModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
+                } catch (IOException e) {
+                    logger.error("IOException occurred finding lock", e);
                     listener.onResponse(null);
-                } else {
-                    try {
-                        XContentParser parser = XContentType.JSON.xContent()
-                            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
-                        parser.nextToken();
-                        listener.onResponse(LockModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
-                    } catch (IOException e) {
-                        logger.error("IOException occurred finding lock", e);
-                        listener.onResponse(null);
-                    }
                 }
-            }, exception -> {
-                logger.error("Exception occurred finding lock", exception);
-                listener.onFailure(exception);
-            }));
-        } catch (Exception e) {
-            logger.error("Exception occurred finding lock", e);
-            listener.onFailure(e);
-        }
+            }
+        }, exception -> {
+            logger.error("Exception occurred finding lock", exception);
+            listener.onFailure(exception);
+        }));
     }
 
     /**
@@ -290,7 +314,6 @@ public final class LockServiceImpl implements LockService {
      * @param listener a {@code ActionListener} that has onResponse and onFailure that is used to return whether
      *                 or not the release was successful
      */
-    @Override
     public void release(final LockModel lock, ActionListener<Boolean> listener) {
         if (lock == null) {
             logger.debug("Lock is null. Nothing to release.");
@@ -298,6 +321,17 @@ public final class LockServiceImpl implements LockService {
         } else {
             logger.debug("Releasing lock: " + lock);
             final LockModel lockToRelease = new LockModel(lock, true);
+
+            if (statusHistoryEnabled.get() && historyService != null) {
+                historyService.recordJobHistory(
+                    lock.getJobIndexName(),
+                    lock.getJobId(),
+                    lock.getLockTime(),
+                    Instant.now(),
+                    0,
+                    ActionListener.wrap(success -> {}, listener::onFailure)
+                );
+            }
             updateLock(lockToRelease, ActionListener.wrap(releasedLock -> listener.onResponse(releasedLock != null), listener::onFailure));
         }
     }
@@ -310,26 +344,20 @@ public final class LockServiceImpl implements LockService {
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return whether
      *                 or not the delete was successful
      */
-    @Override
     public void deleteLock(final String lockId, ActionListener<Boolean> listener) {
-        try {
-            DeleteRequest deleteRequest = new DeleteRequest(LOCK_INDEX_NAME).id(lockId);
-            client.delete(deleteRequest, ActionListener.wrap(response -> {
-                listener.onResponse(
-                    response.getResult() == DocWriteResponse.Result.DELETED || response.getResult() == DocWriteResponse.Result.NOT_FOUND
-                );
-            }, exception -> {
-                if (exception instanceof IndexNotFoundException || exception.getCause() instanceof IndexNotFoundException) {
-                    logger.debug("Index is not found to delete lock. {}", exception.getMessage());
-                    listener.onResponse(true);
-                } else {
-                    listener.onFailure(exception);
-                }
-            }));
-        } catch (Exception e) {
-            logger.error("Exception occurred deleting lock", e);
-            listener.onFailure(e);
-        }
+        DeleteRequest deleteRequest = new DeleteRequest(LOCK_INDEX_NAME).id(lockId);
+        client.delete(deleteRequest, ActionListener.wrap(response -> {
+            listener.onResponse(
+                response.getResult() == DocWriteResponse.Result.DELETED || response.getResult() == DocWriteResponse.Result.NOT_FOUND
+            );
+        }, exception -> {
+            if (exception instanceof IndexNotFoundException || exception.getCause() instanceof IndexNotFoundException) {
+                logger.debug("Index is not found to delete lock. {}", exception.getMessage());
+                listener.onResponse(true);
+            } else {
+                listener.onFailure(exception);
+            }
+        }));
     }
 
     /**
@@ -342,7 +370,6 @@ public final class LockServiceImpl implements LockService {
      * @param listener a {@code ActionListener} that has onResponse and onFailure that is used to
      *                 return the renewed lock if renewal succeed, otherwise return null.
      */
-    @Override
     public void renewLock(final LockModel lock, ActionListener<LockModel> listener) {
         if (lock == null) {
             logger.debug("Lock is null. Nothing to renew.");

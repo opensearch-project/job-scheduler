@@ -49,6 +49,7 @@ import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
 import org.opensearch.indices.SystemIndexDescriptor;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
+import org.opensearch.jobscheduler.utils.JobHistoryService;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.plugins.IdentityAwarePlugin;
@@ -82,6 +83,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private JobSweeper sweeper;
     private JobScheduler scheduler;
     private LockService lockService;
+    private JobHistoryService historyService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
     private PluginClient pluginClient;
@@ -122,8 +124,10 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
+        Supplier<Boolean> statusHistoryEnabled = () -> JobSchedulerSettings.STATUS_HISTORY.get(environment.settings());
         this.pluginClient = new PluginClient(client);
-        this.lockService = new LockServiceImpl(pluginClient, clusterService);
+        this.historyService = new JobHistoryService(pluginClient, clusterService);
+        this.lockService = new LockServiceImpl(pluginClient, clusterService, historyService, statusHistoryEnabled);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
@@ -139,7 +143,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         clusterService.addListener(this.sweeper);
         clusterService.addLifecycleListener(this.sweeper);
 
-        return List.of(this.lockService, this.scheduler, this.jobDetailsService);
+        return List.of(this.lockService, this.scheduler, this.jobDetailsService, this.pluginClient);
     }
 
     @Override
@@ -157,6 +161,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         settingList.add(JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT);
         settingList.add(JobSchedulerSettings.SWEEP_PERIOD);
         settingList.add(JobSchedulerSettings.JITTER_LIMIT);
+        settingList.add(JobSchedulerSettings.STATUS_HISTORY);
         return settingList;
     }
 
