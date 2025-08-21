@@ -110,7 +110,6 @@ public class LockServiceImpl implements LockService {
                         || exception.getCause() instanceof ResourceAlreadyExistsException) {
                         listener.onResponse(true);
                     } else {
-                        System.out.println("exception: " + exception.getMessage());
                         listener.onFailure(exception);
                     }
                 }));
@@ -139,14 +138,9 @@ public class LockServiceImpl implements LockService {
         acquireLockWithId(jobIndexName, lockDurationSeconds, jobId, ActionListener.wrap(lock -> {
 
             if (lock != null && statusHistoryEnabled.get() && historyService != null) {
-                historyService.recordJobHistory(
-                    jobIndexName,
-                    jobId,
-                    lock.getLockTime(),
-                    null,
-                    1,
-                    ActionListener.wrap(success -> listener.onResponse(lock), failure -> listener.onResponse(lock))
-                );
+                historyService.recordJobHistory(jobIndexName, jobId, lock.getLockTime(), null, 1, ActionListener.wrap(success -> {
+                    listener.onResponse(lock);
+                }, failure -> { listener.onResponse(lock); }));
             } else {
                 listener.onResponse(lock);
             }

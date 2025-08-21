@@ -69,7 +69,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.function.Supplier;
@@ -105,8 +104,9 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
 
     @Override
     public Collection<SystemIndexDescriptor> getSystemIndexDescriptors(Settings settings) {
-        return Collections.singletonList(
-            new SystemIndexDescriptor(LockServiceImpl.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution")
+        return List.of(
+            new SystemIndexDescriptor(LockServiceImpl.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution"),
+            new SystemIndexDescriptor(JobHistoryService.JOB_HISTORY_INDEX_NAME, "Stores history documents used for plugin job execution")
         );
     }
 

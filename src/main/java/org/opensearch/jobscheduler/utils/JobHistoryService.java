@@ -153,6 +153,7 @@ public class JobHistoryService {
             final IndexRequest request = new IndexRequest(JOB_HISTORY_INDEX_NAME).id(historyId)
                 .source(historyModel.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .create(true);
 
             client.index(request, ActionListener.wrap(response -> {

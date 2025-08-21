@@ -186,7 +186,6 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         String userName = Optional.ofNullable(System.getProperty("user")).orElseThrow(() -> new RuntimeException("user name is missing"));
         String password = Optional.ofNullable(System.getProperty("password"))
             .orElseThrow(() -> new RuntimeException("password is missing"));
-
         headers.put(
             "Authorization",
             "Basic " + Base64.getEncoder().encodeToString((userName + ":" + password).getBytes(StandardCharsets.UTF_8))
@@ -246,7 +245,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
         ).map();
-        return getJobParameter(client(), responseJson.get("_id").toString());
+        return getJobParameter(responseJson.get("_id").toString());
     }
 
     protected void deleteWatcherJob(String jobId) throws IOException {
@@ -272,7 +271,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
         ).map();
-        return getJobParameter(client(), responseJson.get("_id").toString());
+        return getJobParameter(responseJson.get("_id").toString());
     }
 
     protected SampleJobParameter enableWatcherJob(String jobId, SampleJobParameter jobParameter) throws IOException {
@@ -286,7 +285,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
         ).map();
-        return getJobParameter(client(), responseJson.get("_id").toString());
+        return getJobParameter(responseJson.get("_id").toString());
     }
 
     protected Response makeRequest(
@@ -328,7 +327,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
     }
 
     @SuppressWarnings("unchecked")
-    protected SampleJobParameter getJobParameter(RestClient client, String jobId) throws IOException {
+    protected SampleJobParameter getJobParameter(String jobId) throws IOException {
         Request request = new Request("POST", "/" + SampleExtensionPlugin.JOB_INDEX_NAME + "/_search");
         String entity = """
             {
@@ -342,7 +341,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             }
             """.formatted(jobId);
         request.setJsonEntity(entity);
-        Response response = client.performRequest(request);
+        Response response = adminClient().performRequest(request);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
             NamedXContentRegistry.EMPTY,
             LoggingDeprecationHandler.INSTANCE,
@@ -453,7 +452,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             }
             """.formatted(jobId);
         Response response = makeRequest(
-            client(),
+            adminClient(),
             "POST",
             "/.opendistro-job-scheduler-lock/_search",
             Map.of("ignore", "404"),
