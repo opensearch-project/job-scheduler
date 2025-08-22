@@ -8,46 +8,146 @@
  */
 package org.opensearch.jobscheduler.spi;
 
+import org.opensearch.common.time.DateFormatter;
+import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.core.common.io.stream.Writeable;
+import org.opensearch.core.xcontent.ToXContentFragment;
+import org.opensearch.core.xcontent.XContentBuilder;
+import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
+import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
-import org.opensearch.core.xcontent.ToXContentObject;
+import org.opensearch.core.common.io.stream.StreamInput;
 
+import java.io.IOException;
 import java.time.Instant;
+import java.util.function.Function;
 
 /**
  * Job parameters that being used by the JobScheduler.
  */
-public interface ScheduledJobParameter extends ToXContentObject {
+public abstract class ScheduledJobParameter implements ToXContentFragment, Writeable {
+
+    /**
+     * Enum for Schedule types used to indicate which Schedule constructor to use to read from/write to the stream. Job schedules can be set via cron expression or interval.
+     */
+    public enum ScheduleType {
+        CRON,
+        INTERVAL
+    }
+
+    public static final String NAME_FIELD = "name";
+    public static final String ENABLED_FILED = "enabled";
+    public static final String LAST_UPDATE_TIME_FIELD = "last_update_time";
+    public static final String LAST_UPDATE_TIME_FIELD_READABLE = "last_update_time_field";
+    public static final String SCHEDULE_FIELD = "schedule";
+    public static final String ENABLED_TIME_FILED = "enabled_time";
+    public static final String ENABLED_TIME_FILED_READABLE = "enabled_time_field";
+    public static final String LOCK_DURATION_SECONDS = "lock_duration_seconds";
+    public static final String JITTER = "jitter";
+
+    private static final DateFormatter STRICT_DATE_TIME_FORMATTER = DateFormatter.forPattern("strict_date_time");
+
+    protected String name;
+    protected Instant lastUpdateTime;
+    protected Instant enabledTime;
+    protected boolean isEnabled;
+    protected Schedule schedule;
+    protected Long lockDurationSeconds;
+    protected Double jitter;
+
+    /**
+     * Default constructor for subclasses
+     */
+    public ScheduledJobParameter(String name, Schedule schedule, Long lockDurationSeconds, Double jitter) {
+        this.name = name;
+        this.schedule = schedule;
+        this.lockDurationSeconds = lockDurationSeconds;
+        this.jitter = jitter;
+        Instant now = Instant.now();
+        this.isEnabled = true;
+        this.enabledTime = now;
+        this.lastUpdateTime = now;
+    }
+
+    /**
+     * Default constructor for subclasses
+     */
+    public ScheduledJobParameter(String name, Schedule schedule, Long lockDurationSeconds, Double jitter, boolean isEnabled) {
+        this(name, schedule, lockDurationSeconds, jitter);
+        this.isEnabled = isEnabled;
+    }
+
+    /**
+     * Constructor for deserialization from StreamInput.
+     * Subclasses should override this if they have additional fields to deserialize.
+     */
+    public ScheduledJobParameter(StreamInput in) throws IOException {
+        this.name = in.readString();
+        this.isEnabled = in.readBoolean();
+        this.lockDurationSeconds = in.readOptionalLong();
+        this.jitter = in.readOptionalDouble();
+        this.enabledTime = in.readInstant();
+        this.lastUpdateTime = in.readInstant();
+        if (in.readEnum(ScheduleType.class) == ScheduleType.CRON) {
+            this.schedule = new CronSchedule(in);
+        } else {
+            this.schedule = new IntervalSchedule(in);
+        }
+    }
+
+    public ScheduledJobParameter() {}
+
     /**
      * @return job name.
      */
-    String getName();
+    public String getName() {
+        return this.name;
+    }
 
     /**
      * @return job last update time.
      */
-    Instant getLastUpdateTime();
+    public Instant getLastUpdateTime() {
+        return this.lastUpdateTime;
+    }
 
     /**
      * @return get job enabled time.
      */
-    Instant getEnabledTime();
+    public Instant getEnabledTime() {
+        return this.enabledTime;
+    }
 
     /**
      * @return job schedule.
      */
-    Schedule getSchedule();
+    public Schedule getSchedule() {
+        return this.schedule;
+    }
 
     /**
      * @return true if job is enabled, false otherwise.
      */
-    boolean isEnabled();
+    public boolean isEnabled() {
+        return this.isEnabled;
+    }
 
     /**
      * @return Null if scheduled job doesn't need lock. Seconds of lock duration if the scheduled job needs to be a singleton runner.
      */
-    default Long getLockDurationSeconds() {
-        return null;
+    public Long getLockDurationSeconds() {
+        return this.lockDurationSeconds;
     }
+
+    public void setLastUpdateTime(Instant lastUpdateTime) {
+        this.lastUpdateTime = lastUpdateTime;
+    }
+
+    public void setEnabledTime(Instant enabledTime) {
+        this.enabledTime = enabledTime;
+    }
+
+    public abstract Function<StreamInput, ScheduledJobParameter> getParameterReader();
 
     /**
      * Job will be delayed randomly with range of (0, jitter)*interval for the
@@ -64,7 +164,41 @@ public interface ScheduledJobParameter extends ToXContentObject {
      *
      * @return job execution jitter
      */
-    default Double getJitter() {
-        return null;
+    public Double getJitter() {
+        return this.jitter;
+    }
+
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeString(name);
+        out.writeBoolean(isEnabled);
+        out.writeOptionalLong(lockDurationSeconds);
+        out.writeOptionalDouble(jitter);
+        out.writeInstant(enabledTime);
+        out.writeInstant(lastUpdateTime);
+        if (this.schedule instanceof CronSchedule) {
+            out.writeEnum(ScheduleType.CRON);
+        } else {
+            out.writeEnum(ScheduleType.INTERVAL);
+        }
+        schedule.writeTo(out);
+    }
+
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.field(NAME_FIELD, this.name).field(ENABLED_FILED, this.isEnabled).field(SCHEDULE_FIELD, this.schedule);
+        if (this.enabledTime != null) {
+            builder.timeField(ENABLED_TIME_FILED, ENABLED_TIME_FILED_READABLE, this.enabledTime.toEpochMilli());
+        }
+        if (this.lastUpdateTime != null) {
+            builder.timeField(LAST_UPDATE_TIME_FIELD, LAST_UPDATE_TIME_FIELD_READABLE, this.lastUpdateTime.toEpochMilli());
+        }
+        if (this.lockDurationSeconds != null) {
+            builder.field(LOCK_DURATION_SECONDS, this.lockDurationSeconds);
+        }
+        if (this.jitter != null) {
+            builder.field(JITTER, this.jitter);
+        }
+        return builder;
     }
 }
