@@ -122,15 +122,7 @@ public class JobHistoryService {
                 findHistoryRecord(jobIndexName, jobId, startTime, ActionListener.wrap(existingRecord -> {
                     if (existingRecord != null) {
                         // Update existing record
-                        StatusHistoryModel updatedModel = new StatusHistoryModel(
-                            jobIndexName,
-                            jobId,
-                            startTime,
-                            endTime,
-                            status,
-                            existingRecord.getSeqNo(),
-                            existingRecord.getPrimaryTerm()
-                        );
+                        StatusHistoryModel updatedModel = new StatusHistoryModel(jobIndexName, jobId, startTime, endTime, status);
                         updateHistoryRecord(
                             updatedModel,
                             ActionListener.wrap(updated -> listener.onResponse(updated != null), listener::onFailure)
@@ -186,8 +178,6 @@ public class JobHistoryService {
 
             UpdateRequest updateRequest = new UpdateRequest().index(JOB_HISTORY_INDEX_NAME)
                 .id(documentId)
-                .setIfSeqNo(historyModelupdate.getSeqNo())
-                .setIfPrimaryTerm(historyModelupdate.getPrimaryTerm())
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .doc(historyModelupdate.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .fetchSource(true);
@@ -201,9 +191,7 @@ public class JobHistoryService {
                             historyModelupdate.getJobId(),
                             historyModelupdate.getStartTime(),
                             historyModelupdate.getEndTime(),
-                            historyModelupdate.getStatus(),
-                            response.getSeqNo(),
-                            response.getPrimaryTerm()
+                            historyModelupdate.getStatus()
                         )
                     ),
                     exception -> {
@@ -237,7 +225,7 @@ public class JobHistoryService {
                         XContentParser parser = XContentType.JSON.xContent()
                             .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
                         parser.nextToken();
-                        listener.onResponse(StatusHistoryModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
+                        listener.onResponse(StatusHistoryModel.parse(parser));
                     } catch (IOException e) {
                         logger.error("IOException occurred parsing history record", e);
                         listener.onResponse(null);

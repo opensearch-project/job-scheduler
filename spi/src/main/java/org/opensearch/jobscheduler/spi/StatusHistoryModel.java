@@ -15,7 +15,6 @@ import org.opensearch.core.xcontent.ToXContentObject;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.core.xcontent.XContentParserUtils;
-import org.opensearch.index.seqno.SequenceNumbers;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -35,36 +34,20 @@ public final class StatusHistoryModel implements ToXContentObject, Writeable {
     private final Instant startTime;
     private final Instant endTime;
     private final int status;
-    private final long seqNo;
-    private final long primaryTerm;
 
     public StatusHistoryModel(String jobIndexName, String jobId, Instant startTime, Instant endTime, int status) {
-        this(jobIndexName, jobId, startTime, endTime, status, SequenceNumbers.UNASSIGNED_SEQ_NO, SequenceNumbers.UNASSIGNED_PRIMARY_TERM);
-    }
-
-    public StatusHistoryModel(
-        String jobIndexName,
-        String jobId,
-        Instant startTime,
-        Instant endTime,
-        int status,
-        long seqNo,
-        long primaryTerm
-    ) {
         this.jobIndexName = jobIndexName;
         this.jobId = jobId;
         this.startTime = startTime;
         this.endTime = endTime;
         this.status = status;
-        this.seqNo = seqNo;
-        this.primaryTerm = primaryTerm;
     }
 
     public StatusHistoryModel(StreamInput in) throws IOException {
-        this(in.readString(), in.readString(), in.readInstant(), in.readOptionalInstant(), in.readInt(), in.readLong(), in.readLong());
+        this(in.readString(), in.readString(), in.readInstant(), in.readOptionalInstant(), in.readInt());
     }
 
-    public static StatusHistoryModel parse(final XContentParser parser, long seqNo, long primaryTerm) throws IOException {
+    public static StatusHistoryModel parse(final XContentParser parser) throws IOException {
         String jobIndexName = null;
         String jobId = null;
         Instant startTime = null;
@@ -103,9 +86,7 @@ public final class StatusHistoryModel implements ToXContentObject, Writeable {
             requireNonNull(jobId, "JobId cannot be null"),
             requireNonNull(startTime, "startTime cannot be null"),
             endTime,
-            requireNonNull(status, "status cannot be null"),
-            seqNo,
-            primaryTerm
+            requireNonNull(status, "status cannot be null")
         );
     }
 
@@ -146,22 +127,12 @@ public final class StatusHistoryModel implements ToXContentObject, Writeable {
         return status;
     }
 
-    public long getSeqNo() {
-        return seqNo;
-    }
-
-    public long getPrimaryTerm() {
-        return primaryTerm;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         StatusHistoryModel that = (StatusHistoryModel) o;
-        return seqNo == that.seqNo
-            && primaryTerm == that.primaryTerm
-            && jobIndexName.equals(that.jobIndexName)
+        return jobIndexName.equals(that.jobIndexName)
             && jobId.equals(that.jobId)
             && startTime.equals(that.startTime)
             && Objects.equals(endTime, that.endTime)
@@ -170,7 +141,7 @@ public final class StatusHistoryModel implements ToXContentObject, Writeable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(jobIndexName, jobId, startTime, endTime, status, seqNo, primaryTerm);
+        return Objects.hash(jobIndexName, jobId, startTime, endTime, status);
     }
 
     @Override
@@ -180,7 +151,5 @@ public final class StatusHistoryModel implements ToXContentObject, Writeable {
         out.writeInstant(this.startTime);
         out.writeOptionalInstant(this.endTime);
         out.writeInt(this.status);
-        out.writeLong(this.seqNo);
-        out.writeLong(this.primaryTerm);
     }
 }
