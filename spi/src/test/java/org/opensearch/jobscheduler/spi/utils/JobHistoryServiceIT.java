@@ -213,15 +213,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             historyService.findHistoryRecord(jobIndexName, jobId, startTime, ActionListener.wrap(historyModel -> {
                 assertNotNull("History record should exist", historyModel);
                 // Create updated model
-                StatusHistoryModel updatedModel = new StatusHistoryModel(
-                    jobIndexName,
-                    jobId,
-                    startTime,
-                    Instant.now(),
-                    3,
-                    historyModel.getSeqNo(),
-                    historyModel.getPrimaryTerm()
-                );
+                StatusHistoryModel updatedModel = new StatusHistoryModel(jobIndexName, jobId, startTime, Instant.now(), 3);
                 // Update directly
                 historyService.updateHistoryRecord(updatedModel, ActionListener.wrap(updatedHistoryModel -> {
                     assertNotNull("Updated history model should not be null", updatedHistoryModel);
