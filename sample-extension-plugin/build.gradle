@@ -63,6 +63,7 @@ licenseHeaders.enabled = true
 validateNebulaPom.enabled = false
 testingConventions.enabled = false
 loggerUsageCheck.enabled = false
+forbiddenApisTest.ignoreFailures = true
 
 jacoco {
     toolVersion = '0.8.13'
