@@ -241,6 +241,7 @@ repositories {
 
 dependencies {
     implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    implementation "org.opensearch:opensearch-remote-metadata-sdk:${opensearch_version}"
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"
 
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
