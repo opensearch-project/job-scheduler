@@ -147,7 +147,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
         Settings settings = environment.settings();
-        
+
         // Initialize SDK client for remote metadata storage
         this.sdkClient = SdkClientFactory.createSdkClient(
             client,

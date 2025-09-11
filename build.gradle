@@ -247,6 +247,21 @@ dependencies {
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
 
+def slf4j_api_version = "2.0.17"
+
+configurations {
+    testRuntimeClasspath {
+        resolutionStrategy {
+            force "org.slf4j:slf4j-api:${slf4j_api_version}"
+        }
+    }
+    runtimeClasspath {
+        resolutionStrategy {
+            force "org.slf4j:slf4j-api:${slf4j_api_version}"
+        }
+    }
+}
+
 // RPM & Debian build
 apply plugin: 'com.netflix.nebula.ospackage'
 
@@ -295,9 +310,9 @@ integTest {
     }
 }
 Zip bundle = (Zip) project.getTasks().getByName("bundlePlugin");
-integTest.getClusters().forEach{c -> {
+integTest.getClusters().forEach{ c ->
     c.plugin(project.getObjects().fileProperty().value(bundle.getArchiveFile()))
-}}
+}
 
 testClusters.integTest {
     testDistribution = 'INTEG_TEST'
