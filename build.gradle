@@ -241,6 +241,7 @@ repositories {
 
 dependencies {
     implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    implementation ("org.opensearch:opensearch-remote-metadata-sdk-ddb-client:${opensearch_build}")
     implementation "org.opensearch:opensearch-remote-metadata-sdk:${opensearch_build}"
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"
 
@@ -248,16 +249,41 @@ dependencies {
 }
 
 def slf4j_api_version = "2.0.17"
+def jackson_version = "2.18.2"
 
 configurations {
     testRuntimeClasspath {
         resolutionStrategy {
             force "org.slf4j:slf4j-api:${slf4j_api_version}"
+            force "com.fasterxml.jackson.core:jackson-core:${jackson_version}"
+            force "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
+            force "com.fasterxml.jackson.core:jackson-annotations:${jackson_version}"
+            force "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:${jackson_version}"
+            force "com.fasterxml.jackson.dataformat:jackson-dataformat-smile:${jackson_version}"
+            force "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jackson_version}"
+            force "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jackson_version}"
+            force "commons-codec:commons-codec:1.17.1"
+            force "org.apache.httpcomponents:httpcore:4.4.16"
+            force "jakarta.json:jakarta.json-api:2.1.3"
+            force "commons-logging:commons-logging:1.3.5"
+            force "org.apache.httpcomponents.client5:httpclient5:5.5"
         }
     }
     runtimeClasspath {
         resolutionStrategy {
             force "org.slf4j:slf4j-api:${slf4j_api_version}"
+            force "com.fasterxml.jackson.core:jackson-core:${jackson_version}"
+            force "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
+            force "com.fasterxml.jackson.core:jackson-annotations:${jackson_version}"
+            force "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:${jackson_version}"
+            force "com.fasterxml.jackson.dataformat:jackson-dataformat-smile:${jackson_version}"
+            force "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jackson_version}"
+            force "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jackson_version}"
+            force "commons-codec:commons-codec:1.17.1"
+            force "org.apache.httpcomponents:httpcore:4.4.16"
+            force "jakarta.json:jakarta.json-api:2.1.3"
+            force "commons-logging:commons-logging:1.3.5"
+            force "org.apache.httpcomponents.client5:httpclient5:5.5"
         }
     }
 }
