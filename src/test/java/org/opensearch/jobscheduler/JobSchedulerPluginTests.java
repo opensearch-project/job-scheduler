@@ -137,7 +137,7 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
     public void testGetSettings_returnsSettingsList() {
         List<Setting<?>> settings = plugin.getSettings();
         assertNotNull(settings);
-        assertEquals(13, settings.size());
+        assertEquals(18, settings.size());
         assertTrue(settings.contains(LegacyOpenDistroJobSchedulerSettings.SWEEP_PAGE_SIZE));
         assertTrue(settings.contains(LegacyOpenDistroJobSchedulerSettings.REQUEST_TIMEOUT));
         assertTrue(settings.contains(LegacyOpenDistroJobSchedulerSettings.SWEEP_BACKOFF_MILLIS));
@@ -207,5 +207,9 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
         ActionHandler<?, ?> actionHandler1 = actions.get(1);
         assertEquals(GetAllLocksAction.INSTANCE, actionHandler1.getAction());
         assertEquals(TransportGetAllLocksAction.class, actionHandler1.getTransportAction());
+    }
+
+    public void testGetSdkClient() {
+        assertNull(plugin.getSdkClient()); // SdkClient is null until createComponents is called
     }
 }

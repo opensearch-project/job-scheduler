@@ -51,6 +51,8 @@ import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.plugins.SystemIndexPlugin;
+import org.opensearch.remote.metadata.client.SdkClient;
+import org.opensearch.remote.metadata.client.impl.SdkClientFactory;
 import org.opensearch.repositories.RepositoriesService;
 import org.opensearch.rest.RestController;
 import org.opensearch.script.ScriptService;
@@ -70,10 +72,18 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.function.Supplier;
 
+import static org.opensearch.remote.metadata.common.CommonValue.REMOTE_METADATA_ENDPOINT_KEY;
+import static org.opensearch.remote.metadata.common.CommonValue.REMOTE_METADATA_REGION_KEY;
+import static org.opensearch.remote.metadata.common.CommonValue.REMOTE_METADATA_SERVICE_NAME_KEY;
+import static org.opensearch.remote.metadata.common.CommonValue.REMOTE_METADATA_TYPE_KEY;
+import static org.opensearch.remote.metadata.common.CommonValue.TENANT_AWARE_KEY;
+import static org.opensearch.remote.metadata.common.CommonValue.TENANT_ID_FIELD_KEY;
+
 public class JobSchedulerPlugin extends Plugin implements ActionPlugin, ExtensiblePlugin, SystemIndexPlugin {
 
     public static final String OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME = "open_distro_job_scheduler";
     public static final String JS_BASE_URI = "/_plugins/_job_scheduler";
+    public static final String TENANT_ID_FIELD = "tenant_id";
 
     private static final Logger log = LogManager.getLogger(JobSchedulerPlugin.class);
     private JobSweeper sweeper;
@@ -82,6 +92,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private JobHistoryService historyService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
+    private SdkClient sdkClient;
 
     private JobDetailsService jobDetailsService;
 
@@ -96,6 +107,10 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
 
     public Map<String, ScheduledJobProvider> getIndexToJobProviders() {
         return indexToJobProviders;
+    }
+
+    public SdkClient getSdkClient() {
+        return sdkClient;
     }
 
     @Override
@@ -119,10 +134,34 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
+        Settings settings = environment.settings();
+
+        // Initialize SDK client for remote metadata storage
+        this.sdkClient = SdkClientFactory.createSdkClient(
+            client,
+            xContentRegistry,
+            JobSchedulerSettings.JOB_SCHEDULER_MULTI_TENANCY_ENABLED.get(settings)
+                ? Map.ofEntries(
+                    Map.entry(REMOTE_METADATA_TYPE_KEY, JobSchedulerSettings.REMOTE_METADATA_TYPE.get(settings)),
+                    Map.entry(REMOTE_METADATA_ENDPOINT_KEY, JobSchedulerSettings.REMOTE_METADATA_ENDPOINT.get(settings)),
+                    Map.entry(REMOTE_METADATA_REGION_KEY, JobSchedulerSettings.REMOTE_METADATA_REGION.get(settings)),
+                    Map.entry(REMOTE_METADATA_SERVICE_NAME_KEY, JobSchedulerSettings.REMOTE_METADATA_SERVICE_NAME.get(settings)),
+                    Map.entry(TENANT_AWARE_KEY, "true"),
+                    Map.entry(TENANT_ID_FIELD_KEY, TENANT_ID_FIELD)
+                )
+                : Collections.emptyMap()
+        );
+
         Supplier<Boolean> statusHistoryEnabled = () -> JobSchedulerSettings.STATUS_HISTORY.get(environment.settings());
         this.historyService = new JobHistoryService(client, clusterService);
         this.lockService = new LockService(client, clusterService, historyService, statusHistoryEnabled);
-        this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
+        this.jobDetailsService = new JobDetailsService(
+            client,
+            clusterService,
+            this.indicesToListen,
+            this.indexToJobProviders,
+            this.sdkClient
+        );
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
             environment.settings(),
@@ -137,7 +176,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         clusterService.addListener(this.sweeper);
         clusterService.addLifecycleListener(this.sweeper);
 
-        return List.of(this.lockService, this.scheduler, this.jobDetailsService);
+        return List.of(this.lockService, this.scheduler, this.jobDetailsService, this.sdkClient);
     }
 
     @Override
@@ -156,6 +195,11 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         settingList.add(JobSchedulerSettings.SWEEP_PERIOD);
         settingList.add(JobSchedulerSettings.JITTER_LIMIT);
         settingList.add(JobSchedulerSettings.STATUS_HISTORY);
+        settingList.add(JobSchedulerSettings.REMOTE_METADATA_TYPE);
+        settingList.add(JobSchedulerSettings.REMOTE_METADATA_ENDPOINT);
+        settingList.add(JobSchedulerSettings.REMOTE_METADATA_REGION);
+        settingList.add(JobSchedulerSettings.REMOTE_METADATA_SERVICE_NAME);
+        settingList.add(JobSchedulerSettings.JOB_SCHEDULER_MULTI_TENANCY_ENABLED);
         return settingList;
     }
 

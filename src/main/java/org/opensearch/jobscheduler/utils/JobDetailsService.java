@@ -53,6 +53,7 @@ import org.opensearch.jobscheduler.transport.response.JobParameterResponse;
 import org.opensearch.jobscheduler.transport.request.JobRunnerRequest;
 import org.opensearch.jobscheduler.transport.response.JobRunnerResponse;
 import org.opensearch.transport.client.Client;
+import org.opensearch.remote.metadata.client.SdkClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -73,6 +74,7 @@ public class JobDetailsService implements IndexingOperationListener {
     public static Long TIME_OUT_FOR_REQUEST = 15L;
     private final Client client;
     private final ClusterService clusterService;
+    private final SdkClient sdkClient;
     private Set<String> indicesToListen;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private static final ConcurrentMap<String, JobDetails> indexToJobDetails = IndexToJobDetails.getInstance();
@@ -81,10 +83,12 @@ public class JobDetailsService implements IndexingOperationListener {
         final Client client,
         final ClusterService clusterService,
         Set<String> indicesToListen,
-        Map<String, ScheduledJobProvider> indexToJobProviders
+        Map<String, ScheduledJobProvider> indexToJobProviders,
+        SdkClient sdkClient
     ) {
         this.client = client;
         this.clusterService = clusterService;
+        this.sdkClient = sdkClient;
         this.indicesToListen = indicesToListen;
         this.indexToJobProviders = indexToJobProviders;
     }
@@ -398,7 +402,7 @@ public class JobDetailsService implements IndexingOperationListener {
 
     /**
      * Create Job details entry
-     * @param tempJobDetails new job details object that need to be inserted as document in the index=
+     * @param tempJobDetails new job details object that need to be inserted as document in the index
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was created
      *                 or else null.
      */
