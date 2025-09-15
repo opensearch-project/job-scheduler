@@ -329,7 +329,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
     @SuppressWarnings("unchecked")
     protected SampleJobParameter getJobParameter(String jobId) throws IOException {
         Request request = new Request("POST", "/" + SampleExtensionPlugin.JOB_INDEX_NAME + "/_search");
-        String entity = """
+        String entity = String.format(Locale.ROOT, """
             {
                 "query": {
                     "match": {
@@ -339,7 +339,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
                     }
                 }
             }
-            """.formatted(jobId);
+            """, jobId);
         request.setJsonEntity(entity);
         Response response = adminClient().performRequest(request);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
@@ -440,7 +440,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
 
     @SuppressWarnings("unchecked")
     protected LockModel getLockByJobId(String jobId) throws IOException {
-        String entity = """
+        String entity = String.format(Locale.ROOT, """
             {
                 "query": {
                     "match": {
@@ -450,7 +450,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
                     }
                 }
             }
-            """.formatted(jobId);
+            """, jobId);
         Response response = makeRequest(
             adminClient(),
             "POST",
