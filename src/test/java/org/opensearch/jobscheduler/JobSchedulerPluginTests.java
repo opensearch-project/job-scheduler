@@ -208,4 +208,8 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
         assertEquals(GetAllLocksAction.INSTANCE, actionHandler1.getAction());
         assertEquals(TransportGetAllLocksAction.class, actionHandler1.getTransportAction());
     }
+
+    public void testGetSdkClient() {
+        assertNull(plugin.getSdkClient()); // SdkClient is null until createComponents is called
+    }
 }
