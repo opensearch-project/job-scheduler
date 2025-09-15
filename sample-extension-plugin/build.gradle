@@ -53,6 +53,36 @@ dependencies {
     }
 }
 
+// DynamoDB Local setup for integration tests
+task startDynamoDBLocal(type: Exec) {
+    group = 'verification'
+    description = 'Start DynamoDB Local container'
+    commandLine 'docker', 'run', '-d', '--name', 'dynamodb-local-test', '-p', '8000:8000', 'amazon/dynamodb-local'
+    ignoreExitValue = true
+}
+
+task stopDynamoDBLocal(type: Exec) {
+    group = 'verification'
+    description = 'Stop and remove DynamoDB Local container'
+    commandLine 'docker', 'rm', '-f', 'dynamodb-local-test'
+    ignoreExitValue = true
+}
+
+task integTestWithRemoteStore(type: RestIntegTestTask) {
+    group = 'verification'
+    description = 'Run integration tests with remote metadata store enabled'
+    dependsOn startDynamoDBLocal
+    finalizedBy stopDynamoDBLocal
+    
+    systemProperty 'tests.remote_metadata', 'true'
+    useCluster testClusters.integTest
+    
+    doFirst {
+        // Wait for DynamoDB Local to be ready
+        sleep(3000)
+    }
+}
+
 def es_tmp_dir = rootProject.file('build/private/es_tmp').absoluteFile
 es_tmp_dir.mkdirs()
 
@@ -138,6 +168,15 @@ testClusters.integTest {
     setting 'path.repo', repo.absolutePath
     setting 'plugins.jobscheduler.sweeper.period', '1s'
     setting 'plugins.jobscheduler.history.enabled', 'true'
+    
+    // Remote metadata settings for DynamoDB Local
+    if (System.getProperty("tests.remote_metadata") == "true") {
+        setting 'plugins.jobscheduler.remote_metadata_type', 'AWSDynamoDB'
+        setting 'plugins.jobscheduler.remote_metadata_endpoint', 'http://localhost:8000'
+        setting 'plugins.jobscheduler.remote_metadata_region', 'us-east-1'
+        setting 'plugins.jobscheduler.remote_metadata_service_name', 'es'
+        setting 'plugins.jobscheduler.tenant_aware', 'true'
+    }
 }
 
 String baseName = "jobSchedulerBwcCluster"
