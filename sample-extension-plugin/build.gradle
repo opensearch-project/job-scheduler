@@ -76,7 +76,7 @@ integTest {
             exclude "${it}"
         }
     }
-    systemProperty 'tests.security.manager', 'false'
+    systemProperty 'tests.security.manager', 'true'
     systemProperty 'java.io.tmpdir', es_tmp_dir.absolutePath
 
     systemProperty "https", System.getProperty("https")
