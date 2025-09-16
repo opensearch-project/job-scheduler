@@ -39,8 +39,5 @@ public class SampleExtensionPluginIT extends SampleExtensionIntegTestCase {
                 .map(o -> (Map<String, Object>) o)
                 .anyMatch(plugin -> plugin.get("component").equals("opensearch-job-scheduler-sample-extension"))
         );
-        
-        // Debug logging to see what plugins are actually detected
-        logger.info("Detected plugins: " + pluginInfos.stream().map(PluginInfo::getName).collect(Collectors.toList()));
     }
 }

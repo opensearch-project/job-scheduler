@@ -54,9 +54,6 @@ import org.opensearch.jobscheduler.transport.request.JobRunnerRequest;
 import org.opensearch.jobscheduler.transport.response.JobRunnerResponse;
 import org.opensearch.transport.client.Client;
 import org.opensearch.remote.metadata.client.SdkClient;
-import org.opensearch.remote.metadata.client.PutDataObjectRequest;
-import org.opensearch.remote.metadata.client.GetDataObjectRequest;
-import org.opensearch.remote.metadata.client.DeleteDataObjectRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -411,35 +408,18 @@ public class JobDetailsService implements IndexingOperationListener {
      */
     private void createJobDetails(final JobDetails tempJobDetails, ActionListener<String> listener) {
         try {
-            if (sdkClient != null) {
-                // Use SdkClient for remote metadata - pass JobDetails as ToXContentObject
-                PutDataObjectRequest putRequest = PutDataObjectRequest.builder()
-                    .index(JOB_DETAILS_INDEX_NAME)
-                    .dataObject(tempJobDetails)
-                    .build();
-                
-                sdkClient.putDataObjectAsync(putRequest).whenComplete((response, throwable) -> {
-                    if (throwable != null) {
-                        logger.error("Exception occurred creating job details with SdkClient", throwable);
-                        listener.onResponse(null);
-                    } else {
-                        // For SdkClient, we'll generate a simple ID since the response format may differ
-                        listener.onResponse("sdk-generated-id");
-                    }
-                });
-            } else {
-                // Fallback to NodeClient
-                final IndexRequest request = new IndexRequest(JOB_DETAILS_INDEX_NAME).source(
-                    tempJobDetails.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS)
-                ).setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO).setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM).create(true);
+            // Create index request, document Id will be randomly generated
+            final IndexRequest request = new IndexRequest(JOB_DETAILS_INDEX_NAME).source(
+                tempJobDetails.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS)
+            ).setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO).setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM).create(true);
 
-                client.index(request, ActionListener.wrap(response -> { listener.onResponse(response.getId()); }, exception -> {
-                    if (exception instanceof IOException) {
-                        logger.error("IOException occurred creating job details", exception);
-                    }
-                    listener.onResponse(null);
-                }));
-            }
+            // Index Job Details
+            client.index(request, ActionListener.wrap(response -> { listener.onResponse(response.getId()); }, exception -> {
+                if (exception instanceof IOException) {
+                    logger.error("IOException occurred creating job details", exception);
+                }
+                listener.onResponse(null);
+            }));
         } catch (IOException e) {
             logger.error("IOException occurred creating job details", e);
             listener.onResponse(null);
@@ -453,45 +433,25 @@ public class JobDetailsService implements IndexingOperationListener {
      *                 or else null.
      */
     private void findJobDetails(final String documentId, ActionListener<JobDetails> listener) {
-        if (sdkClient != null) {
-            // Use SdkClient for remote metadata
-            GetDataObjectRequest getRequest = GetDataObjectRequest.builder()
-                .index(JOB_DETAILS_INDEX_NAME)
-                .id(documentId)
-                .build();
-                
-            sdkClient.getDataObjectAsync(getRequest).whenComplete((response, throwable) -> {
-                if (throwable != null) {
-                    logger.error("Exception occurred finding job details for documentId " + documentId, throwable);
-                    listener.onFailure(new Exception(throwable));
-                } else {
-                    // For now, return null as we need to understand the actual response format
-                    // This will be refined once we see the actual SdkClient response structure
+        GetRequest getRequest = new GetRequest(JOB_DETAILS_INDEX_NAME).id(documentId);
+        client.get(getRequest, ActionListener.wrap(response -> {
+            if (!response.isExists()) {
+                listener.onResponse(null);
+            } else {
+                try {
+                    XContentParser parser = XContentType.JSON.xContent()
+                        .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
+                    parser.nextToken();
+                    listener.onResponse(JobDetails.parse(parser));
+                } catch (IOException e) {
+                    logger.error("IOException occurred finding JobDetails for documentId " + documentId, e);
                     listener.onResponse(null);
                 }
-            });
-        } else {
-            // Fallback to NodeClient
-            GetRequest getRequest = new GetRequest(JOB_DETAILS_INDEX_NAME).id(documentId);
-            client.get(getRequest, ActionListener.wrap(response -> {
-                if (!response.isExists()) {
-                    listener.onResponse(null);
-                } else {
-                    try {
-                        XContentParser parser = XContentType.JSON.xContent()
-                            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
-                        parser.nextToken();
-                        listener.onResponse(JobDetails.parse(parser));
-                    } catch (IOException e) {
-                        logger.error("IOException occurred finding JobDetails for documentId " + documentId, e);
-                        listener.onResponse(null);
-                    }
-                }
-            }, exception -> {
-                logger.error("Exception occurred finding job details for documentId " + documentId, exception);
-                listener.onFailure(exception);
-            }));
-        }
+            }
+        }, exception -> {
+            logger.error("Exception occurred finding job details for documentId " + documentId, exception);
+            listener.onFailure(exception);
+        }));
     }
 
     /**
@@ -501,37 +461,19 @@ public class JobDetailsService implements IndexingOperationListener {
      *                 or else null.
      */
     public void deleteJobDetails(final String documentId, ActionListener<Boolean> listener) {
-        if (sdkClient != null) {
-            // Use SdkClient for remote metadata
-            DeleteDataObjectRequest deleteRequest = DeleteDataObjectRequest.builder()
-                .index(JOB_DETAILS_INDEX_NAME)
-                .id(documentId)
-                .build();
-                
-            sdkClient.deleteDataObjectAsync(deleteRequest).whenComplete((response, throwable) -> {
-                if (throwable != null) {
-                    logger.debug("Exception occurred deleting job details for document id: " + documentId, throwable);
-                    listener.onResponse(true); // Consider delete successful even if document not found
-                } else {
-                    listener.onResponse(true); // SdkClient delete is successful if no exception
-                }
-            });
-        } else {
-            // Fallback to NodeClient
-            DeleteRequest deleteRequest = new DeleteRequest(JOB_DETAILS_INDEX_NAME).id(documentId);
-            client.delete(deleteRequest, ActionListener.wrap(response -> {
-                listener.onResponse(
-                    response.getResult() == DocWriteResponse.Result.DELETED || response.getResult() == DocWriteResponse.Result.NOT_FOUND
-                );
-            }, exception -> {
-                if (exception instanceof IndexNotFoundException || exception.getCause() instanceof IndexNotFoundException) {
-                    logger.debug("Index is not found to delete job details for document id. {} " + documentId, exception.getMessage());
-                    listener.onResponse(true);
-                } else {
-                    listener.onFailure(exception);
-                }
-            }));
-        }
+        DeleteRequest deleteRequest = new DeleteRequest(JOB_DETAILS_INDEX_NAME).id(documentId);
+        client.delete(deleteRequest, ActionListener.wrap(response -> {
+            listener.onResponse(
+                response.getResult() == DocWriteResponse.Result.DELETED || response.getResult() == DocWriteResponse.Result.NOT_FOUND
+            );
+        }, exception -> {
+            if (exception instanceof IndexNotFoundException || exception.getCause() instanceof IndexNotFoundException) {
+                logger.debug("Index is not found to delete job details for document id. {} " + documentId, exception.getMessage());
+                listener.onResponse(true);
+            } else {
+                listener.onFailure(exception);
+            }
+        }));
     }
 
     /**
@@ -543,42 +485,23 @@ public class JobDetailsService implements IndexingOperationListener {
      */
     private void updateJobDetails(final String documentId, final JobDetails updateJobDetails, ActionListener<String> listener) {
         try {
-            if (sdkClient != null) {
-                // Use SdkClient for remote metadata - updates are done via PutDataObjectRequest
-                PutDataObjectRequest putRequest = PutDataObjectRequest.builder()
-                    .index(JOB_DETAILS_INDEX_NAME)
-                    .id(documentId)
-                    .dataObject(updateJobDetails)
-                    .build();
-                    
-                sdkClient.putDataObjectAsync(putRequest).whenComplete((response, throwable) -> {
-                    if (throwable != null) {
-                        logger.debug("Exception occurred updating job details for documentId " + documentId, throwable);
-                        listener.onResponse(null);
-                    } else {
-                        listener.onResponse(documentId);
-                    }
-                });
-            } else {
-                // Fallback to NodeClient
-                UpdateRequest updateRequest = new UpdateRequest().index(JOB_DETAILS_INDEX_NAME)
-                    .id(documentId)
-                    .doc(updateJobDetails.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
-                    .fetchSource(true);
+            UpdateRequest updateRequest = new UpdateRequest().index(JOB_DETAILS_INDEX_NAME)
+                .id(documentId)
+                .doc(updateJobDetails.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
+                .fetchSource(true);
 
-                client.update(updateRequest, ActionListener.wrap(response -> listener.onResponse(response.getId()), exception -> {
-                    if (exception instanceof VersionConflictEngineException) {
-                        logger.debug("could not update job details for documentId " + documentId, exception.getMessage());
-                    }
-                    if (exception instanceof DocumentMissingException) {
-                        logger.debug("Document is deleted. This happens if the job details is already removed {}", exception.getMessage());
-                    }
-                    if (exception instanceof IOException) {
-                        logger.error("IOException occurred in updating job details.", exception);
-                    }
-                    listener.onResponse(null);
-                }));
-            }
+            client.update(updateRequest, ActionListener.wrap(response -> listener.onResponse(response.getId()), exception -> {
+                if (exception instanceof VersionConflictEngineException) {
+                    logger.debug("could not update job details for documentId " + documentId, exception.getMessage());
+                }
+                if (exception instanceof DocumentMissingException) {
+                    logger.debug("Document is deleted. This happens if the job details is already removed {}", exception.getMessage());
+                }
+                if (exception instanceof IOException) {
+                    logger.error("IOException occurred in updating job details.", exception);
+                }
+                listener.onResponse(null);
+            }));
         } catch (IOException e) {
             logger.error("IOException occurred updating job details for documentId " + documentId, e);
             listener.onResponse(null);
