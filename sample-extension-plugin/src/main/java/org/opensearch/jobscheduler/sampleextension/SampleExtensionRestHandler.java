@@ -9,6 +9,7 @@
 package org.opensearch.jobscheduler.sampleextension;
 
 import org.opensearch.action.support.WriteRequest;
+import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
 import org.opensearch.core.action.ActionListener;
@@ -96,11 +97,11 @@ public class SampleExtensionRestHandler extends BaseRestHandler {
                 schedule = new CronSchedule(cron, ZoneId.systemDefault());
             }
 
-            SampleJobParameter jobParameter = new SampleJobParameter(id, jobName, indexName, schedule, lockDurationSeconds, jitter);
+            SampleJobParameter jobParameter = new SampleJobParameter(jobName, indexName, schedule, lockDurationSeconds, jitter);
             jobParameter.setEnabled(Boolean.parseBoolean(enabled));
             IndexRequest indexRequest = new IndexRequest().index(SampleExtensionPlugin.JOB_INDEX_NAME)
                 .id(id)
-                .source(jobParameter.toXContent(JsonXContent.contentBuilder(), null))
+                .source(jobParameter.toXContent(XContentFactory.jsonBuilder(), null))
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
             return restChannel -> {

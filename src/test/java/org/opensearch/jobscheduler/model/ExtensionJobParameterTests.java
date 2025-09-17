@@ -9,7 +9,11 @@
 package org.opensearch.jobscheduler.model;
 
 import org.junit.Before;
+import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.common.xcontent.XContentFactory;
+import org.opensearch.common.xcontent.json.JsonXContent;
+import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
@@ -17,8 +21,9 @@ import org.opensearch.test.OpenSearchTestCase;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Map;
+import java.util.function.Function;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -138,12 +143,24 @@ public class ExtensionJobParameterTests extends OpenSearchTestCase {
     public void testToXContent() throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         XContentBuilder xContentBuilder = XContentFactory.jsonBuilder(outputStream);
+        xContentBuilder.startObject();
         extensionJobParameter.toXContent(xContentBuilder, null);
+        xContentBuilder.endObject();
         xContentBuilder.flush();
-        String actualOutput = outputStream.toString(StandardCharsets.UTF_8);
-        String expectedOutput =
-            "{\"name\":\"testJob\",\"schedule\":null,\"last_update_time\":1609459200000,\"enabled_time\":1609459200000,\"enabled\":true,\"lock_duration_seconds\":60,\"jitter\":0.1}";
-        assertEquals(expectedOutput, actualOutput);
+
+        // Parse JSON to compare fields individually (order independent)
+        Map<String, Object> actualMap = JsonXContent.jsonXContent.createParser(
+            NamedXContentRegistry.EMPTY,
+            LoggingDeprecationHandler.INSTANCE,
+            outputStream.toByteArray()
+        ).map();
+
+        assertEquals("testJob", actualMap.get("name"));
+        assertEquals(true, actualMap.get("enabled"));
+        assertEquals(1609459200000L, actualMap.get("last_update_time"));
+        assertEquals(1609459200000L, actualMap.get("enabled_time"));
+        assertEquals(60, actualMap.get("lock_duration_seconds"));
+        assertEquals(0.1, actualMap.get("jitter"));
     }
 
     public void testExtensionJobParameterConstructor() {
@@ -176,6 +193,11 @@ public class ExtensionJobParameterTests extends OpenSearchTestCase {
             @Override
             public boolean isEnabled() {
                 return false;
+            }
+
+            @Override
+            public Function<StreamInput, ScheduledJobParameter> getParameterReader() {
+                return (in) -> null;
             }
         };
         ExtensionJobParameter extensionJobParameter = new ExtensionJobParameter(jobParameter);

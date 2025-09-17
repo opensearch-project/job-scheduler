@@ -39,7 +39,6 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
     @Before
     public void setupJobs() throws IOException, InterruptedException {
         jobParam1 = new SampleJobParameter(
-            "test-job-1",
             "Test Job 1",
             "test-index-1",
             new IntervalSchedule(Instant.now(), 5, ChronoUnit.MINUTES),
@@ -48,7 +47,6 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         );
 
         jobParam2 = new SampleJobParameter(
-            "test-job-2",
             "Test Job 2",
             "test-index-2",
             new IntervalSchedule(Instant.now(), 10, ChronoUnit.MINUTES),
@@ -57,7 +55,6 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         );
 
         jobParam3 = new SampleJobParameter(
-            "test-job-3",
             "Test Job 3",
             "test-index-3",
             new CronSchedule("30 2 * * *", ZoneId.of("America/New_York")),
@@ -66,7 +63,6 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         );
 
         jobParam4 = new SampleJobParameter(
-            "test-job-4",
             "Test Job 4",
             "test-index-4",
             new CronSchedule("0 9 * * MON", ZoneId.systemDefault()),
@@ -126,9 +122,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         for (Map<String, Object> node : nodes) {
 
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> nodeJobs = (List<Map<String, Object>>) ((Map<String, Object>) node.get("scheduled_job_info")).get(
-                "jobs"
-            );
+            List<Map<String, Object>> nodeJobs = (List<Map<String, Object>>) node.get("jobs");
             if (nodeJobs != null) {
                 for (Map<String, Object> job : nodeJobs) {
                     validateJobFields(job, true, false, actualJobIds);
@@ -262,6 +256,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         assertEquals("All expected job IDs should be present", expectedJobIds, actualJobIds);
     }
 
+    @SuppressWarnings("unchecked")
     private void validateJobFields(
         Map<String, Object> job,
         boolean expectedEnabled,
@@ -272,18 +267,17 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         assertNotNull(job.get("job_id"));
         actualJobIds.add((String) job.get("job_id"));
         assertEquals(".scheduler_sample_extension", job.get("index_name"));
-        assertNotNull(job.get("name"));
         assertEquals(expectedDescheduled, job.get("descheduled"));
-        assertEquals(expectedEnabled, job.get("enabled"));
-        assertNotNull(job.get("enabled_time"));
-        assertNotNull(job.get("last_update_time"));
-        assertNotNull(job.get("schedule"));
-        assertEquals("none", job.get("jitter"));
+        Map<String, Object> jobParameter = (Map<String, Object>) job.get("job_parameter");
+        assertNotNull(jobParameter.get("name"));
+        assertEquals(expectedEnabled, jobParameter.get("enabled"));
+        assertNotNull(jobParameter.get("enabled_time"));
+        assertNotNull(jobParameter.get("last_update_time"));
+        assertNotNull(jobParameter.get("schedule"));
+        assertNull(jobParameter.get("jitter"));
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> schedule = (Map<String, Object>) job.get("schedule");
-        assertTrue(schedule.get("type").equals("interval") || schedule.get("type").equals("cron"));
-        assertNotNull(schedule.get("delay"));
+        Map<String, Object> schedule = (Map<String, Object>) jobParameter.get("schedule");
+        assertTrue(schedule.containsKey("interval") || schedule.containsKey("cron"));
     }
 
     private Map<String, Object> parseResponse(Response response) throws IOException {
