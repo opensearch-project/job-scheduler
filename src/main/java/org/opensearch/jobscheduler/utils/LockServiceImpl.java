@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.utils;
 
+import org.opensearch.action.support.WriteRequest;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -217,6 +218,7 @@ public class LockServiceImpl implements LockService {
                 .id(updateLock.getLockId())
                 .setIfSeqNo(updateLock.getSeqNo())
                 .setIfPrimaryTerm(updateLock.getPrimaryTerm())
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .doc(updateLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .fetchSource(true);
 
@@ -253,6 +255,7 @@ public class LockServiceImpl implements LockService {
                 .source(tempLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
                 .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .create(true);
             client.index(
                 request,

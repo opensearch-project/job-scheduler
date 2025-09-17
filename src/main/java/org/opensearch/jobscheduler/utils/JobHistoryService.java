@@ -20,6 +20,7 @@ import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.index.engine.VersionConflictEngineException;
 import org.opensearch.index.seqno.SequenceNumbers;
 import org.opensearch.action.admin.indices.create.CreateIndexRequest;
+import org.opensearch.action.support.WriteRequest;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.core.action.ActionListener;
@@ -152,6 +153,7 @@ public class JobHistoryService {
             final IndexRequest request = new IndexRequest(JOB_HISTORY_INDEX_NAME).id(historyId)
                 .source(historyModel.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .create(true);
 
             client.index(request, ActionListener.wrap(response -> {
@@ -181,6 +183,7 @@ public class JobHistoryService {
                 .id(documentId)
                 .setIfSeqNo(historyModelupdate.getSeqNo())
                 .setIfPrimaryTerm(historyModelupdate.getPrimaryTerm())
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .doc(historyModelupdate.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .fetchSource(true);
 
