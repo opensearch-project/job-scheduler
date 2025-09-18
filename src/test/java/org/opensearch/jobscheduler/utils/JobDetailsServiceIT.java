@@ -146,8 +146,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             client(),
             this.clusterService,
             this.indicesToListen,
-            this.indexToJobProviders,
-            null
+            this.indexToJobProviders
         );
 
         jobDetailsService.processJobDetails(
@@ -183,8 +182,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             client(),
             this.clusterService,
             this.indicesToListen,
-            this.indexToJobProviders,
-            null
+            this.indexToJobProviders
         );
 
         // Create initial index request
@@ -226,8 +224,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             client(),
             this.clusterService,
             this.indicesToListen,
-            this.indexToJobProviders,
-            null
+            this.indexToJobProviders
         );
         jobDetailsService.deleteJobDetails(expectedDocumentId, ActionListener.wrap(deleted -> {
             assertTrue("Failed to delete JobDetails.", deleted);
@@ -239,8 +236,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             client(),
             this.clusterService,
             this.indicesToListen,
-            this.indexToJobProviders,
-            null
+            this.indexToJobProviders
         );
         jobDetailsService.createJobDetailsIndex(ActionListener.wrap(created -> {
             if (created) {
@@ -260,8 +256,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             client(),
             this.clusterService,
             this.indicesToListen,
-            this.indexToJobProviders,
-            null
+            this.indexToJobProviders
         );
         JobDetails jobDetails = new JobDetails(
             expectedJobIndex,
@@ -293,8 +288,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
             client(),
             this.clusterService,
             this.indicesToListen,
-            this.indexToJobProviders,
-            null
+            this.indexToJobProviders
         );
         JobDetails jobDetails = new JobDetails(
             expectedJobIndex,

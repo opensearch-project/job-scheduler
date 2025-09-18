@@ -170,17 +170,17 @@ testClusters {
         testDistribution = 'INTEG_TEST'
 
         if (_numNodes > 1) numberOfNodes = _numNodes
-        
+
         setting 'path.repo', repo.absolutePath
         setting 'plugins.jobscheduler.sweeper.period', '1s'
-        
+
         // DynamoDB settings for remote metadata
         setting 'plugins.jobscheduler.remote_metadata_type', 'AWSDynamoDB'
         setting 'plugins.jobscheduler.remote_metadata_endpoint', 'http://localhost:8000'
         setting 'plugins.jobscheduler.remote_metadata_region', 'us-east-1'
         setting 'plugins.jobscheduler.remote_metadata_service_name', 'es'
         setting 'plugins.jobscheduler.tenant_aware', 'true'
-        
+
         // Install plugins
         plugin(rootProject.getObjects().fileProperty().value(rootBundle.getArchiveFile()))
         plugin(project.getObjects().fileProperty().value(bundle.getArchiveFile()))
@@ -193,10 +193,10 @@ task integTestWithRemoteStore(type: RestIntegTestTask) {
     description = 'Run integration tests with remote metadata store enabled'
     dependsOn startDynamoDBLocal
     finalizedBy stopDynamoDBLocal
-    
+
     systemProperty 'tests.remote_metadata', 'true'
     useCluster testClusters.integTestRemoteStore
-    
+
     doFirst {
         // Wait for DynamoDB Local to be ready
         sleep(3000)
