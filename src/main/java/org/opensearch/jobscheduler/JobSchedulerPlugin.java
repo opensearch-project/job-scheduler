@@ -72,10 +72,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.function.Supplier;
-
 
 import static org.opensearch.remote.metadata.common.CommonValue.REMOTE_METADATA_ENDPOINT_KEY;
 import static org.opensearch.remote.metadata.common.CommonValue.REMOTE_METADATA_REGION_KEY;
@@ -168,7 +168,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         this.pluginClient = new PluginClient(client);
         this.historyService = new JobHistoryService(pluginClient, clusterService);
         this.lockService = new LockServiceImpl(pluginClient, clusterService, historyService, statusHistoryEnabled);
-        this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders, this.sdkClient);
+        this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
             environment.settings(),
