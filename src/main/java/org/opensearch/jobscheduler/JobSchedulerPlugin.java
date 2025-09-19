@@ -10,6 +10,7 @@ package org.opensearch.jobscheduler;
 
 import org.opensearch.action.ActionRequest;
 import org.opensearch.cluster.node.DiscoveryNodes;
+import org.opensearch.common.inject.Module;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.settings.ClusterSettings;
@@ -100,6 +101,11 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
 
     public Map<String, ScheduledJobProvider> getIndexToJobProviders() {
         return indexToJobProviders;
+    }
+
+    @Override
+    public Collection<Module> createGuiceModules() {
+        return List.of(new JobSchedulerPluginModule());
     }
 
     @Override
