@@ -147,10 +147,11 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
         Settings settings = environment.settings();
+        this.pluginClient = new PluginClient(client);
 
         // Initialize SDK client for remote metadata storage
         this.sdkClient = SdkClientFactory.createSdkClient(
-            client,
+            pluginClient,
             xContentRegistry,
             JobSchedulerSettings.JOB_SCHEDULER_MULTI_TENANCY_ENABLED.get(settings)
                 ? Map.ofEntries(
@@ -165,7 +166,6 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         );
 
         Supplier<Boolean> statusHistoryEnabled = () -> JobSchedulerSettings.STATUS_HISTORY.get(environment.settings());
-        this.pluginClient = new PluginClient(client);
         this.historyService = new JobHistoryService(pluginClient, clusterService);
         this.lockService = new LockServiceImpl(pluginClient, clusterService, historyService, statusHistoryEnabled, this.sdkClient);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
