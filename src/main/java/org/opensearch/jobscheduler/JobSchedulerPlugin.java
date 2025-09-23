@@ -115,10 +115,6 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         return indexToJobProviders;
     }
 
-    public SdkClient getSdkClient() {
-        return sdkClient;
-    }
-
     @Override
     public Collection<Module> createGuiceModules() {
         return List.of(new JobSchedulerPluginModule());

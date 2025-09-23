@@ -63,13 +63,12 @@ licenseHeaders.enabled = true
 validateNebulaPom.enabled = false
 testingConventions.enabled = false
 loggerUsageCheck.enabled = false
-forbiddenApisTest.ignoreFailures = true
 
 jacoco {
     toolVersion = '0.8.13'
 }
 
-check.dependsOn jacocoTestReport
+check.dependsOn jacocoTestRepor~t
 
 integTest {
     if (project.hasProperty('excludeTests')) {
