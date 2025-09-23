@@ -23,6 +23,7 @@ import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.reactor.ssl.TlsDetails;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.util.Timeout;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.opensearch.client.Request;
@@ -36,8 +37,11 @@ import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
+import org.opensearch.core.xcontent.DeprecationHandler;
+import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.common.xcontent.json.JsonXContent;
+import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.schedule.CronSchedule;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
@@ -76,6 +80,56 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
+
+    @After
+    public void wipeAllODFEIndices() throws IOException {
+        Response response = client().performRequest(new Request("GET", "/_cat/indices?format=json&expand_wildcards=all"));
+
+        MediaType mediaType = MediaType.fromMediaType(response.getEntity().getContentType());
+
+        try (
+            XContentParser parser = mediaType.xContent()
+                .createParser(
+                    NamedXContentRegistry.EMPTY,
+                    DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                    response.getEntity().getContent()
+                )
+        ) {
+
+            XContentParser.Token token = parser.nextToken();
+            if (token != XContentParser.Token.START_ARRAY) {
+                throw new IOException("Expected START_ARRAY from /_cat/indices response but found: " + token);
+            }
+
+            // Iterate over array elements (each is an object with "index" and other fields)
+            while ((token = parser.nextToken()) != XContentParser.Token.END_ARRAY) {
+                String indexName = null;
+
+                while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
+                    if (token == XContentParser.Token.FIELD_NAME) {
+                        String field = parser.currentName();
+                        token = parser.nextToken();
+                        if ("index".equals(field)) {
+                            indexName = parser.text();
+                        } else {
+                            // skip any nested structures we don't care about
+                            parser.skipChildren();
+                        }
+                    }
+                }
+
+                // .opendistro_security isn't allowed to delete from cluster
+                if (indexName != null && !".opendistro_security".equals(indexName)) {
+                    Request delete = new Request("DELETE", "/" + indexName);
+                    RequestOptions.Builder opts = RequestOptions.DEFAULT.toBuilder();
+                    opts.setWarningsHandler(WarningsHandler.PERMISSIVE);
+                    delete.setOptions(opts.build());
+
+                    adminClient().performRequest(delete);
+                }
+            }
+        }
+    }
 
     @AfterClass
     public static void dumpCoverage() throws IOException, MalformedObjectNameException {
@@ -186,7 +240,6 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
         String userName = Optional.ofNullable(System.getProperty("user")).orElseThrow(() -> new RuntimeException("user name is missing"));
         String password = Optional.ofNullable(System.getProperty("password"))
             .orElseThrow(() -> new RuntimeException("password is missing"));
-
         headers.put(
             "Authorization",
             "Basic " + Base64.getEncoder().encodeToString((userName + ":" + password).getBytes(StandardCharsets.UTF_8))
@@ -246,7 +299,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
         ).map();
-        return getJobParameter(client(), responseJson.get("_id").toString());
+        return getJobParameter(responseJson.get("_id").toString());
     }
 
     protected void deleteWatcherJob(String jobId) throws IOException {
@@ -272,7 +325,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
         ).map();
-        return getJobParameter(client(), responseJson.get("_id").toString());
+        return getJobParameter(responseJson.get("_id").toString());
     }
 
     protected SampleJobParameter enableWatcherJob(String jobId, SampleJobParameter jobParameter) throws IOException {
@@ -286,7 +339,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
             LoggingDeprecationHandler.INSTANCE,
             response.getEntity().getContent()
         ).map();
-        return getJobParameter(client(), responseJson.get("_id").toString());
+        return getJobParameter(responseJson.get("_id").toString());
     }
 
     protected Response makeRequest(
@@ -328,9 +381,9 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
     }
 
     @SuppressWarnings("unchecked")
-    protected SampleJobParameter getJobParameter(RestClient client, String jobId) throws IOException {
+    protected SampleJobParameter getJobParameter(String jobId) throws IOException {
         Request request = new Request("POST", "/" + SampleExtensionPlugin.JOB_INDEX_NAME + "/_search");
-        String entity = """
+        String entity = String.format(Locale.ROOT, """
             {
                 "query": {
                     "match": {
@@ -340,9 +393,9 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
                     }
                 }
             }
-            """.formatted(jobId);
+            """, jobId);
         request.setJsonEntity(entity);
-        Response response = client.performRequest(request);
+        Response response = adminClient().performRequest(request);
         Map<String, Object> responseJson = JsonXContent.jsonXContent.createParser(
             NamedXContentRegistry.EMPTY,
             LoggingDeprecationHandler.INSTANCE,
@@ -441,7 +494,7 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
 
     @SuppressWarnings("unchecked")
     protected LockModel getLockByJobId(String jobId) throws IOException {
-        String entity = """
+        String entity = String.format(Locale.ROOT, """
             {
                 "query": {
                     "match": {
@@ -451,9 +504,9 @@ public class SampleExtensionIntegTestCase extends OpenSearchRestTestCase {
                     }
                 }
             }
-            """.formatted(jobId);
+            """, jobId);
         Response response = makeRequest(
-            client(),
+            adminClient(),
             "POST",
             "/.opendistro-job-scheduler-lock/_search",
             Map.of("ignore", "404"),

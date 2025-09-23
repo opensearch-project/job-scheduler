@@ -15,7 +15,7 @@ import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
-import org.opensearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.utils.LockServiceImpl;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
@@ -127,7 +127,7 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
             xContentRegistry,
             jobProviderMap,
             scheduler,
-            new LockService(client, clusterService),
+            new LockServiceImpl(client, clusterService),
             jobDetailsService
         );
     }
