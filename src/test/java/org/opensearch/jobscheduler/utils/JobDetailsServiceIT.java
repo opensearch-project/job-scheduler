@@ -40,7 +40,6 @@ import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
-import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.request.ExtensionJobActionRequest;
 import org.opensearch.jobscheduler.transport.request.JobParameterRequest;
 import org.opensearch.jobscheduler.transport.response.JobParameterResponse;
@@ -325,7 +324,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     public void testJobRunnerExtensionJobActionRequest() throws IOException {
 
-        LockService lockService = new LockService(client(), this.clusterService);
+        LockServiceImpl lockService = new LockServiceImpl(client(), this.clusterService);
         JobExecutionContext jobExecutionContext = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),
