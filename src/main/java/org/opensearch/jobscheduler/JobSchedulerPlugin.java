@@ -10,11 +10,13 @@ package org.opensearch.jobscheduler;
 
 import org.opensearch.action.ActionRequest;
 import org.opensearch.cluster.node.DiscoveryNodes;
+import org.opensearch.common.inject.Module;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.IndexScopedSettings;
 import org.opensearch.common.settings.SettingsFilter;
+import org.opensearch.identity.PluginSubject;
 import org.opensearch.core.action.ActionResponse;
 import org.opensearch.jobscheduler.rest.action.RestGetLocksAction;
 import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
@@ -22,6 +24,8 @@ import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestGetScheduledInfoAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
 import org.opensearch.jobscheduler.rest.action.RestGetHistoryAction;
+import org.opensearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.transport.PluginClient;
 import org.opensearch.jobscheduler.transport.action.GetAllLocksAction;
 import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetAllLocksAction;
@@ -34,7 +38,7 @@ import org.opensearch.jobscheduler.spi.ScheduledJobParser;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import org.opensearch.jobscheduler.spi.schedule.ScheduleParser;
-import org.opensearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.jobscheduler.utils.LockServiceImpl;
 import org.opensearch.jobscheduler.sweeper.JobSweeper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,9 +53,10 @@ import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
 import org.opensearch.indices.SystemIndexDescriptor;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
-import org.opensearch.jobscheduler.spi.utils.JobHistoryService;
+import org.opensearch.jobscheduler.utils.JobHistoryService;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
+import org.opensearch.plugins.IdentityAwarePlugin;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.plugins.SystemIndexPlugin;
 import org.opensearch.repositories.RepositoriesService;
@@ -72,7 +77,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.function.Supplier;
 
-public class JobSchedulerPlugin extends Plugin implements ActionPlugin, ExtensiblePlugin, SystemIndexPlugin {
+public class JobSchedulerPlugin extends Plugin implements ActionPlugin, ExtensiblePlugin, SystemIndexPlugin, IdentityAwarePlugin {
 
     public static final String OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME = "open_distro_job_scheduler";
     public static final String JS_BASE_URI = "/_plugins/_job_scheduler";
@@ -84,6 +89,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     private JobHistoryService historyService;
     private Map<String, ScheduledJobProvider> indexToJobProviders;
     private Set<String> indicesToListen;
+    private PluginClient pluginClient;
 
     private JobDetailsService jobDetailsService;
     private ClusterService clusterService;
@@ -102,9 +108,14 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     }
 
     @Override
+    public Collection<Module> createGuiceModules() {
+        return List.of(new JobSchedulerPluginModule());
+    }
+
+    @Override
     public Collection<SystemIndexDescriptor> getSystemIndexDescriptors(Settings settings) {
         return List.of(
-            new SystemIndexDescriptor(LockService.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution"),
+            new SystemIndexDescriptor(LockServiceImpl.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution"),
             new SystemIndexDescriptor(JobHistoryService.JOB_HISTORY_INDEX_NAME, "Stores job execution history")
         );
     }
@@ -123,10 +134,10 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
-        this.clusterService = clusterService;
         Supplier<Boolean> statusHistoryEnabled = () -> clusterService.getClusterSettings().get(JobSchedulerSettings.STATUS_HISTORY);
-        this.historyService = new JobHistoryService(client, clusterService);
-        this.lockService = new LockService(client, clusterService, historyService, statusHistoryEnabled);
+        this.pluginClient = new PluginClient(client);
+        this.historyService = new JobHistoryService(pluginClient, clusterService);
+        this.lockService = new LockServiceImpl(pluginClient, clusterService, historyService, statusHistoryEnabled);
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
@@ -142,7 +153,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         clusterService.addListener(this.sweeper);
         clusterService.addLifecycleListener(this.sweeper);
 
-        return List.of(this.lockService, this.scheduler, this.jobDetailsService);
+        return List.of(this.lockService, this.scheduler, this.jobDetailsService, this.pluginClient);
     }
 
     @Override
@@ -284,6 +295,13 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         actions.add(new ActionHandler<>(GetHistoryAction.INSTANCE, TransportGetHistoryAction.class));
 
         return actions;
+    }
+
+    @Override
+    public void assignSubject(PluginSubject pluginSubject) {
+        // When security is not installed, the pluginSubject will still be assigned.
+        assert pluginSubject != null;
+        this.pluginClient.setSubject(pluginSubject);
     }
 
 }

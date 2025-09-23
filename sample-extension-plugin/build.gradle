@@ -42,6 +42,10 @@ repositories {
     maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
 }
 
+configurations {
+    opensearchPlugin
+}
+
 dependencies {
     compileOnly project(path: ":${rootProject.name}-spi", configuration: 'shadow')
     testImplementation('org.awaitility:awaitility:4.3.0') {
@@ -126,6 +130,9 @@ testClusters.integTest {
             node.jvmArgs("-agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=*:${debugPort}")
             debugPort += 1
         }
+    }
+    if (ext.securityEnabled) {
+        plugin(provider(ext.securityPluginFile))
     }
     setting 'path.repo', repo.absolutePath
     setting 'plugins.jobscheduler.sweeper.period', '1s'
