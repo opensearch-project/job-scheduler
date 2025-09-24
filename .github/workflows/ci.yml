@@ -33,10 +33,11 @@ jobs:
       - name: Run start commands
         run: ${{ needs.Get-CI-Image-Tag.outputs.ci-image-start-command }}
       - name: Checkout job-scheduler
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Java ${{ matrix.java }}
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v5
         with:
+          distribution: temurin # Temurin is a distribution of adoptium
           java-version: ${{ matrix.java }}
 
       - name: Run build
@@ -67,11 +68,12 @@ jobs:
 
     steps:
       - name: Checkout job-scheduler
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Java ${{ matrix.java }}
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v5
         with:
+          distribution: temurin # Temurin is a distribution of adoptium
           java-version: ${{ matrix.java }}
 
       - name: Run build
@@ -104,11 +106,12 @@ jobs:
 
     steps:
       - name: Checkout job-scheduler
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Java ${{ matrix.java }}
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v5
         with:
+          distribution: temurin # Temurin is a distribution of adoptium
           java-version: ${{ matrix.java }}
 
       - name: Run build
@@ -132,8 +135,8 @@ jobs:
     needs: ["build-job-scheduler-linux", "build-job-scheduler-MacOS", "build-job-scheduler-Windows"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         with:
           path: downloaded-artifacts
 
