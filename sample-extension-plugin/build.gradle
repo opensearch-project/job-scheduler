@@ -68,7 +68,7 @@ jacoco {
     toolVersion = '0.8.13'
 }
 
-check.dependsOn jacocoTestRepor~t
+check.dependsOn jacocoTestReport
 
 integTest {
     if (project.hasProperty('excludeTests')) {
