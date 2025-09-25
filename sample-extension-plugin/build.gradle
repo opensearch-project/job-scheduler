@@ -111,10 +111,10 @@ integTest {
 
 Zip bundle = (Zip) project.getTasks().getByName("bundlePlugin");
 Zip rootBundle = (Zip) rootProject.getTasks().getByName("bundlePlugin");
-integTest.getClusters().forEach{c -> {
+integTest.getClusters().forEach{c ->
     c.plugin(rootProject.getObjects().fileProperty().value(rootBundle.getArchiveFile()))
     c.plugin(project.getObjects().fileProperty().value(bundle.getArchiveFile()))
-}}
+}
 
 testClusters.integTest {
     testDistribution = 'INTEG_TEST'

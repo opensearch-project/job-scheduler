@@ -20,6 +20,7 @@ import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.utils.LockServiceImpl;
+import org.opensearch.remote.metadata.client.SdkClient;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.test.OpenSearchTestCase;
@@ -45,7 +46,7 @@ public class RestReleaseLockActionTests extends OpenSearchTestCase {
         super.setUp();
         this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
         this.client = Mockito.mock(Client.class);
-        this.lockService = new LockServiceImpl(client, clusterService);
+        this.lockService = new LockServiceImpl(client, clusterService, Mockito.mock(SdkClient.class), false);
         restReleaseLockAction = new RestReleaseLockAction(this.lockService);
         this.releaseLockPath = String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock", LockModel.LOCK_ID);
 
