@@ -248,7 +248,6 @@ dependencies {
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
 
-// Define common resolution strategy to eliminate duplication
 def commonResolutionStrategy = {
     force "org.slf4j:slf4j-api:${versions.slf4j}"
     force "com.fasterxml.jackson.core:jackson-core:${versions.jackson}"
