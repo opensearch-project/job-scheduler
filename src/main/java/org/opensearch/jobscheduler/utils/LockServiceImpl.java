@@ -261,7 +261,7 @@ public class LockServiceImpl implements LockService {
             });
 
         } catch (Exception e) {
-            logger.error("Exception occurred updating lock with SdkClient.", e);
+            logger.error("Exception occurred updating lock.", e);
             listener.onResponse(null);
         }
     }
@@ -295,7 +295,7 @@ public class LockServiceImpl implements LockService {
             });
 
         } catch (Exception e) {
-            logger.error("Exception occurred creating lock with SdkClient.", e);
+            logger.error("Exception occurred creating lock.", e);
             listener.onFailure(e);
         }
     }
@@ -327,7 +327,7 @@ public class LockServiceImpl implements LockService {
             });
 
         } catch (Exception e) {
-            logger.error("Exception occurred finding lock with SdkClient.", e);
+            logger.error("Exception occurred finding lock.", e);
             listener.onFailure(e);
         }
     }
@@ -397,7 +397,7 @@ public class LockServiceImpl implements LockService {
             });
 
         } catch (Exception e) {
-            logger.error("Exception occurred deleting lock with SdkClient.", e);
+            logger.error("Exception occurred deleting lock.", e);
             listener.onFailure(e);
         }
     }
