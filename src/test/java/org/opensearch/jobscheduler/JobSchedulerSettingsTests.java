@@ -17,8 +17,6 @@ import org.opensearch.common.settings.Settings;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.test.OpenSearchTestCase;
 
-import static org.opensearch.remote.metadata.common.CommonValue.AWS_DYNAMO_DB;
-
 @SuppressWarnings({ "rawtypes" })
 public class JobSchedulerSettingsTests extends OpenSearchTestCase {
 
@@ -102,47 +100,5 @@ public class JobSchedulerSettingsTests extends OpenSearchTestCase {
                 LegacyOpenDistroJobSchedulerSettings.SWEEP_PAGE_SIZE,
                 LegacyOpenDistroJobSchedulerSettings.JITTER_LIMIT }
         );
-    }
-
-    public void testRemoteMetadataSettingsReturned() {
-        List<Setting<?>> settings = plugin.getSettings();
-        assertTrue(
-            "remote metadata settings must be returned from settings",
-            settings.containsAll(
-                Arrays.asList(
-                    JobSchedulerSettings.REMOTE_METADATA_TYPE,
-                    JobSchedulerSettings.REMOTE_METADATA_ENDPOINT,
-                    JobSchedulerSettings.REMOTE_METADATA_REGION,
-                    JobSchedulerSettings.REMOTE_METADATA_SERVICE_NAME,
-                    JobSchedulerSettings.JOB_SCHEDULER_MULTI_TENANCY_ENABLED
-                )
-            )
-        );
-    }
-
-    public void testRemoteMetadataSettingsDefaults() {
-        Settings settings = Settings.EMPTY;
-
-        assertEquals("", JobSchedulerSettings.REMOTE_METADATA_TYPE.get(settings));
-        assertEquals("", JobSchedulerSettings.REMOTE_METADATA_ENDPOINT.get(settings));
-        assertEquals("", JobSchedulerSettings.REMOTE_METADATA_REGION.get(settings));
-        assertEquals("", JobSchedulerSettings.REMOTE_METADATA_SERVICE_NAME.get(settings));
-        assertFalse(JobSchedulerSettings.JOB_SCHEDULER_MULTI_TENANCY_ENABLED.get(settings));
-    }
-
-    public void testRemoteMetadataSettingsValues() {
-        Settings settings = Settings.builder()
-            .put("plugins.jobscheduler.remote_metadata_type", AWS_DYNAMO_DB)
-            .put("plugins.jobscheduler.remote_metadata_endpoint", "https://dynamodb.us-east-1.amazonaws.com")
-            .put("plugins.jobscheduler.remote_metadata_region", "us-east-1")
-            .put("plugins.jobscheduler.remote_metadata_service_name", "es")
-            .put("plugins.jobscheduler.tenant_aware", true)
-            .build();
-
-        assertEquals(AWS_DYNAMO_DB, JobSchedulerSettings.REMOTE_METADATA_TYPE.get(settings));
-        assertEquals("https://dynamodb.us-east-1.amazonaws.com", JobSchedulerSettings.REMOTE_METADATA_ENDPOINT.get(settings));
-        assertEquals("us-east-1", JobSchedulerSettings.REMOTE_METADATA_REGION.get(settings));
-        assertEquals("es", JobSchedulerSettings.REMOTE_METADATA_SERVICE_NAME.get(settings));
-        assertTrue(JobSchedulerSettings.JOB_SCHEDULER_MULTI_TENANCY_ENABLED.get(settings));
     }
 }

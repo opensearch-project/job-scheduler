@@ -45,7 +45,6 @@ import org.opensearch.jobscheduler.transport.request.JobParameterRequest;
 import org.opensearch.jobscheduler.transport.response.JobParameterResponse;
 import org.opensearch.jobscheduler.transport.request.JobRunnerRequest;
 import org.opensearch.jobscheduler.transport.response.JobRunnerResponse;
-import org.opensearch.remote.metadata.client.SdkClient;
 import org.opensearch.test.OpenSearchIntegTestCase;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 
@@ -325,7 +324,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     public void testJobRunnerExtensionJobActionRequest() throws IOException {
 
-        LockServiceImpl lockService = new LockServiceImpl(client(), this.clusterService, Mockito.mock(SdkClient.class), false);
+        LockServiceImpl lockService = new LockServiceImpl(client(), this.clusterService);
         JobExecutionContext jobExecutionContext = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),
