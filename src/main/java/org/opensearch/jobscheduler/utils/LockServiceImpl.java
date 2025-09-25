@@ -231,15 +231,10 @@ public class LockServiceImpl implements LockService {
                 .build();
 
             sdkClient.updateDataObjectAsync(updateDataObjectRequest).thenAccept(response -> {
-                try {
-                    UpdateResponse updateResponse = response.parser() == null ? null : UpdateResponse.fromXContent(response.parser());
-                    if (updateResponse != null) {
-                        listener.onResponse(new LockModel(updateLock, updateResponse.getSeqNo(), updateResponse.getPrimaryTerm()));
-                    } else {
-                        listener.onResponse(null);
-                    }
-                } catch (IOException e) {
-                    logger.error("IOException occurred parsing UpdateDataObjectResponse.", e);
+                UpdateResponse updateResponse = response.updateResponse();
+                if (updateResponse != null) {
+                    listener.onResponse(new LockModel(updateLock, updateResponse.getSeqNo(), updateResponse.getPrimaryTerm()));
+                } else {
                     listener.onResponse(null);
                 }
             }).exceptionally(throwable -> {
@@ -277,15 +272,10 @@ public class LockServiceImpl implements LockService {
                 .build();
 
             sdkClient.putDataObjectAsync(putDataObjectRequest).thenAccept(response -> {
-                try {
-                    IndexResponse indexResponse = response.parser() == null ? null : IndexResponse.fromXContent(response.parser());
-                    if (indexResponse != null) {
-                        listener.onResponse(new LockModel(tempLock, indexResponse.getSeqNo(), indexResponse.getPrimaryTerm()));
-                    } else {
-                        listener.onResponse(null);
-                    }
-                } catch (IOException e) {
-                    logger.error("IOException occurred parsing PutDataObjectResponse.", e);
+                IndexResponse indexResponse = response.indexResponse();
+                if (indexResponse != null) {
+                    listener.onResponse(new LockModel(tempLock, indexResponse.getSeqNo(), indexResponse.getPrimaryTerm()));
+                } else {
                     listener.onResponse(null);
                 }
             }).exceptionally(throwable -> {
@@ -310,19 +300,19 @@ public class LockServiceImpl implements LockService {
             GetDataObjectRequest getDataObjectRequest = GetDataObjectRequest.builder().index(LOCK_INDEX_NAME).id(lockId).build();
 
             sdkClient.getDataObjectAsync(getDataObjectRequest).thenAccept(response -> {
-                try {
-                    GetResponse getResponse = response.parser() == null ? null : GetResponse.fromXContent(response.parser());
-                    if (getResponse == null || !getResponse.isExists()) {
-                        listener.onResponse(null);
-                    } else {
+                GetResponse getResponse = response.getResponse();
+                if (getResponse == null || !getResponse.isExists()) {
+                    listener.onResponse(null);
+                } else {
+                    try {
                         XContentParser parser = XContentType.JSON.xContent()
                             .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, getResponse.getSourceAsString());
                         parser.nextToken();
                         listener.onResponse(LockModel.parse(parser, getResponse.getSeqNo(), getResponse.getPrimaryTerm()));
+                    } catch (IOException e) {
+                        logger.error("IOException occurred parsing GetResponse.", e);
+                        listener.onResponse(null);
                     }
-                } catch (IOException e) {
-                    logger.error("IOException occurred parsing GetDataObjectResponse.", e);
-                    listener.onResponse(null);
                 }
             }).exceptionally(throwable -> {
                 Exception cause = SdkClientUtils.unwrapAndConvertToException(throwable);
@@ -381,18 +371,13 @@ public class LockServiceImpl implements LockService {
             DeleteDataObjectRequest deleteDataObjectRequest = DeleteDataObjectRequest.builder().index(LOCK_INDEX_NAME).id(lockId).build();
 
             sdkClient.deleteDataObjectAsync(deleteDataObjectRequest).thenAccept(response -> {
-                try {
-                    DeleteResponse deleteResponse = response.parser() == null ? null : DeleteResponse.fromXContent(response.parser());
-                    if (deleteResponse != null) {
-                        listener.onResponse(
-                            deleteResponse.getResult() == DocWriteResponse.Result.DELETED
-                                || deleteResponse.getResult() == DocWriteResponse.Result.NOT_FOUND
-                        );
-                    } else {
-                        listener.onResponse(true); // Assume success if we can't parse response
-                    }
-                } catch (IOException e) {
-                    logger.error("IOException occurred parsing DeleteDataObjectResponse.", e);
+                DeleteResponse deleteResponse = response.deleteResponse();
+                if (deleteResponse != null) {
+                    listener.onResponse(
+                        deleteResponse.getResult() == DocWriteResponse.Result.DELETED
+                            || deleteResponse.getResult() == DocWriteResponse.Result.NOT_FOUND
+                    );
+                } else {
                     listener.onResponse(true); // Assume success if we can't parse response
                 }
             }).exceptionally(throwable -> {
