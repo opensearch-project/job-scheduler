@@ -398,7 +398,7 @@ public class JobDetailsService implements IndexingOperationListener {
 
     /**
      * Create Job details entry
-     * @param tempJobDetails new job details object that need to be inserted as document in the index
+     * @param tempJobDetails new job details object that need to be inserted as document in the index=
      * @param listener an {@code ActionListener} that has onResponse and onFailure that is used to return the job details if it was created
      *                 or else null.
      */

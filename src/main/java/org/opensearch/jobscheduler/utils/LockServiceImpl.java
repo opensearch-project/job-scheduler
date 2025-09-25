@@ -8,6 +8,7 @@
  */
 package org.opensearch.jobscheduler.utils;
 
+import org.opensearch.action.support.WriteRequest;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -17,14 +18,16 @@ import org.opensearch.ResourceAlreadyExistsException;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.action.DocWriteResponse;
 import org.opensearch.action.admin.indices.create.CreateIndexRequest;
-import org.opensearch.action.delete.DeleteResponse;
-import org.opensearch.action.get.GetResponse;
-import org.opensearch.action.index.IndexResponse;
-import org.opensearch.action.update.UpdateResponse;
+import org.opensearch.action.delete.DeleteRequest;
+import org.opensearch.action.get.GetRequest;
+import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.update.UpdateRequest;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
+import org.opensearch.core.xcontent.ToXContent;
+import org.opensearch.common.xcontent.XContentFactory;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.index.IndexNotFoundException;
@@ -33,12 +36,6 @@ import org.opensearch.index.engine.VersionConflictEngineException;
 import org.opensearch.index.seqno.SequenceNumbers;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.transport.client.Client;
-import org.opensearch.remote.metadata.client.SdkClient;
-import org.opensearch.remote.metadata.common.SdkClientUtils;
-import org.opensearch.remote.metadata.client.PutDataObjectRequest;
-import org.opensearch.remote.metadata.client.GetDataObjectRequest;
-import org.opensearch.remote.metadata.client.UpdateDataObjectRequest;
-import org.opensearch.remote.metadata.client.DeleteDataObjectRequest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -58,8 +55,6 @@ public class LockServiceImpl implements LockService {
     final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
     private final JobHistoryService historyService;
     private final Supplier<Boolean> statusHistoryEnabled;
-    private final SdkClient sdkClient;
-    private final Boolean isMultiTenancyEnabled;
 
     // This is used in tests to control time.
     private Instant testInstant = null;
@@ -68,25 +63,19 @@ public class LockServiceImpl implements LockService {
         final Client client,
         final ClusterService clusterService,
         JobHistoryService historyService,
-        Supplier<Boolean> statusHistoryEnabled,
-        SdkClient sdkClient,
-        Boolean isMultiTenancyEnabled
+        Supplier<Boolean> statusHistoryEnabled
     ) {
         this.client = client;
         this.clusterService = clusterService;
         this.historyService = historyService;
         this.statusHistoryEnabled = statusHistoryEnabled;
-        this.sdkClient = sdkClient;
-        this.isMultiTenancyEnabled = isMultiTenancyEnabled;
     }
 
-    public LockServiceImpl(final Client client, final ClusterService clusterService, SdkClient sdkClient, Boolean isMultiTenancyEnabled) {
+    public LockServiceImpl(final Client client, final ClusterService clusterService) {
         this.client = client;
         this.clusterService = clusterService;
         this.historyService = null;
         this.statusHistoryEnabled = () -> false;
-        this.sdkClient = sdkClient;
-        this.isMultiTenancyEnabled = isMultiTenancyEnabled;
     }
 
     private String lockMapping() {
@@ -109,8 +98,7 @@ public class LockServiceImpl implements LockService {
 
     @VisibleForTesting
     void createLockIndex(ActionListener<Boolean> listener) {
-        // When multi-tenancy is enabled, we assume remote index or DDB table is pre-created prior to JS plugin being started.
-        if (this.isMultiTenancyEnabled || lockIndexExist()) {
+        if (lockIndexExist()) {
             listener.onResponse(true);
         } else {
             final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(lockMapping(), (MediaType) XContentType.JSON)
@@ -225,111 +213,90 @@ public class LockServiceImpl implements LockService {
     }
 
     private void updateLock(final LockModel updateLock, ActionListener<LockModel> listener) {
-        // Use SdkClient with UpdateDataObjectRequest
         try {
-            UpdateDataObjectRequest updateDataObjectRequest = UpdateDataObjectRequest.builder()
-                .index(LOCK_INDEX_NAME)
+            UpdateRequest updateRequest = new UpdateRequest().index(LOCK_INDEX_NAME)
                 .id(updateLock.getLockId())
-                .ifSeqNo(updateLock.getSeqNo())
-                .ifPrimaryTerm(updateLock.getPrimaryTerm())
-                .dataObject(updateLock)
-                .build();
+                .setIfSeqNo(updateLock.getSeqNo())
+                .setIfPrimaryTerm(updateLock.getPrimaryTerm())
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+                .doc(updateLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
+                .fetchSource(true);
 
-            sdkClient.updateDataObjectAsync(updateDataObjectRequest).thenAccept(response -> {
-                UpdateResponse updateResponse = response.updateResponse();
-                if (updateResponse != null) {
-                    listener.onResponse(new LockModel(updateLock, updateResponse.getSeqNo(), updateResponse.getPrimaryTerm()));
-                } else {
-                    listener.onResponse(null);
-                }
-            }).exceptionally(throwable -> {
-                Exception cause = SdkClientUtils.unwrapAndConvertToException(throwable);
-                if (cause instanceof VersionConflictEngineException) {
-                    logger.debug("could not acquire lock {}", cause.getMessage());
-                }
-                if (cause instanceof DocumentMissingException) {
-                    logger.debug(
-                        "Document is deleted. This happens if the job is already removed and" + " this is the last run." + "{}",
-                        cause.getMessage()
-                    );
-                }
-                if (cause instanceof IOException) {
-                    logger.error("IOException occurred updating lock.", cause);
-                }
-                listener.onResponse(null);
-                return null;
-            });
-
-        } catch (Exception e) {
-            logger.error("Exception occurred updating lock.", e);
+            client.update(
+                updateRequest,
+                ActionListener.wrap(
+                    response -> listener.onResponse(new LockModel(updateLock, response.getSeqNo(), response.getPrimaryTerm())),
+                    exception -> {
+                        if (exception instanceof VersionConflictEngineException) {
+                            logger.debug("could not acquire lock {}", exception.getMessage());
+                        }
+                        if (exception instanceof DocumentMissingException) {
+                            logger.debug(
+                                "Document is deleted. This happens if the job is already removed and" + " this is the last run." + "{}",
+                                exception.getMessage()
+                            );
+                        }
+                        if (exception instanceof IOException) {
+                            logger.error("IOException occurred updating lock.", exception);
+                        }
+                        listener.onResponse(null);
+                    }
+                )
+            );
+        } catch (IOException e) {
+            logger.error("IOException occurred updating lock.", e);
             listener.onResponse(null);
         }
     }
 
     private void createLock(final LockModel tempLock, ActionListener<LockModel> listener) {
         try {
-            PutDataObjectRequest putDataObjectRequest = PutDataObjectRequest.builder()
-                .index(LOCK_INDEX_NAME)
-                .id(tempLock.getLockId())
-                .ifSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
-                .ifPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
-                .dataObject(tempLock)
-                .build();
-
-            sdkClient.putDataObjectAsync(putDataObjectRequest).thenAccept(response -> {
-                IndexResponse indexResponse = response.indexResponse();
-                if (indexResponse != null) {
-                    listener.onResponse(new LockModel(tempLock, indexResponse.getSeqNo(), indexResponse.getPrimaryTerm()));
-                } else {
-                    listener.onResponse(null);
-                }
-            }).exceptionally(throwable -> {
-                Exception cause = SdkClientUtils.unwrapAndConvertToException(throwable);
-                if (cause instanceof VersionConflictEngineException) {
-                    logger.debug("Lock is already created. {}", cause.getMessage());
-                    listener.onResponse(null);
-                } else {
-                    listener.onFailure(cause);
-                }
-                return null;
-            });
-
-        } catch (Exception e) {
-            logger.error("Exception occurred creating lock.", e);
+            final IndexRequest request = new IndexRequest(LOCK_INDEX_NAME).id(tempLock.getLockId())
+                .source(tempLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
+                .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
+                .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+                .create(true);
+            client.index(
+                request,
+                ActionListener.wrap(
+                    response -> listener.onResponse(new LockModel(tempLock, response.getSeqNo(), response.getPrimaryTerm())),
+                    exception -> {
+                        if (exception instanceof VersionConflictEngineException) {
+                            logger.debug("Lock is already created. {}", exception.getMessage());
+                            listener.onResponse(null);
+                            return;
+                        }
+                        listener.onFailure(exception);
+                    }
+                )
+            );
+        } catch (IOException e) {
+            logger.error("IOException occurred creating lock", e);
             listener.onFailure(e);
         }
     }
 
     public void findLock(final String lockId, ActionListener<LockModel> listener) {
-        try {
-            GetDataObjectRequest getDataObjectRequest = GetDataObjectRequest.builder().index(LOCK_INDEX_NAME).id(lockId).build();
-
-            sdkClient.getDataObjectAsync(getDataObjectRequest).thenAccept(response -> {
-                GetResponse getResponse = response.getResponse();
-                if (getResponse == null || !getResponse.isExists()) {
+        GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
+        client.get(getRequest, ActionListener.wrap(response -> {
+            if (!response.isExists()) {
+                listener.onResponse(null);
+            } else {
+                try {
+                    XContentParser parser = XContentType.JSON.xContent()
+                        .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, response.getSourceAsString());
+                    parser.nextToken();
+                    listener.onResponse(LockModel.parse(parser, response.getSeqNo(), response.getPrimaryTerm()));
+                } catch (IOException e) {
+                    logger.error("IOException occurred finding lock", e);
                     listener.onResponse(null);
-                } else {
-                    try {
-                        XContentParser parser = XContentType.JSON.xContent()
-                            .createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, getResponse.getSourceAsString());
-                        parser.nextToken();
-                        listener.onResponse(LockModel.parse(parser, getResponse.getSeqNo(), getResponse.getPrimaryTerm()));
-                    } catch (IOException e) {
-                        logger.error("IOException occurred parsing GetResponse.", e);
-                        listener.onResponse(null);
-                    }
                 }
-            }).exceptionally(throwable -> {
-                Exception cause = SdkClientUtils.unwrapAndConvertToException(throwable);
-                logger.error("Exception occurred finding lock", cause);
-                listener.onFailure(cause);
-                return null;
-            });
-
-        } catch (Exception e) {
-            logger.error("Exception occurred finding lock.", e);
-            listener.onFailure(e);
-        }
+            }
+        }, exception -> {
+            logger.error("Exception occurred finding lock", exception);
+            listener.onFailure(exception);
+        }));
     }
 
     /**
@@ -372,34 +339,19 @@ public class LockServiceImpl implements LockService {
      *                 or not the delete was successful
      */
     public void deleteLock(final String lockId, ActionListener<Boolean> listener) {
-        try {
-            DeleteDataObjectRequest deleteDataObjectRequest = DeleteDataObjectRequest.builder().index(LOCK_INDEX_NAME).id(lockId).build();
-
-            sdkClient.deleteDataObjectAsync(deleteDataObjectRequest).thenAccept(response -> {
-                DeleteResponse deleteResponse = response.deleteResponse();
-                if (deleteResponse != null) {
-                    listener.onResponse(
-                        deleteResponse.getResult() == DocWriteResponse.Result.DELETED
-                            || deleteResponse.getResult() == DocWriteResponse.Result.NOT_FOUND
-                    );
-                } else {
-                    listener.onResponse(false);
-                }
-            }).exceptionally(throwable -> {
-                Exception cause = SdkClientUtils.unwrapAndConvertToException(throwable);
-                if (cause instanceof IndexNotFoundException || cause.getCause() instanceof IndexNotFoundException) {
-                    logger.debug("Index is not found to delete lock. {}", cause.getMessage());
-                    listener.onResponse(true);
-                } else {
-                    listener.onFailure(cause);
-                }
-                return null;
-            });
-
-        } catch (Exception e) {
-            logger.error("Exception occurred deleting lock.", e);
-            listener.onFailure(e);
-        }
+        DeleteRequest deleteRequest = new DeleteRequest(LOCK_INDEX_NAME).id(lockId);
+        client.delete(deleteRequest, ActionListener.wrap(response -> {
+            listener.onResponse(
+                response.getResult() == DocWriteResponse.Result.DELETED || response.getResult() == DocWriteResponse.Result.NOT_FOUND
+            );
+        }, exception -> {
+            if (exception instanceof IndexNotFoundException || exception.getCause() instanceof IndexNotFoundException) {
+                logger.debug("Index is not found to delete lock. {}", exception.getMessage());
+                listener.onResponse(true);
+            } else {
+                listener.onFailure(exception);
+            }
+        }));
     }
 
     /**

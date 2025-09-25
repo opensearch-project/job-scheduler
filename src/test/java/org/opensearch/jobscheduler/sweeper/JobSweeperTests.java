@@ -45,7 +45,6 @@ import org.opensearch.index.engine.Engine;
 import org.opensearch.index.mapper.ParseContext;
 import org.opensearch.index.mapper.ParsedDocument;
 import org.opensearch.core.index.shard.ShardId;
-import org.opensearch.remote.metadata.client.SdkClient;
 import org.opensearch.test.ClusterServiceUtils;
 import org.opensearch.test.OpenSearchTestCase;
 import org.opensearch.threadpool.Scheduler;
@@ -128,7 +127,7 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
             xContentRegistry,
             jobProviderMap,
             scheduler,
-            new LockServiceImpl(client, clusterService, Mockito.mock(SdkClient.class), false),
+            new LockServiceImpl(client, clusterService),
             jobDetailsService
         );
     }
