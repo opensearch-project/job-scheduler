@@ -383,7 +383,7 @@ public class LockServiceImpl implements LockService {
                             || deleteResponse.getResult() == DocWriteResponse.Result.NOT_FOUND
                     );
                 } else {
-                    listener.onResponse(true); // Assume success if we can't parse response
+                    listener.onResponse(false);
                 }
             }).exceptionally(throwable -> {
                 Exception cause = SdkClientUtils.unwrapAndConvertToException(throwable);
