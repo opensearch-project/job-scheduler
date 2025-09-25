@@ -104,13 +104,13 @@ public class LockServiceImpl implements LockService {
     }
 
     public boolean lockIndexExist() {
-        // When multi-tenancy is enabled, we assume remote index or DDB table is pre-created prior to JS plugin being started.
-        return clusterService.state().routingTable().hasIndex(LOCK_INDEX_NAME) || this.isMultiTenancyEnabled;
+        return clusterService.state().routingTable().hasIndex(LOCK_INDEX_NAME);
     }
 
     @VisibleForTesting
     void createLockIndex(ActionListener<Boolean> listener) {
-        if (lockIndexExist()) {
+        // When multi-tenancy is enabled, we assume remote index or DDB table is pre-created prior to JS plugin being started.
+        if (this.isMultiTenancyEnabled || lockIndexExist()) {
             listener.onResponse(true);
         } else {
             final CreateIndexRequest request = new CreateIndexRequest(LOCK_INDEX_NAME).mapping(lockMapping(), (MediaType) XContentType.JSON)
