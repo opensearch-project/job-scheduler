@@ -128,7 +128,7 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
             xContentRegistry,
             jobProviderMap,
             scheduler,
-            new LockServiceImpl(client, clusterService, Mockito.mock(SdkClient.class)),
+            new LockServiceImpl(client, clusterService, Mockito.mock(SdkClient.class), false),
             jobDetailsService
         );
     }

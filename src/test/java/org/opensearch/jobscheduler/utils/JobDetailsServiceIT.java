@@ -325,7 +325,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
 
     public void testJobRunnerExtensionJobActionRequest() throws IOException {
 
-        LockServiceImpl lockService = new LockServiceImpl(client(), this.clusterService, Mockito.mock(SdkClient.class));
+        LockServiceImpl lockService = new LockServiceImpl(client(), this.clusterService, Mockito.mock(SdkClient.class), false);
         JobExecutionContext jobExecutionContext = new JobExecutionContext(
             Instant.now(),
             new JobDocVersion(0, 0, 0),

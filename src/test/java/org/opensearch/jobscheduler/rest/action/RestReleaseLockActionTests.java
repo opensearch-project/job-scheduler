@@ -46,7 +46,7 @@ public class RestReleaseLockActionTests extends OpenSearchTestCase {
         super.setUp();
         this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
         this.client = Mockito.mock(Client.class);
-        this.lockService = new LockServiceImpl(client, clusterService, Mockito.mock(SdkClient.class));
+        this.lockService = new LockServiceImpl(client, clusterService, Mockito.mock(SdkClient.class), false);
         restReleaseLockAction = new RestReleaseLockAction(this.lockService);
         this.releaseLockPath = String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_release_lock", LockModel.LOCK_ID);
 

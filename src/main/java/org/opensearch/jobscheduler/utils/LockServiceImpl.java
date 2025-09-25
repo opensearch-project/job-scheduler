@@ -59,6 +59,7 @@ public class LockServiceImpl implements LockService {
     private final JobHistoryService historyService;
     private final Supplier<Boolean> statusHistoryEnabled;
     private final SdkClient sdkClient;
+    private final Boolean isMultiTenancyEnabled;
 
     // This is used in tests to control time.
     private Instant testInstant = null;
@@ -68,21 +69,24 @@ public class LockServiceImpl implements LockService {
         final ClusterService clusterService,
         JobHistoryService historyService,
         Supplier<Boolean> statusHistoryEnabled,
-        SdkClient sdkClient
+        SdkClient sdkClient,
+        Boolean isMultiTenancyEnabled
     ) {
         this.client = client;
         this.clusterService = clusterService;
         this.historyService = historyService;
         this.statusHistoryEnabled = statusHistoryEnabled;
         this.sdkClient = sdkClient;
+        this.isMultiTenancyEnabled = isMultiTenancyEnabled;
     }
 
-    public LockServiceImpl(final Client client, final ClusterService clusterService, SdkClient sdkClient) {
+    public LockServiceImpl(final Client client, final ClusterService clusterService, SdkClient sdkClient, Boolean isMultiTenancyEnabled) {
         this.client = client;
         this.clusterService = clusterService;
         this.historyService = null;
         this.statusHistoryEnabled = () -> false;
         this.sdkClient = sdkClient;
+        this.isMultiTenancyEnabled = isMultiTenancyEnabled;
     }
 
     private String lockMapping() {
@@ -100,7 +104,8 @@ public class LockServiceImpl implements LockService {
     }
 
     public boolean lockIndexExist() {
-        return clusterService.state().routingTable().hasIndex(LOCK_INDEX_NAME);
+        // When multi-tenancy is enabled, we assume remote index or DDB table is pre-created prior to JS plugin being started.
+        return clusterService.state().routingTable().hasIndex(LOCK_INDEX_NAME) || this.isMultiTenancyEnabled;
     }
 
     @VisibleForTesting

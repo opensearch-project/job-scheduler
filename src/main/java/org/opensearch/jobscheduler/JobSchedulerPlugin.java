@@ -143,13 +143,14 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
         Settings settings = environment.settings();
+        Boolean isMultiTenancyEnabled = JobSchedulerSettings.JOB_SCHEDULER_MULTI_TENANCY_ENABLED.get(settings);
         this.pluginClient = new PluginClient(client);
 
         // Initialize SDK client for remote metadata storage
         this.sdkClient = SdkClientFactory.createSdkClient(
             pluginClient,
             xContentRegistry,
-            JobSchedulerSettings.JOB_SCHEDULER_MULTI_TENANCY_ENABLED.get(settings)
+            isMultiTenancyEnabled
                 ? Map.ofEntries(
                     Map.entry(REMOTE_METADATA_TYPE_KEY, JobSchedulerSettings.REMOTE_METADATA_TYPE.get(settings)),
                     Map.entry(REMOTE_METADATA_ENDPOINT_KEY, JobSchedulerSettings.REMOTE_METADATA_ENDPOINT.get(settings)),
@@ -163,7 +164,14 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
 
         Supplier<Boolean> statusHistoryEnabled = () -> JobSchedulerSettings.STATUS_HISTORY.get(environment.settings());
         this.historyService = new JobHistoryService(pluginClient, clusterService);
-        this.lockService = new LockServiceImpl(pluginClient, clusterService, historyService, statusHistoryEnabled, this.sdkClient);
+        this.lockService = new LockServiceImpl(
+            pluginClient,
+            clusterService,
+            historyService,
+            statusHistoryEnabled,
+            this.sdkClient,
+            isMultiTenancyEnabled
+        );
         this.jobDetailsService = new JobDetailsService(client, clusterService, this.indicesToListen, this.indexToJobProviders);
         this.scheduler = new JobScheduler(threadPool, this.lockService);
         this.sweeper = initSweeper(
