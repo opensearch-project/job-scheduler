@@ -14,9 +14,17 @@ plugins {
     id "org.gradle.test-retry" version "1.6.2"
 }
 
-apply plugin: 'opensearch.java'
+apply plugin: 'opensearch.opensearchplugin'
+apply plugin: 'opensearch.pluginzip'
 apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-agent'
+apply plugin: 'opensearch.rest-test'
+
+opensearchplugin {
+    name 'opensearch-job-scheduler-spi'
+    description 'OpenSearch Job Scheduler SPI Plugin'
+    classname 'org.opensearch.jobscheduler.spi.JobSchedulerSpiPlugin'
+}
 
 repositories {
     mavenLocal()
@@ -88,22 +96,7 @@ test {
     systemProperty 'tests.security.manager', 'true'
 }
 
-task integTest(type: RestIntegTestTask) {
-    description 'Run integ test with opensearch test framework'
-    group 'verification'
-    systemProperty 'tests.security.manager', 'true'
-}
 
-task sourcesJar(type: Jar) {
-    archiveClassifier.set 'sources'
-    from sourceSets.main.allJava
-}
-
-task javadocJar(type: Jar) {
-    archiveClassifier.set 'javadoc'
-    from javadoc.destinationDir
-    dependsOn javadoc
-}
 
 publishing {
     repositories {
@@ -121,33 +114,29 @@ publishing {
         }
     }
     publications {
-        shadow(MavenPublication) { publication ->
-            project.shadow.component(publication)
-            artifact sourcesJar
-            artifact javadocJar
-
+        pluginZip(MavenPublication) { publication ->
             pom {
-              name = "OpenSearch Job Scheduler SPI"
-              packaging = "jar"
-              url = "https://github.com/opensearch-project/job-scheduler"
-              description = "OpenSearch Job Scheduler"
-              scm {
-                connection = "scm:git@github.com:opensearch-project/job-scheduler.git"
-                developerConnection = "scm:git@github.com:opensearch-project/job-scheduler.git"
-                url = "git@github.com:opensearch-project/job-scheduler.git"
-              }
-              licenses {
-                license {
-                  name = "The Apache License, Version 2.0"
-                  url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                name = "opensearch-job-scheduler-spi"
+                description = "OpenSearch Job Scheduler SPI Plugin"
+                groupId = "org.opensearch.plugin"
+                url = "https://github.com/opensearch-project/job-scheduler"
+                scm {
+                    connection = "scm:git@github.com:opensearch-project/job-scheduler.git"
+                    developerConnection = "scm:git@github.com:opensearch-project/job-scheduler.git"
+                    url = "git@github.com:opensearch-project/job-scheduler.git"
                 }
-              }
-              developers {
-                developer {
-                  name = "OpenSearch"
-                  url = "https://github.com/opensearch-project/job-scheduler"
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
                 }
-              }
+                developers {
+                    developer {
+                        name = "OpenSearch"
+                        url = "https://github.com/opensearch-project/job-scheduler"
+                    }
+                }
             }
         }
     }
