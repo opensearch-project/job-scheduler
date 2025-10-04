@@ -73,6 +73,7 @@ opensearchplugin {
     name 'opensearch-job-scheduler'
     description 'OpenSearch Job Scheduler plugin'
     classname 'org.opensearch.jobscheduler.JobSchedulerPlugin'
+    extendedPlugins = ['opensearch-job-scheduler-spi']
 }
 
 configurations {
@@ -217,6 +218,24 @@ publishing {
                 name = "opensearch-job-scheduler"
                 description = "OpenSearch Job Scheduler plugin"
                 groupId = "org.opensearch.plugin"
+                
+                // Add required license information
+                licenses {
+                    license {
+                        name = 'The Apache Software License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                
+                // Add required developer information
+                developers {
+                    developer {
+                        name = 'OpenSearch'
+                        url = 'https://github.com/opensearch-project/job-scheduler'
+                    }
+                }
+                
+                inceptionYear = '2021'
             }
         }
     }
@@ -240,7 +259,7 @@ repositories {
 }
 
 dependencies {
-    implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    implementation project(path: ":${rootProject.name}-spi")
     implementation ("org.opensearch:opensearch-remote-metadata-sdk-ddb-client:${opensearch_build}")
     implementation "org.opensearch:opensearch-remote-metadata-sdk:${opensearch_build}"
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"

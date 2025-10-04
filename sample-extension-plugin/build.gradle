@@ -26,7 +26,7 @@ opensearchplugin {
     name 'opensearch-job-scheduler-sample-extension'
     description 'Sample plugin that extends OpenSearch Job Scheduler plugin'
     classname 'org.opensearch.jobscheduler.sampleextension.SampleExtensionPlugin'
-    extendedPlugins = ['opensearch-job-scheduler']
+    extendedPlugins = ['opensearch-job-scheduler-spi']
 }
 
 ext {
@@ -47,7 +47,7 @@ configurations {
 }
 
 dependencies {
-    compileOnly project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    compileOnly project(path: ":${rootProject.name}-spi")
     testImplementation('org.awaitility:awaitility:4.3.0') {
         exclude(group: 'org.hamcrest', module: 'hamcrest')
     }

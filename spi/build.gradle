@@ -3,11 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import com.github.jengelman.gradle.plugins.shadow.ShadowBasePlugin
-import org.opensearch.gradle.test.RestIntegTestTask
-
 plugins {
-    id 'com.gradleup.shadow'
     id 'jacoco'
     id 'maven-publish'
     id 'signing'
@@ -74,74 +70,49 @@ configurations.all {
     }
 }
 
-shadowJar {
-    relocate 'com.cronutils', 'org.opensearch.jobscheduler.repackage.com.cronutils'
-    relocate 'org.slf4j', 'org.opensearch.jobscheduler.repackage.org.slf4j' // dependency of cron-utils
-    archiveClassifier = null
-}
-
 test {
     retry {
         failOnPassedAfterRetry = false
         maxRetries = 5
     }
-    doFirst {
-        // reverse operation of https://github.com/elastic/elasticsearch/blob/7.6/buildSrc/src/main/groovy/org/elasticsearch/gradle/BuildPlugin.groovy#L736-L743
-        // to fix the classpath for unit tests
-        test.classpath -= project.files(project.tasks.named('shadowJar'))
-        test.classpath -= project.configurations.getByName(ShadowBasePlugin.CONFIGURATION_NAME)
-        test.classpath += project.extensions.getByType(SourceSetContainer).getByName(SourceSet.MAIN_SOURCE_SET_NAME).runtimeClasspath
-    }
     // add "-Dtests.security.manager=false" to VM options if you want to run integ tests in IntelliJ
     systemProperty 'tests.security.manager', 'true'
 }
 
-
-
 publishing {
-    repositories {
-        maven {
-            name = 'staging'
-            url = "${rootProject.buildDir}/local-staging-repo"
-        }
-        maven {
-            name = "Snapshots" //  optional target repository name
-            url = "https://central.sonatype.com/repository/maven-snapshots/"
-            credentials {
-                username System.getenv("SONATYPE_USERNAME")
-                password System.getenv("SONATYPE_PASSWORD")
-            }
-        }
-    }
     publications {
+        // Only keep the pluginZip publication
         pluginZip(MavenPublication) { publication ->
             pom {
                 name = "opensearch-job-scheduler-spi"
                 description = "OpenSearch Job Scheduler SPI Plugin"
                 groupId = "org.opensearch.plugin"
-                url = "https://github.com/opensearch-project/job-scheduler"
-                scm {
-                    connection = "scm:git@github.com:opensearch-project/job-scheduler.git"
-                    developerConnection = "scm:git@github.com:opensearch-project/job-scheduler.git"
-                    url = "git@github.com:opensearch-project/job-scheduler.git"
-                }
+                
+                // Add required license information
                 licenses {
                     license {
-                        name = "The Apache License, Version 2.0"
-                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                        name = 'The Apache Software License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                     }
                 }
+                
+                // Add required developer information
                 developers {
                     developer {
-                        name = "OpenSearch"
-                        url = "https://github.com/opensearch-project/job-scheduler"
+                        name = 'OpenSearch'
+                        url = 'https://github.com/opensearch-project/job-scheduler'
                     }
                 }
+                
+                inceptionYear = '2021'
             }
         }
     }
+}
 
-    // TODO - enabled debug logging for the time being, remove this eventually
-    gradle.startParameter.setShowStacktrace(ShowStacktrace.ALWAYS)
-    gradle.startParameter.setLogLevel(LogLevel.DEBUG)
+// Clean up conflicting publications
+afterEvaluate {
+    publishing.publications.removeAll { pub ->
+        pub.name in ['nebula', 'shadow']
+    }
 }
