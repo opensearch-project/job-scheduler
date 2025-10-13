@@ -91,7 +91,7 @@ allprojects {
 
     apply from: "$rootDir/build-tools/repositories.gradle"
 
-    plugins.withId('java') {
+    java {
         targetCompatibility = JavaVersion.VERSION_21
         sourceCompatibility = JavaVersion.VERSION_21
     }
@@ -359,7 +359,7 @@ afterEvaluate {
         version = "${project.version}"
 
         into '/usr/share/opensearch/plugins'
-        from(zipTree(bundlePlugin.archivePath)) {
+        from(zipTree(bundlePlugin.getArchiveFile())) {
             into opensearchplugin.name
         }
 
