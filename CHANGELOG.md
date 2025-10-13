@@ -18,4 +18,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Security
 
-[Unreleased 3.x]: https://github.com/opensearch-project/job-scheduler/compare/3.0...main
+[Unreleased 3.x]: https://github.com/opensearch-project/job-scheduler/compare/3.3...main
