@@ -2,8 +2,6 @@ name: Publish snapshots to maven
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * 0'  # Run weekly on Sundays at midnight UTC
   push:
     branches:
       - main
