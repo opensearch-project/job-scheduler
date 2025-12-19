@@ -26,7 +26,7 @@ jobs:
           java-version: ${{ matrix.java }}
       # This step uses the checkout Github action: https://github.com/actions/checkout
       - name: Checkout Branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Run Job-scheduler Backwards Compatibility Tests
         run: |
           echo "Running backwards compatibility tests..."

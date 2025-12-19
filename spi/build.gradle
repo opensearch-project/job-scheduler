@@ -11,7 +11,7 @@ plugins {
     id 'jacoco'
     id 'maven-publish'
     id 'signing'
-    id "org.gradle.test-retry" version "1.6.2"
+    id "org.gradle.test-retry" version "1.6.4"
 }
 
 apply plugin: 'opensearch.java'
@@ -21,8 +21,7 @@ apply plugin: 'opensearch.java-agent'
 repositories {
     mavenLocal()
     mavenCentral()
-    maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
-    maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
+    maven { url "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
 }
 
 ext {
@@ -113,10 +112,11 @@ publishing {
         }
         maven {
             name = "Snapshots" //  optional target repository name
-            url = "https://central.sonatype.com/repository/maven-snapshots/"
-            credentials {
-                username System.getenv("SONATYPE_USERNAME")
-                password System.getenv("SONATYPE_PASSWORD")
+            url = System.getenv("MAVEN_SNAPSHOTS_S3_REPO")
+            credentials(AwsCredentials) {
+                accessKey = System.getenv("AWS_ACCESS_KEY_ID")
+                secretKey = System.getenv("AWS_SECRET_ACCESS_KEY")
+                sessionToken = System.getenv("AWS_SESSION_TOKEN")
             }
         }
     }
