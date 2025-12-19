@@ -9,7 +9,7 @@ import java.util.concurrent.Callable
 
 buildscript {
     ext {
-        opensearch_version = System.getProperty("opensearch.version", "3.3.0-SNAPSHOT")
+        opensearch_version = System.getProperty("opensearch.version", "3.4.0-SNAPSHOT")
         isSnapshot = "true" == System.getProperty("build.snapshot", "true")
         buildVersionQualifier = System.getProperty("build.version_qualifier", "")
         // 2.2.0-SNAPSHOT -> 2.2.0.0-SNAPSHOT
@@ -27,8 +27,7 @@ buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
-        maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
-        maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
+        maven { url "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
     }
 
     dependencies {
@@ -91,7 +90,7 @@ allprojects {
 
     apply from: "$rootDir/build-tools/repositories.gradle"
 
-    plugins.withId('java') {
+    java {
         targetCompatibility = JavaVersion.VERSION_21
         sourceCompatibility = JavaVersion.VERSION_21
     }
@@ -223,10 +222,11 @@ publishing {
     repositories {
         maven {
             name = "Snapshots" //  optional target repository name
-            url = "https://central.sonatype.com/repository/maven-snapshots/"
-            credentials {
-                username System.getenv("SONATYPE_USERNAME")
-                password System.getenv("SONATYPE_PASSWORD")
+            url = System.getenv("MAVEN_SNAPSHOTS_S3_REPO")
+            credentials(AwsCredentials) {
+                accessKey = System.getenv("AWS_ACCESS_KEY_ID")
+                secretKey = System.getenv("AWS_SECRET_ACCESS_KEY")
+                sessionToken = System.getenv("AWS_SESSION_TOKEN")
             }
         }
     }
@@ -235,8 +235,7 @@ publishing {
 repositories {
     mavenLocal()
     mavenCentral()
-    maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
-    maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
+    maven { url "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
 }
 
 dependencies {
@@ -299,7 +298,7 @@ integTest.getClusters().forEach{c -> {
 }}
 
 testClusters.integTest {
-    testDistribution = 'INTEG_TEST'
+    testDistribution = 'ARCHIVE'
 
     // Cluster shrink exception thrown if we try to set numberOfNodes to 1, so only apply if > 1
     if (_numNodes > 1) numberOfNodes = _numNodes
@@ -359,7 +358,7 @@ afterEvaluate {
         version = "${project.version}"
 
         into '/usr/share/opensearch/plugins'
-        from(zipTree(bundlePlugin.archivePath)) {
+        from(zipTree(bundlePlugin.getArchiveFile())) {
             into opensearchplugin.name
         }
 
