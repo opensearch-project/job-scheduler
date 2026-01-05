@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+plugins {
+    id "org.gradle.test-retry" version "1.6.4"
+}
+
 apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-agent'
@@ -70,6 +74,10 @@ jacoco {
 check.dependsOn jacocoTestReport
 
 integTest {
+    retry {
+        failOnPassedAfterRetry = false
+        maxRetries = 3
+    }
     if (project.hasProperty('excludeTests')) {
         project.properties['excludeTests']?.replaceAll('\\s', '')?.split('[,;]')?.each {
             exclude "${it}"
