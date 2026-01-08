@@ -21,7 +21,6 @@ buildscript {
         if (isSnapshot) {
             opensearch_build += "-SNAPSHOT"
         }
-        security_plugin_version = System.getProperty("security.version", opensearch_build)
     }
 
     repositories {
@@ -94,82 +93,6 @@ allprojects {
         targetCompatibility = JavaVersion.VERSION_21
         sourceCompatibility = JavaVersion.VERSION_21
     }
-
-    // Make security settings available to all subprojects
-    ext.securityEnabled = System.getProperty("security.enabled", "false") == "true" || System.getProperty("https", "false") == "true"
-
-    // Download security files for projects that need them
-    if (securityEnabled && (project == rootProject || project.name == 'opensearch-job-scheduler-sample-extension')) {
-        afterEvaluate {
-            ['esnode.pem', 'esnode-key.pem', 'kirk.pem', 'kirk-key.pem', 'root-ca.pem', 'sample.pem', 'test-kirk.jks'].forEach { file ->
-                File local = project.layout.buildDirectory.file(file).get().asFile
-                download.run {
-                    src "https://raw.githubusercontent.com/opensearch-project/security/refs/heads/main/bwc-test/src/test/resources/security/" + file
-                    dest local
-                    overwrite false
-                }
-                processTestResources {
-                    from(local)
-                }
-            }
-        }
-    }
-    ext.resolvePluginFile = { pluginId ->
-        return new Callable<RegularFile>() {
-            @Override
-            RegularFile call() throws Exception {
-                return new RegularFile() {
-                    @Override
-                    File getAsFile() {
-                        return configurations.opensearchPlugin.resolvedConfiguration.resolvedArtifacts
-                                .find { ResolvedArtifact f ->
-                                    f.name.startsWith(pluginId)
-                                }
-                                .file
-                    }
-                }
-            }
-        }
-    }
-    ext.securityPluginFile = resolvePluginFile("opensearch-security")
-    afterEvaluate {
-        if (plugins.hasPlugin('opensearch.testclusters') && configurations.findByName('opensearchPlugin')) {
-            // === Setup security test ===
-            testClusters.integTest.nodes.each { node ->
-                def plugins = node.plugins
-                def firstPlugin = plugins.get(0)
-                if (firstPlugin.provider == project.bundlePlugin.archiveFile) {
-                    plugins.remove(0)
-                    plugins.add(firstPlugin)
-                }
-
-                if (ext.securityEnabled) {
-                    node.extraConfigFile("kirk.pem", file("build/kirk.pem"))
-                    node.extraConfigFile("kirk-key.pem", file("build/kirk-key.pem"))
-                    node.extraConfigFile("esnode.pem", file("build/esnode.pem"))
-                    node.extraConfigFile("esnode-key.pem", file("build/esnode-key.pem"))
-                    node.extraConfigFile("root-ca.pem", file("build/root-ca.pem"))
-                    node.setting("plugins.security.ssl.transport.pemcert_filepath", "esnode.pem")
-                    node.setting("plugins.security.ssl.transport.pemkey_filepath", "esnode-key.pem")
-                    node.setting("plugins.security.ssl.transport.pemtrustedcas_filepath", "root-ca.pem")
-                    node.setting("plugins.security.ssl.transport.enforce_hostname_verification", "false")
-                    node.setting("plugins.security.ssl.http.enabled", "true")
-                    node.setting("plugins.security.ssl.http.pemcert_filepath", "esnode.pem")
-                    node.setting("plugins.security.ssl.http.pemkey_filepath", "esnode-key.pem")
-                    node.setting("plugins.security.ssl.http.pemtrustedcas_filepath", "root-ca.pem")
-                    node.setting("plugins.security.allow_unsafe_democertificates", "true")
-                    node.setting("plugins.security.allow_default_init_securityindex", "true")
-                    node.setting("plugins.security.authcz.admin_dn", "\n - CN=kirk,OU=client,O=client,L=test,C=de")
-                    node.setting("plugins.security.audit.type", "internal_opensearch")
-                    node.setting("plugins.security.enable_snapshot_restore_privilege", "true")
-                    node.setting("plugins.security.check_snapshot_restore_write_privileges", "true")
-                    node.setting("plugins.security.restapi.roles_enabled", "[\"all_access\", \"security_rest_api_access\"]")
-                    node.setting("plugins.security.system_indices.enabled", "true")
-                    // node.setting("plugins.security.system_indices.indices", "[\".opendistro-ism-config\"]")
-                }
-            }
-        }
-    }
 }
 
 allprojects {
@@ -241,8 +164,6 @@ repositories {
 dependencies {
     implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"
-
-    opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
 
 // RPM & Debian build
@@ -298,7 +219,7 @@ integTest.getClusters().forEach{c -> {
 }}
 
 testClusters.integTest {
-    testDistribution = 'ARCHIVE'
+    testDistribution = 'INTEG_TEST'
 
     // Cluster shrink exception thrown if we try to set numberOfNodes to 1, so only apply if > 1
     if (_numNodes > 1) numberOfNodes = _numNodes
@@ -313,9 +234,6 @@ testClusters.integTest {
         }
     }
 
-    if (ext.securityEnabled) {
-        plugin(provider(ext.securityPluginFile))
-    }
     setting 'path.repo', repo.absolutePath
 }
 
