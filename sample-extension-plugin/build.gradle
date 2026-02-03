@@ -147,23 +147,17 @@ testClusters.integTest {
 }
 
 String baseName = "jobSchedulerBwcCluster"
-
 String bwcOpenSearchVersion = "2.19.4"
 String bwcPluginVersion = bwcOpenSearchVersion + ".0"
-
 String bwcFilePath = "src/test/resources/bwc/job-scheduler/"
 String bwcSnapshotVersion = bwcPluginVersion + "-SNAPSHOT"
-
 String groupPath = "org/opensearch/plugin"
 String artifact = "opensearch-job-scheduler"
-
-// CI snapshots repo base (same style as your GH Actions)
 String base = "https://ci.opensearch.org/ci/dbc/snapshots/maven"
 
 String metadataUrl = "${base}/${groupPath}/${artifact}/${bwcSnapshotVersion}/maven-metadata.xml"
 
 def resolveZipSnapshotValue = { String metadataXmlUrl ->
-    // very similar to your bash: find the snapshotVersion entry for zip and extract <value>...</value>
     def xml = new URL(metadataXmlUrl).text
     def m = (xml =~ /<snapshotVersion>[\s\S]*?<extension>zip<\/extension>[\s\S]*?<value>([^<]+)<\/value>[\s\S]*?<\/snapshotVersion>/)
     if (!m.find()) {
