@@ -147,12 +147,36 @@ testClusters.integTest {
 }
 
 String baseName = "jobSchedulerBwcCluster"
+
 String bwcOpenSearchVersion = "2.19.4"
 String bwcPluginVersion = bwcOpenSearchVersion + ".0"
+
 String bwcFilePath = "src/test/resources/bwc/job-scheduler/"
-bwcOpenSearchVersion += "-SNAPSHOT"
-String bwcFileName = "opensearch-job-scheduler-" + bwcPluginVersion + ".zip"
-String bwcDownloadUrl = "https://aws.oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=org.opensearch.plugin&a=opensearch-job-scheduler&v=$bwcPluginVersion-SNAPSHOT&p=zip"
+String bwcSnapshotVersion = bwcPluginVersion + "-SNAPSHOT"
+
+String groupPath = "org/opensearch/plugin"
+String artifact = "opensearch-job-scheduler"
+
+// CI snapshots repo base (same style as your GH Actions)
+String base = "https://ci.opensearch.org/ci/dbc/snapshots/maven"
+
+String metadataUrl = "${base}/${groupPath}/${artifact}/${bwcSnapshotVersion}/maven-metadata.xml"
+
+def resolveZipSnapshotValue = { String metadataXmlUrl ->
+    // very similar to your bash: find the snapshotVersion entry for zip and extract <value>...</value>
+    def xml = new URL(metadataXmlUrl).text
+    def m = (xml =~ /<snapshotVersion>[\s\S]*?<extension>zip<\/extension>[\s\S]*?<value>([^<]+)<\/value>[\s\S]*?<\/snapshotVersion>/)
+    if (!m.find()) {
+        throw new GradleException("Could not find zip snapshot <value> in ${metadataXmlUrl}")
+    }
+    return m.group(1)
+}
+
+String snapshotValue = resolveZipSnapshotValue(metadataUrl)
+// ex: "2.19.4.0-20260203.123456-1"
+
+String bwcFileName = "${artifact}-${snapshotValue}.zip"
+String bwcDownloadUrl = "${base}/${groupPath}/${artifact}/${bwcSnapshotVersion}/${bwcFileName}"
 
 2.times {i ->
     testClusters {
