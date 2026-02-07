@@ -124,7 +124,7 @@ integTest.getClusters().forEach{c -> {
 }}
 
 testClusters.integTest {
-    testDistribution = 'ARCHIVE'
+    testDistribution = 'INTEG_TEST'
 
     // Cluster shrink exception thrown if we try to set numberOfNodes to 1, so only apply if > 1
     if (_numNodes > 1) numberOfNodes = _numNodes
@@ -157,7 +157,7 @@ String bwcDownloadUrl = "https://aws.oss.sonatype.org/service/local/artifact/mav
 2.times {i ->
     testClusters {
         "${baseName}$i" {
-            testDistribution = "ARCHIVE"
+            testDistribution = "INTEG_TEST"
             versions = [bwcOpenSearchVersion, opensearch_version]
             numberOfNodes = 3
             plugin(provider(new Callable<RegularFile>(){
