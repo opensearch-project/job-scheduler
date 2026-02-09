@@ -240,7 +240,6 @@ repositories {
 
 dependencies {
     implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: "${versions.mockito}"
 
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
@@ -298,7 +297,7 @@ integTest.getClusters().forEach{c -> {
 }}
 
 testClusters.integTest {
-    testDistribution = 'ARCHIVE'
+    testDistribution = 'INTEG_TEST'
 
     // Cluster shrink exception thrown if we try to set numberOfNodes to 1, so only apply if > 1
     if (_numNodes > 1) numberOfNodes = _numNodes
