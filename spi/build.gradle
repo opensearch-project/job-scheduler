@@ -122,7 +122,7 @@ publishing {
     }
     publications {
         shadow(MavenPublication) { publication ->
-            project.shadow.component(publication)
+            publication.artifact(tasks.shadowJar)
             artifact sourcesJar
             artifact javadocJar
 
