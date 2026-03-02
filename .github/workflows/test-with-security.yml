@@ -30,4 +30,5 @@ jobs:
       - name: Run Job-scheduler Integ Tests with Security
         run: |
           echo "Running integ tests with security..."
-          ./gradlew clean :integTest --tests "*RestIT" -Dhttps=true -Dsecurity.enabled=true  -Dtests.opensearch.secure=true -Dtests.opensearch.username=admin -Dtests.opensearch.password=admin -Duser=admin -Dpassword=admin -Pcrypto.standard=FIPS-140-3
+          ./gradlew clean
+          ./gradlew :integTest --tests "*RestIT" -Dhttps=true -Dsecurity.enabled=true  -Dtests.opensearch.secure=true -Dtests.opensearch.username=admin -Dtests.opensearch.password=admin -Duser=admin -Dpassword=admin -Pcrypto.standard=FIPS-140-3
