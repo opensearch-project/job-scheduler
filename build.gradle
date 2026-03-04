@@ -29,6 +29,12 @@ buildscript {
 
     dependencies {
         classpath "org.opensearch.gradle:build-tools:${opensearch_version}"
+        classpath 'org.codehaus.plexus:plexus-utils:3.5.1'
+    }
+    configurations.classpath {
+        resolutionStrategy {
+            force 'org.codehaus.plexus:plexus-utils:3.5.1'
+        }
     }
 }
 
@@ -115,6 +121,12 @@ allprojects {
 }
 
 allprojects {
+    configurations.all {
+        resolutionStrategy {
+            force 'org.codehaus.plexus:plexus-utils:3.5.1'
+        }
+    }
+
     // Default to the apache license
     project.ext.licenseName = 'The Apache Software License, Version 2.0'
     project.ext.licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
