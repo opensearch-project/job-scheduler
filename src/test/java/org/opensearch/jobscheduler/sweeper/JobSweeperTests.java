@@ -319,6 +319,30 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
         Mockito.verify(this.client, Mockito.times(2)).search(Mockito.any());
     }
 
+    public void testSweepAbortsOnNonOkResponse() {
+        SearchResponse badResponse = Mockito.mock(SearchResponse.class);
+        Mockito.when(badResponse.status()).thenReturn(RestStatus.INTERNAL_SERVER_ERROR);
+
+        ActionFuture<SearchResponse> future = Mockito.mock(ActionFuture.class);
+        Mockito.when(future.actionGet(Mockito.any(TimeValue.class))).thenReturn(badResponse);
+        Mockito.when(this.client.search(Mockito.any())).thenReturn(future);
+
+        JobSweeper testSweeper = Mockito.spy(this.sweeper);
+        Mockito.doNothing()
+            .when(testSweeper)
+            .sweep(Mockito.any(), Mockito.anyString(), Mockito.any(BytesReference.class), Mockito.any(JobDocVersion.class));
+
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+
+        testSweeper.sweepIndex("index-name");
+
+        // search was called once, but sweep was never called due to non-OK status
+        Mockito.verify(this.client, Mockito.times(1)).search(Mockito.any());
+        Mockito.verify(testSweeper, Mockito.times(0))
+            .sweep(Mockito.any(), Mockito.anyString(), Mockito.any(BytesReference.class), Mockito.any(JobDocVersion.class));
+    }
+
     public void testSweepAbortsOnSearchException() {
         ActionFuture<SearchResponse> failingFuture = Mockito.mock(ActionFuture.class);
         Mockito.when(failingFuture.actionGet(Mockito.any(TimeValue.class)))
