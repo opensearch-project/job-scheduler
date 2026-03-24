@@ -270,11 +270,11 @@ gradle.projectsEvaluated {
     task copyLibs(type: Copy) {
         dependsOn spiProject.tasks.named('shadowJar')
         from spiProject.tasks.named('shadowJar')
-        into "$buildDir/lib"
+        into "$projectDir/lib"
     }
     bundlePlugin.dependsOn copyLibs
     bundlePlugin {
-        from("$buildDir/lib") {
+        from("$projectDir/lib") {
             into 'lib'
         }
     }
