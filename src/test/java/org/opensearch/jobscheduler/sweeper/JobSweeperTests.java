@@ -21,6 +21,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.opensearch.Version;
 import org.opensearch.action.delete.DeleteResponse;
+import org.opensearch.action.search.SearchResponse;
 import org.opensearch.cluster.ClusterName;
 import org.opensearch.cluster.ClusterState;
 import org.opensearch.cluster.OpenSearchAllocationTestCase;
@@ -38,6 +39,7 @@ import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.common.action.ActionFuture;
 import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.Setting;
+import org.opensearch.common.unit.TimeValue;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.index.Index;
@@ -45,6 +47,9 @@ import org.opensearch.index.engine.Engine;
 import org.opensearch.index.mapper.ParseContext;
 import org.opensearch.index.mapper.ParsedDocument;
 import org.opensearch.core.index.shard.ShardId;
+import org.opensearch.core.rest.RestStatus;
+import org.opensearch.search.SearchHit;
+import org.opensearch.search.SearchHits;
 import org.opensearch.test.ClusterServiceUtils;
 import org.opensearch.test.OpenSearchTestCase;
 import org.opensearch.threadpool.Scheduler;
@@ -273,6 +278,111 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
                 Mockito.any(JobDocVersion.class),
                 Mockito.any(Double.class)
             );
+    }
+
+    public void testSweepUsesSeqNoSort() throws IOException {
+        SearchHit hit = new SearchHit(1, "doc-id", null, null);
+        hit.sourceRef(this.getTestJsonSource());
+        hit.setSeqNo(42L);
+        hit.setPrimaryTerm(1L);
+        SearchHits hits = new SearchHits(new SearchHit[] { hit }, null, 1.0f);
+
+        SearchHits emptyHits = new SearchHits(new SearchHit[0], null, 1.0f);
+
+        SearchResponse firstResponse = Mockito.mock(SearchResponse.class);
+        Mockito.when(firstResponse.status()).thenReturn(RestStatus.OK);
+        Mockito.when(firstResponse.getHits()).thenReturn(hits);
+
+        SearchResponse secondResponse = Mockito.mock(SearchResponse.class);
+        Mockito.when(secondResponse.status()).thenReturn(RestStatus.OK);
+        Mockito.when(secondResponse.getHits()).thenReturn(emptyHits);
+
+        ActionFuture<SearchResponse> firstFuture = Mockito.mock(ActionFuture.class);
+        Mockito.when(firstFuture.actionGet(Mockito.any(TimeValue.class))).thenReturn(firstResponse);
+
+        ActionFuture<SearchResponse> secondFuture = Mockito.mock(ActionFuture.class);
+        Mockito.when(secondFuture.actionGet(Mockito.any(TimeValue.class))).thenReturn(secondResponse);
+
+        Mockito.when(this.client.search(Mockito.any())).thenReturn(firstFuture).thenReturn(secondFuture);
+
+        JobSweeper testSweeper = Mockito.spy(this.sweeper);
+        Mockito.doNothing()
+            .when(testSweeper)
+            .sweep(Mockito.any(), Mockito.anyString(), Mockito.any(BytesReference.class), Mockito.any(JobDocVersion.class));
+
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+
+        testSweeper.sweepIndex("index-name");
+
+        // verify search was called twice: once for the page with the hit, once for the empty page
+        Mockito.verify(this.client, Mockito.times(2)).search(Mockito.any());
+    }
+
+    public void testSweepAbortsOnNonOkResponse() {
+        SearchResponse badResponse = Mockito.mock(SearchResponse.class);
+        Mockito.when(badResponse.status()).thenReturn(RestStatus.INTERNAL_SERVER_ERROR);
+
+        ActionFuture<SearchResponse> future = Mockito.mock(ActionFuture.class);
+        Mockito.when(future.actionGet(Mockito.any(TimeValue.class))).thenReturn(badResponse);
+        Mockito.when(this.client.search(Mockito.any())).thenReturn(future);
+
+        JobSweeper testSweeper = Mockito.spy(this.sweeper);
+        Mockito.doNothing()
+            .when(testSweeper)
+            .sweep(Mockito.any(), Mockito.anyString(), Mockito.any(BytesReference.class), Mockito.any(JobDocVersion.class));
+
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+
+        testSweeper.sweepIndex("index-name");
+
+        // search was called once, but sweep was never called due to non-OK status
+        Mockito.verify(this.client, Mockito.times(1)).search(Mockito.any());
+        Mockito.verify(testSweeper, Mockito.times(0))
+            .sweep(Mockito.any(), Mockito.anyString(), Mockito.any(BytesReference.class), Mockito.any(JobDocVersion.class));
+    }
+
+    public void testSweepAbortsOnSearchException() {
+        ActionFuture<SearchResponse> failingFuture = Mockito.mock(ActionFuture.class);
+        Mockito.when(failingFuture.actionGet(Mockito.any(TimeValue.class)))
+            .thenThrow(new RuntimeException("fielddata access on _id disallowed"));
+        Mockito.when(this.client.search(Mockito.any())).thenReturn(failingFuture);
+
+        JobSweeper testSweeper = Mockito.spy(this.sweeper);
+        Mockito.doNothing()
+            .when(testSweeper)
+            .sweep(Mockito.any(), Mockito.anyString(), Mockito.any(BytesReference.class), Mockito.any(JobDocVersion.class));
+
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+
+        // should not throw — exception is caught and logged
+        testSweeper.sweepIndex("index-name");
+
+        // search was attempted once before the exception aborted the loop
+        Mockito.verify(this.client, Mockito.times(1)).search(Mockito.any());
+        Mockito.verify(testSweeper, Mockito.times(0))
+            .sweep(Mockito.any(), Mockito.anyString(), Mockito.any(BytesReference.class), Mockito.any(JobDocVersion.class));
+    }
+
+    private ClusterState buildSingleShardClusterState(String indexName) {
+        Metadata metadata = Metadata.builder().put(createIndexMetadata(indexName, 0, 1)).build();
+        RoutingTable routingTable = new RoutingTable.Builder().add(
+            new IndexRoutingTable.Builder(metadata.index(indexName).getIndex()).initializeAsNew(metadata.index(indexName)).build()
+        ).build();
+        ClusterState clusterState = ClusterState.builder(new ClusterName("cluster-name"))
+            .metadata(metadata)
+            .routingTable(routingTable)
+            .build();
+        clusterState = this.addNodesToCluter(clusterState, 1);
+        clusterState = this.initializeAllShards(clusterState);
+        // set local node so getLocalShards can match shards assigned to this node
+        String firstNodeId = clusterState.getNodes().iterator().next().getId();
+        clusterState = ClusterState.builder(clusterState)
+            .nodes(DiscoveryNodes.builder(clusterState.getNodes()).localNodeId(firstNodeId))
+            .build();
+        return clusterState;
     }
 
     private ClusterState addNodesToCluter(ClusterState clusterState, int nodeCount) {
