@@ -264,7 +264,7 @@ dependencies {
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
 
-// Copy the SPI shadow jar into lib/ so core installs it to OPENSEARCH_HOME/lib/<plugin_name>/
+// Copy the SPI shadow jar into shared/ so core installs it to OPENSEARCH_HOME/plugins/lib/<plugin_name>/
 gradle.projectsEvaluated {
     def spiProject = project(":${rootProject.name}-spi")
     task copyLibs(type: Copy) {
@@ -275,7 +275,7 @@ gradle.projectsEvaluated {
     bundlePlugin.dependsOn copyLibs
     bundlePlugin {
         from("$buildDir/lib") {
-            into 'lib'
+            into 'shared'
         }
     }
 }
