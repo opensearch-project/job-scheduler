@@ -125,7 +125,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                 }, exception -> fail(exception.getMessage())));
             }, exception -> fail(exception.getMessage())));
         }, exception -> fail(exception.getMessage())));
-        latch.await(5L, TimeUnit.SECONDS);
+        assertTrue("testSanity timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testSanityWithCustomLockID() throws Exception {
@@ -159,7 +159,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                 }, exception -> fail(exception.getMessage())));
             }, exception -> fail(exception.getMessage())));
         }, exception -> fail(exception.getMessage())));
-        latch.await(5L, TimeUnit.SECONDS);
+        assertTrue("testSanityWithCustomLockID timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testSecondAcquireLockFail() throws Exception {
@@ -188,7 +188,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                 }, exception -> fail(exception.getMessage())));
             }, exception -> fail(exception.getMessage())));
         }, exception -> fail(exception.getMessage())));
-        latch.await(10L, TimeUnit.SECONDS);
+        assertTrue("testSecondAcquireLockFail timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testAcquireLockWithLongIdFail() throws Exception {
@@ -210,7 +210,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             assertTrue(exception.getMessage().contains("too long"));
             latch.countDown();
         }));
-        latch.await(10L, TimeUnit.SECONDS);
+        assertTrue("testAcquireLockWithLongIdFail timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testLockReleasedAndAcquired() throws Exception {
@@ -242,7 +242,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                 }, exception -> fail(exception.getMessage())));
             }, exception -> fail(exception.getMessage())));
         }, exception -> fail(exception.getMessage())));
-        latch.await(5L, TimeUnit.SECONDS);
+        assertTrue("testLockReleasedAndAcquired timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testLockExpired() throws Exception {
@@ -278,7 +278,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                 }, exception -> fail(exception.getMessage())));
             }, exception -> fail(exception.getMessage())));
         }, exception -> fail(exception.getMessage())));
-        latch.await(5L, TimeUnit.SECONDS);
+        assertTrue("testLockExpired timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testDeleteLockWithOutIndexCreation() throws Exception {
@@ -288,7 +288,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
             assertTrue("Failed to delete lock.", deleted);
             latch.countDown();
         }, exception -> fail(exception.getMessage())));
-        latch.await(5L, TimeUnit.SECONDS);
+        assertTrue("testDeleteLockWithOutIndexCreation timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testDeleteNonExistingLock() throws Exception {
@@ -305,7 +305,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                 fail("Failed to create lock index.");
             }
         }, exception -> fail(exception.getMessage())));
-        latch.await(5L, TimeUnit.SECONDS);
+        assertTrue("testDeleteNonExistingLock timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     private static volatile AtomicInteger multiThreadCreateLockCounter = new AtomicInteger(0);
@@ -468,15 +468,15 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
                     lock.getLockDurationSeconds(),
                     renewedLock.getLockDurationSeconds()
                 );
-                lockService.release(lock, ActionListener.wrap(released -> {
+                lockService.release(renewedLock, ActionListener.wrap(released -> {
                     assertTrue("Failed to release lock.", released);
-                    lockService.deleteLock(lock.getLockId(), ActionListener.wrap(deleted -> {
+                    lockService.deleteLock(renewedLock.getLockId(), ActionListener.wrap(deleted -> {
                         assertTrue("Failed to delete lock.", deleted);
                         latch.countDown();
                     }, exception -> fail(exception.getMessage())));
                 }, exception -> fail(exception.getMessage())));
             }, exception -> fail(exception.getMessage())));
         }, exception -> fail(exception.getMessage())));
-        latch.await(5L, TimeUnit.SECONDS);
+        assertTrue("testRenewLock timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 }
