@@ -117,7 +117,7 @@ public class RestReleaseLockAction extends BaseRestHandler {
             try {
                 releaseResponse = releaseLockInProgressFuture.get();
             } catch (Exception e) {
-                logger.error("Exception occured in releasing lock ", e);
+                logger.error("Exception occurred in releasing lock ", e);
             }
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
