@@ -129,7 +129,7 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
             try {
                 jobDetailsResponseHolder = inProgressFuture.get();
             } catch (Exception e) {
-                logger.error("Exception occured in get job details ", e);
+                logger.error("Exception occurred in get job details ", e);
             }
             XContentBuilder builder = channel.newBuilder();
             RestStatus restStatus = RestStatus.OK;
