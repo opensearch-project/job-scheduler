@@ -104,7 +104,7 @@ public class RestGetLockAction extends BaseRestHandler {
             try {
                 lockModelResponseHolder = inProgressFuture.get();
             } catch (Exception e) {
-                logger.error("Exception occured in acquiring lock ", e);
+                logger.error("Exception occurred in acquiring lock ", e);
             }
             try (XContentBuilder builder = channel.newBuilder()) {
                 // Prepare response
