@@ -10,6 +10,7 @@ package org.opensearch.jobscheduler.sampleextension;
 
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.jobscheduler.spi.AbstractScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import org.opensearch.core.xcontent.XContentBuilder;
@@ -24,7 +25,7 @@ import java.util.function.Function;
  * It adds an additional "indexToWatch" field to {@link ScheduledJobParameter}, which stores the index
  * the job runner will watch.
  */
-public class SampleJobParameter extends ScheduledJobParameter {
+public class SampleJobParameter extends AbstractScheduledJobParameter {
     public static final String INDEX_NAME_FIELD = "index_name_to_watch";
 
     private String indexToWatch;

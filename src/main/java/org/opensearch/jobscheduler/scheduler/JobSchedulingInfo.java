@@ -46,7 +46,10 @@ public class JobSchedulingInfo implements Writeable, ToXContentObject {
         this.jobType = provider.getJobType();
         this.jobId = jobId;
         this.jobParameter = jobParameter;
-        registerParameterReader(this.jobType, jobParameter.getParameterReader());
+        Function<StreamInput, ScheduledJobParameter> parameterReader = jobParameter.getParameterReader();
+        if (parameterReader != null) {
+            registerParameterReader(this.jobType, parameterReader);
+        }
     }
 
     public JobSchedulingInfo(StreamInput in) throws IOException {

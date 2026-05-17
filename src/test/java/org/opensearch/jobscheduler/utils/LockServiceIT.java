@@ -14,6 +14,7 @@ import org.mockito.Mockito;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.jobscheduler.spi.AbstractScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.LockModel;
@@ -39,7 +40,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
     static final String JOB_ID = "test_job_id";
     static final String JOB_INDEX_NAME = "test_job_index_name";
     static final long LOCK_DURATION_SECONDS = 60;
-    static final ScheduledJobParameter TEST_SCHEDULED_JOB_PARAM = new ScheduledJobParameter(null, null, 60L, null) {
+    static final ScheduledJobParameter TEST_SCHEDULED_JOB_PARAM = new AbstractScheduledJobParameter(null, null, 60L, null) {
         @Override
         public Function<StreamInput, ScheduledJobParameter> getParameterReader() {
             return (in) -> null;

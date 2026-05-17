@@ -14,15 +14,15 @@ import java.util.function.Function;
 
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.Writeable;
+import org.opensearch.jobscheduler.spi.AbstractScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
-import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 
 /**
  * A {@link Writeable} ScheduledJobParameter used to transport job parameters between OpenSearch and Extensions
  *
  */
-public class ExtensionJobParameter extends ScheduledJobParameter implements Writeable {
+public class ExtensionJobParameter extends AbstractScheduledJobParameter implements Writeable {
 
     public ExtensionJobParameter(
         String jobName,

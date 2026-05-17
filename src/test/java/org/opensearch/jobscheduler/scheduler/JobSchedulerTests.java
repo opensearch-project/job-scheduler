@@ -10,6 +10,7 @@ package org.opensearch.jobscheduler.scheduler;
 
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
+import org.opensearch.jobscheduler.spi.AbstractScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
@@ -250,7 +251,7 @@ public class JobSchedulerTests extends OpenSearchTestCase {
         boolean enabled,
         Double jitter
     ) {
-        ScheduledJobParameter parameter = new ScheduledJobParameter(name, schedule, 60L, jitter, enabled) {
+        AbstractScheduledJobParameter parameter = new AbstractScheduledJobParameter(name, schedule, 60L, jitter, enabled) {
             @Override
             public Function<StreamInput, ScheduledJobParameter> getParameterReader() {
                 return (in) -> null;
