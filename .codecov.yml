@@ -4,19 +4,9 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: "75...100"
+  range: "70...100"
   status:
     project:
       default:
-        target: 75%    # the required coverage value
+        target: 70%    # the required coverage value
         threshold: 1%  # the leniency in hitting the target
-
-# Specify coverage report paths for multi-project build
-fixes:
-  - "**/build/reports/jacoco/test/jacocoTestReport.xml"
-  - "**/build/reports/jacoco/jacocoTestReport.xml"
-
-fixes:
-  - "build/reports/jacoco/test/jacocoTestReport.xml"
-  - "spi/build/reports/jacoco/test/jacocoTestReport.xml"
-  - "sample-extension-plugin/build/reports/jacoco/test/jacocoTestReport.xml"

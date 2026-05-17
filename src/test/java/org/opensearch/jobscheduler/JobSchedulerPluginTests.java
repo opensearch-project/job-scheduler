@@ -137,7 +137,7 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
     public void testGetSettings_returnsSettingsList() {
         List<Setting<?>> settings = plugin.getSettings();
         assertNotNull(settings);
-        assertEquals(12, settings.size());
+        assertEquals(13, settings.size());
         assertTrue(settings.contains(LegacyOpenDistroJobSchedulerSettings.SWEEP_PAGE_SIZE));
         assertTrue(settings.contains(LegacyOpenDistroJobSchedulerSettings.REQUEST_TIMEOUT));
         assertTrue(settings.contains(LegacyOpenDistroJobSchedulerSettings.SWEEP_BACKOFF_MILLIS));

@@ -15,11 +15,11 @@ import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
+import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.AcquireLockResponse;
 import org.opensearch.jobscheduler.transport.AcquireLockRequest;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.jobscheduler.spi.LockModel;
-import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
@@ -104,7 +104,7 @@ public class RestGetLockAction extends BaseRestHandler {
             try {
                 lockModelResponseHolder = inProgressFuture.get();
             } catch (Exception e) {
-                logger.error("Exception occured in acquiring lock ", e);
+                logger.error("Exception occurred in acquiring lock ", e);
             }
             try (XContentBuilder builder = channel.newBuilder()) {
                 // Prepare response

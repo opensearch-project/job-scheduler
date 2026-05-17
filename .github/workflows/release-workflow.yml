@@ -17,11 +17,12 @@ jobs:
     steps:
       # This step uses the checkout Github action: https://github.com/actions/checkout
       - name: Checkout Branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       # This step uses the setup-java Github action: https://github.com/actions/setup-java
       - name: Set Up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v5
         with:
+          distribution: temurin # Temurin is a distribution of adoptium
           java-version: ${{ matrix.java }}
 
       # Building zip, deb and rpm files
@@ -41,7 +42,7 @@ jobs:
 
       # AWS authentication
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_STAGING_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_STAGING_SECRET_ACCESS_KEY }}
@@ -117,7 +118,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload Workflow Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: job-scheduler-plugin
           path: job-scheduler-artifacts

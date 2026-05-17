@@ -61,21 +61,47 @@ public class RestReleaseLockAction extends BaseRestHandler {
             throw new IOException("lockId cannot be null or empty");
         }
         CompletableFuture<Boolean> releaseLockInProgressFuture = new CompletableFuture<>();
-        if (!lockService.lockIndexExist()) {
-            releaseLockInProgressFuture.complete(false);
-        } else {
-            CompletableFuture<LockModel> findInProgressFuture = new CompletableFuture<>();
-            lockService.findLock(lockId, ActionListener.wrap(lock -> { findInProgressFuture.complete(lock); }, exception -> {
-                logger.error("Could not find lock model with lockId " + lockId, exception);
-                findInProgressFuture.completeExceptionally(exception);
-            }));
+        CompletableFuture<LockModel> findInProgressFuture = new CompletableFuture<>();
+        lockService.findLock(lockId, ActionListener.wrap(lock -> { findInProgressFuture.complete(lock); }, exception -> {
+            logger.error("Could not find lock model with lockId " + lockId, exception);
+            findInProgressFuture.completeExceptionally(exception);
+        }));
 
-            LockModel releaseLock;
+        LockModel releaseLock;
+        try {
+            releaseLock = findInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).get();
+        } catch (CompletionException | InterruptedException | ExecutionException e) {
+            if (e.getCause() instanceof TimeoutException) {
+                logger.error(" Finding lock timed out ", e);
+            }
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else if (e.getCause() instanceof Error) {
+                throw (Error) e.getCause();
+            } else {
+                throw new RuntimeException(e.getCause());
+            }
+        }
+
+        if (releaseLock != null) {
+            lockService.release(releaseLock, new ActionListener<>() {
+                @Override
+                public void onResponse(Boolean response) {
+                    releaseLockInProgressFuture.complete(response);
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    logger.error("Releasing lock failed with an exception", e);
+                    releaseLockInProgressFuture.completeExceptionally(e);
+                }
+            });
+
             try {
-                releaseLock = findInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS).get();
-            } catch (CompletionException | InterruptedException | ExecutionException e) {
+                releaseLockInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
+            } catch (CompletionException e) {
                 if (e.getCause() instanceof TimeoutException) {
-                    logger.error(" Finding lock timed out ", e);
+                    logger.error("Release lock timed out ", e);
                 }
                 if (e.getCause() instanceof RuntimeException) {
                     throw (RuntimeException) e.getCause();
@@ -83,36 +109,6 @@ public class RestReleaseLockAction extends BaseRestHandler {
                     throw (Error) e.getCause();
                 } else {
                     throw new RuntimeException(e.getCause());
-                }
-            }
-
-            if (releaseLock != null) {
-                lockService.release(releaseLock, new ActionListener<>() {
-                    @Override
-                    public void onResponse(Boolean response) {
-                        releaseLockInProgressFuture.complete(response);
-                    }
-
-                    @Override
-                    public void onFailure(Exception e) {
-                        logger.error("Releasing lock failed with an exception", e);
-                        releaseLockInProgressFuture.completeExceptionally(e);
-                    }
-                });
-
-                try {
-                    releaseLockInProgressFuture.orTimeout(JobDetailsService.TIME_OUT_FOR_REQUEST, TimeUnit.SECONDS);
-                } catch (CompletionException e) {
-                    if (e.getCause() instanceof TimeoutException) {
-                        logger.error("Release lock timed out ", e);
-                    }
-                    if (e.getCause() instanceof RuntimeException) {
-                        throw (RuntimeException) e.getCause();
-                    } else if (e.getCause() instanceof Error) {
-                        throw (Error) e.getCause();
-                    } else {
-                        throw new RuntimeException(e.getCause());
-                    }
                 }
             }
         }

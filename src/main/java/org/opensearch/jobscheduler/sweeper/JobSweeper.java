@@ -331,7 +331,8 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         this.lastFullSweepTimeNano = System.nanoTime();
     }
 
-    private void sweepIndex(String indexName) {
+    @VisibleForTesting
+    void sweepIndex(String indexName) {
         ClusterState clusterState = this.clusterService.state();
         // checks to see if index no longer exists
         if (!clusterState.routingTable().hasIndex(indexName)) {
@@ -368,14 +369,14 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
             try {
                 List<ShardRouting> shardRoutingList = shard.getValue();
                 List<String> shardNodeIds = shardRoutingList.stream().map(ShardRouting::currentNodeId).collect(Collectors.toList());
-                sweepShard(shard.getKey(), new ShardNodes(localNodeId, shardNodeIds), null);
+                sweepShard(shard.getKey(), new ShardNodes(localNodeId, shardNodeIds), -1L);
             } catch (Exception e) {
                 log.info("Error while sweeping shard {}, error message: {}", shard.getKey(), e.getMessage());
             }
         }
     }
 
-    private void sweepShard(ShardId shardId, ShardNodes shardNodes, String startAfter) {
+    private void sweepShard(ShardId shardId, ShardNodes shardNodes, long startAfter) {
         ConcurrentHashMap<String, JobDocVersion> currentJobs = this.sweptJobs.containsKey(shardId)
             ? this.sweptJobs.get(shardId)
             : new ConcurrentHashMap<>();
@@ -388,24 +389,27 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
             }
         }
 
-        String searchAfter = startAfter == null ? "" : startAfter;
-        while (searchAfter != null) {
+        long searchAfter = startAfter;
+        while (searchAfter >= -1L) {
             SearchRequest jobSearchRequest = new SearchRequest().indices(shardId.getIndexName())
                 .preference("_shards:" + shardId.id() + "|_primary")
                 .source(
                     new SearchSourceBuilder().version(true)
                         .seqNoAndPrimaryTerm(true)
-                        .sort(new FieldSortBuilder("_id").unmappedType("keyword").missing("_last"))
-                        .searchAfter(new String[] { searchAfter })
+                        .sort(new FieldSortBuilder("_seq_no").unmappedType("long"))
+                        .searchAfter(new Long[] { searchAfter })
                         .size(this.sweepPageMaxSize)
                         .query(QueryBuilders.matchAllQuery())
                 );
 
-            SearchResponse response = this.retry(
-                (searchRequest) -> this.client.search(searchRequest),
-                jobSearchRequest,
-                this.sweepSearchBackoff
-            ).actionGet(this.sweepSearchTimeout);
+            SearchResponse response;
+            try {
+                response = this.retry((searchRequest) -> this.client.search(searchRequest), jobSearchRequest, this.sweepSearchBackoff)
+                    .actionGet(this.sweepSearchTimeout);
+            } catch (Exception e) {
+                log.error("Aborting sweep of shard {}, will retry on next sweep cycle.", shardId, e);
+                return;
+            }
             if (response.status() != RestStatus.OK) {
                 log.error("Error sweeping shard {}, failed querying jobs on this shard", shardId);
                 return;
@@ -422,10 +426,10 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                 }
             }
             if (response.getHits() == null || response.getHits().getHits().length < 1) {
-                searchAfter = null;
+                break;
             } else {
                 SearchHit lastHit = response.getHits().getHits()[response.getHits().getHits().length - 1];
-                searchAfter = lastHit.getId();
+                searchAfter = lastHit.getSeqNo();
             }
         }
     }
