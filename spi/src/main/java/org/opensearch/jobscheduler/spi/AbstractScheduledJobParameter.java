@@ -126,6 +126,9 @@ public abstract class AbstractScheduledJobParameter implements ScheduledJobParam
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
+        if (this.schedule == null) {
+            throw new IOException("Schedule must not be null when serializing scheduled job parameter");
+        }
         out.writeString(name);
         out.writeBoolean(isEnabled);
         out.writeOptionalLong(lockDurationSeconds);
@@ -134,8 +137,10 @@ public abstract class AbstractScheduledJobParameter implements ScheduledJobParam
         out.writeInstant(lastUpdateTime);
         if (this.schedule instanceof CronSchedule) {
             out.writeEnum(ScheduleType.CRON);
-        } else {
+        } else if (this.schedule instanceof IntervalSchedule) {
             out.writeEnum(ScheduleType.INTERVAL);
+        } else {
+            throw new IOException("Unsupported schedule type [" + this.schedule.getClass().getName() + "]");
         }
         schedule.writeTo(out);
     }

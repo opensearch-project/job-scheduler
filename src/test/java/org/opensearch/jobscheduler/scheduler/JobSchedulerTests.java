@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.scheduler;
 
-import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.spi.AbstractScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
@@ -31,7 +30,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 @RunWith(RandomizedRunner.class)
 @SuppressWarnings({ "rawtypes" })
@@ -252,10 +250,6 @@ public class JobSchedulerTests extends OpenSearchTestCase {
         Double jitter
     ) {
         AbstractScheduledJobParameter parameter = new AbstractScheduledJobParameter(name, schedule, 60L, jitter, enabled) {
-            @Override
-            public Function<StreamInput, ScheduledJobParameter> getParameterReader() {
-                return (in) -> null;
-            }
         };
         parameter.setEnabledTime(enableTime);
         parameter.setLastUpdateTime(updateTime);

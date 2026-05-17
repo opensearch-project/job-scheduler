@@ -81,7 +81,7 @@ public class TransportGetScheduledInfoAction extends TransportNodesAction<
     protected GetScheduledInfoResponse.NodeResponse nodeOperation(GetScheduledInfoRequest.NodeRequest request) {
         GetScheduledInfoResponse.NodeResponse response = new GetScheduledInfoResponse.NodeResponse(clusterService.localNode());
 
-        response.setJobs(jobScheduler.getJobsAsList());
+        response.setJobSchedulingInfo(jobScheduler.getJobsAsList());
         return response;
     }
 }

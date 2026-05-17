@@ -17,7 +17,6 @@ import org.opensearch.core.xcontent.XContentBuilder;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.function.Function;
 
 /**
  * A sample job parameter.
@@ -35,6 +34,10 @@ public class SampleJobParameter extends AbstractScheduledJobParameter {
     public SampleJobParameter(String name, String indexToWatch, Schedule schedule, Long lockDurationSeconds, Double jitter) {
         super(name, schedule, lockDurationSeconds, jitter);
         this.indexToWatch = indexToWatch;
+    }
+
+    public SampleJobParameter(String id, String name, String indexToWatch, Schedule schedule, Long lockDurationSeconds, Double jitter) {
+        this(name, indexToWatch, schedule, lockDurationSeconds, jitter);
     }
 
     public SampleJobParameter(StreamInput in) throws IOException {
@@ -85,17 +88,6 @@ public class SampleJobParameter extends AbstractScheduledJobParameter {
         builder.field(INDEX_NAME_FIELD, this.indexToWatch);
         builder.endObject();
         return builder;
-    }
-
-    @Override
-    public Function<StreamInput, ScheduledJobParameter> getParameterReader() {
-        return (in) -> {
-            try {
-                return new SampleJobParameter(in);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        };
     }
 
     @Override

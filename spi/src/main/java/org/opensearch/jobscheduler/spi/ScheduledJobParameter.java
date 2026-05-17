@@ -8,14 +8,10 @@
  */
 package org.opensearch.jobscheduler.spi;
 
-import org.opensearch.core.common.io.stream.StreamInput;
-import org.opensearch.core.common.io.stream.StreamOutput;
 import org.opensearch.core.xcontent.ToXContentObject;
 import org.opensearch.jobscheduler.spi.schedule.Schedule;
 
-import java.io.IOException;
 import java.time.Instant;
-import java.util.function.Function;
 
 /**
  * Job parameters that being used by the JobScheduler.
@@ -82,17 +78,4 @@ public interface ScheduledJobParameter extends ToXContentObject {
         return null;
     }
 
-    /**
-     * @return a reader for this parameter type when it needs transport serialization.
-     */
-    default Function<StreamInput, ScheduledJobParameter> getParameterReader() {
-        return null;
-    }
-
-    /**
-     * Writes this parameter to a transport stream.
-     */
-    default void writeTo(StreamOutput out) throws IOException {
-        throw new UnsupportedOperationException("Scheduled job parameter does not support stream serialization");
-    }
 }

@@ -57,7 +57,7 @@ public class JobParameterResponse extends ActionResponse {
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
-        this.jobParameter.writeTo(out);
+        new ExtensionJobParameter(this.jobParameter).writeTo(out);
     }
 
     public ScheduledJobParameter getJobParameter() {

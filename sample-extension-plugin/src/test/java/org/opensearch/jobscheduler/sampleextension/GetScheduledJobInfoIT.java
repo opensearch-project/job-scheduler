@@ -39,6 +39,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
     @Before
     public void setupJobs() throws IOException, InterruptedException {
         jobParam1 = new SampleJobParameter(
+            "test-job-1",
             "Test Job 1",
             "test-index-1",
             new IntervalSchedule(Instant.now(), 5, ChronoUnit.MINUTES),
@@ -47,6 +48,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         );
 
         jobParam2 = new SampleJobParameter(
+            "test-job-2",
             "Test Job 2",
             "test-index-2",
             new IntervalSchedule(Instant.now(), 10, ChronoUnit.MINUTES),
@@ -55,6 +57,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         );
 
         jobParam3 = new SampleJobParameter(
+            "test-job-3",
             "Test Job 3",
             "test-index-3",
             new CronSchedule("30 2 * * *", ZoneId.of("America/New_York")),
@@ -63,6 +66,7 @@ public class GetScheduledJobInfoIT extends SampleExtensionIntegTestCase {
         );
 
         jobParam4 = new SampleJobParameter(
+            "test-job-4",
             "Test Job 4",
             "test-index-4",
             new CronSchedule("0 9 * * MON", ZoneId.systemDefault()),
