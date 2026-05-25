@@ -71,13 +71,8 @@ public class RestRunJobActionTests extends OpenSearchTestCase {
         params.put(RestRunJobAction.JOB_TYPE, "scheduler_sample_extension");
         params.put(RestRunJobAction.JOB_ID, "my-job");
 
-        String path = String.format(
-            Locale.ROOT,
-            "%s/_run/scheduler_sample_extension/my-job",
-            JobSchedulerPlugin.JS_BASE_URI
-        );
-        FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry())
-            .withMethod(RestRequest.Method.POST)
+        String path = String.format(Locale.ROOT, "%s/_run/scheduler_sample_extension/my-job", JobSchedulerPlugin.JS_BASE_URI);
+        FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.POST)
             .withPath(path)
             .withParams(params)
             .build();
@@ -87,11 +82,7 @@ public class RestRunJobActionTests extends OpenSearchTestCase {
 
         doAnswer(invocation -> {
             ActionListener<RunJobResponse> listener = invocation.getArgument(2);
-            RunJobResponse response = new RunJobResponse(
-                new ClusterName("test-cluster"),
-                Collections.emptyList(),
-                Collections.emptyList()
-            );
+            RunJobResponse response = new RunJobResponse(new ClusterName("test-cluster"), Collections.emptyList(), Collections.emptyList());
             listener.onResponse(response);
             return null;
         }).when(mockClient).execute(eq(RunJobAction.INSTANCE), any(RunJobRequest.class), any(ActionListener.class));

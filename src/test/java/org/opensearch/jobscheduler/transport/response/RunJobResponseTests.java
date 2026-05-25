@@ -10,7 +10,6 @@ package org.opensearch.jobscheduler.transport.response;
 
 import org.junit.Before;
 import org.opensearch.Version;
-import org.opensearch.action.FailedNodeException;
 import org.opensearch.cluster.ClusterName;
 import org.opensearch.cluster.node.DiscoveryNode;
 import org.opensearch.common.xcontent.XContentFactory;

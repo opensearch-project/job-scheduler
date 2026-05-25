@@ -10,8 +10,6 @@ package org.opensearch.jobscheduler.transport.request;
 
 import org.junit.Before;
 import org.opensearch.action.ActionRequestValidationException;
-import org.opensearch.common.io.stream.BytesStreamOutput;
-import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.test.OpenSearchTestCase;
 
 public class RunJobRequestTests extends OpenSearchTestCase {
@@ -26,6 +24,7 @@ public class RunJobRequestTests extends OpenSearchTestCase {
         super.setUp();
         request = new RunJobRequest(JOB_TYPE, JOB_ID);
     }
+
     public void testValidate_withNullJobType_returnError() {
         RunJobRequest invalidRequest = new RunJobRequest(null, JOB_ID);
         ActionRequestValidationException ex = invalidRequest.validate();
