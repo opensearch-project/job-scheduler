@@ -2,11 +2,6 @@
 
 Compatible with OpenSearch and OpenSearch Dashboards version 3.7.0
 
-### Bug Fixes
-
-* Fix typo in log message: "occured" → "occurred" ([#915](https://github.com/opensearch-project/job-scheduler/pull/915))
-* Fix typo in log message: "occured" → "occurred" ([#917](https://github.com/opensearch-project/job-scheduler/pull/917))
-
 ### Infrastructure
 
 * Add Maven cache mirror before mavenCentral to reduce HTTP 429 throttling errors in CI builds ([#918](https://github.com/opensearch-project/job-scheduler/pull/918))
