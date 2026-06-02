@@ -33,7 +33,7 @@ jobs:
 
   auto-close-issue:
     if: github.event_name == 'schedule' && github.repository == 'opensearch-project/job-scheduler'
-    uses: opensearch-project/opensearch-build/.github/workflows/issue-dedupe-autoclose.yml@c2498b758c08fb7bc48476509a5fc1b8dd5f7493 # main
+    uses: opensearch-project/opensearch-build/.github/workflows/issue-dedupe-autoclose.yml@7bd506cbfe8ef5616d86ad08bf881003969d3118 # main
     permissions:
       issues: write
     with:
