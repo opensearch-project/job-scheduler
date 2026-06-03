@@ -23,12 +23,15 @@ import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestGetScheduledInfoAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
+import org.opensearch.jobscheduler.rest.action.RestRunJobAction;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.jobscheduler.transport.PluginClient;
 import org.opensearch.jobscheduler.transport.action.GetAllLocksAction;
 import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
+import org.opensearch.jobscheduler.transport.action.RunJobAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetAllLocksAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetScheduledInfoAction;
+import org.opensearch.jobscheduler.transport.action.TransportRunJobAction;
 import org.opensearch.jobscheduler.scheduler.JobScheduler;
 import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
@@ -272,20 +275,23 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         RestReleaseLockAction restReleaseLockAction = new RestReleaseLockAction(lockService);
         RestGetScheduledInfoAction restGetScheduledInfoAction = new RestGetScheduledInfoAction();
         RestGetLocksAction restGetAllLocksAction = new RestGetLocksAction();
+        RestRunJobAction restRunJobAction = new RestRunJobAction();
         return List.of(
             restGetJobDetailsAction,
             restGetLockAction,
             restReleaseLockAction,
             restGetScheduledInfoAction,
-            restGetAllLocksAction
+            restGetAllLocksAction,
+            restRunJobAction
         );
     }
 
     @Override
     public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
-        List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> actions = new ArrayList<>(2);
+        List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> actions = new ArrayList<>(3);
         actions.add(new ActionHandler<>(GetScheduledInfoAction.INSTANCE, TransportGetScheduledInfoAction.class));
         actions.add(new ActionHandler<>(GetAllLocksAction.INSTANCE, TransportGetAllLocksAction.class));
+        actions.add(new ActionHandler<>(RunJobAction.INSTANCE, TransportRunJobAction.class));
         return actions;
     }
 
