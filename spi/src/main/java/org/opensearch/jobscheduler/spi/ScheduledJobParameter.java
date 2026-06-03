@@ -8,8 +8,8 @@
  */
 package org.opensearch.jobscheduler.spi;
 
-import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import org.opensearch.core.xcontent.ToXContentObject;
+import org.opensearch.jobscheduler.spi.schedule.Schedule;
 
 import java.time.Instant;
 
@@ -17,6 +17,16 @@ import java.time.Instant;
  * Job parameters that being used by the JobScheduler.
  */
 public interface ScheduledJobParameter extends ToXContentObject {
+    String NAME_FIELD = "name";
+    String ENABLED_FILED = "enabled";
+    String LAST_UPDATE_TIME_FIELD = "last_update_time";
+    String LAST_UPDATE_TIME_FIELD_READABLE = "last_update_time_field";
+    String SCHEDULE_FIELD = "schedule";
+    String ENABLED_TIME_FILED = "enabled_time";
+    String ENABLED_TIME_FILED_READABLE = "enabled_time_field";
+    String LOCK_DURATION_SECONDS = "lock_duration_seconds";
+    String JITTER = "jitter";
+
     /**
      * @return job name.
      */
@@ -67,4 +77,5 @@ public interface ScheduledJobParameter extends ToXContentObject {
     default Double getJitter() {
         return null;
     }
+
 }

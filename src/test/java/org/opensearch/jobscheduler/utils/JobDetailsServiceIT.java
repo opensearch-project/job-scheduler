@@ -39,6 +39,7 @@ import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
+import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.jobscheduler.transport.request.ExtensionJobActionRequest;
 import org.opensearch.jobscheduler.transport.request.JobParameterRequest;
@@ -63,7 +64,7 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
     private String expectedDocumentId;
     private String updatedJobIndex;
 
-    private ExtensionJobParameter extensionJobParameter;
+    private ScheduledJobParameter extensionJobParameter;
 
     @Before
     public void setup() {
@@ -310,8 +311,8 @@ public class JobDetailsServiceIT extends OpenSearchIntegTestCase {
     }
 
     private void compareExtensionJobParameters(
-        ExtensionJobParameter extensionJobParameter,
-        ExtensionJobParameter deserializedJobParameter
+        ScheduledJobParameter extensionJobParameter,
+        ScheduledJobParameter deserializedJobParameter
     ) {
         assertEquals(extensionJobParameter.getName(), deserializedJobParameter.getName());
         assertEquals(extensionJobParameter.getSchedule(), deserializedJobParameter.getSchedule());
