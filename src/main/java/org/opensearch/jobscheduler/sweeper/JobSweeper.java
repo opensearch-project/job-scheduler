@@ -21,6 +21,7 @@ import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.jobscheduler.utils.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.opensearch.OpenSearchException;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.action.bulk.BackoffPolicy;
@@ -407,7 +408,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                 response = this.retry((searchRequest) -> this.client.search(searchRequest), jobSearchRequest, this.sweepSearchBackoff)
                     .actionGet(this.sweepSearchTimeout);
             } catch (Exception e) {
-                log.error("Aborting sweep of shard {}, will retry on next sweep cycle.", shardId, e);
+                log.error(() -> new ParameterizedMessage("Aborting sweep of shard {}, will retry on next sweep cycle.", shardId), e);
                 return;
             }
             if (response.status() != RestStatus.OK) {
