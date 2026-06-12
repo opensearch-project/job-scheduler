@@ -32,16 +32,14 @@ public class RestGetHistoryAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return List.of(
-            new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/history"),
-            new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/history/{history_id}")
-        );
+        return List.of(new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/history"));
     }
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) {
-        String history_id = request.param("history_id");
-        GetHistoryRequest getHistoryRequest = new GetHistoryRequest(history_id);
+        String jobIndexName = request.param("job_index_name");
+        String jobId = request.param("job_id");
+        GetHistoryRequest getHistoryRequest = new GetHistoryRequest(jobIndexName, jobId);
         return channel -> client.execute(GetHistoryAction.INSTANCE, getHistoryRequest, new RestToXContentListener<>(channel));
     }
 }

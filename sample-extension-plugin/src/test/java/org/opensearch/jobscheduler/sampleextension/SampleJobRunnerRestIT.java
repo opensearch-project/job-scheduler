@@ -271,9 +271,13 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
 
         waitUntilLockIsAcquiredAndReleased(jobId);
 
-        String historyIndexById = HISTORY_INFO_URI + "/.scheduler_sample_extension-" + jobId;
-
-        Response response = makeRequest(client(), "GET", historyIndexById, Map.of(), null);
+        Response response = makeRequest(
+            client(),
+            "GET",
+            HISTORY_INFO_URI,
+            Map.of("job_index_name", ".scheduler_sample_extension", "job_id", jobId),
+            null
+        );
         Map<String, Object> responseJson = parseResponse(response);
 
         Assert.assertTrue("Response should contain total_history", responseJson.containsKey("total_history"));

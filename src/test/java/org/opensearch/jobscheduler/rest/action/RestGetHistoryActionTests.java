@@ -37,14 +37,12 @@ public class RestGetHistoryActionTests extends OpenSearchTestCase {
 
     private RestGetHistoryAction action;
     private String getHistoryPath;
-    private String getHistoryByIdPath;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
         this.action = new RestGetHistoryAction();
         this.getHistoryPath = JobSchedulerPlugin.JS_BASE_URI + "/api/history";
-        this.getHistoryByIdPath = JobSchedulerPlugin.JS_BASE_URI + "/api/history/{history_id}";
     }
 
     public void testGetName() {
@@ -54,14 +52,12 @@ public class RestGetHistoryActionTests extends OpenSearchTestCase {
 
     public void testRoutes() {
         List<RestHandler.Route> routes = action.routes();
-        assertEquals(2, routes.size());
+        assertEquals(1, routes.size());
         assertEquals(getHistoryPath, routes.get(0).getPath());
         assertEquals(RestRequest.Method.GET, routes.get(0).getMethod());
-        assertEquals(getHistoryByIdPath, routes.get(1).getPath());
-        assertEquals(RestRequest.Method.GET, routes.get(1).getMethod());
     }
 
-    public void testPrepareRequestWithoutHistoryId() throws IOException {
+    public void testPrepareRequestWithoutJobFilter() throws IOException {
         FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.GET)
             .withPath(getHistoryPath)
             .withParams(new HashMap<>())
@@ -83,12 +79,13 @@ public class RestGetHistoryActionTests extends OpenSearchTestCase {
         assertEquals(0, channel.errors().get());
     }
 
-    public void testPrepareRequestWithHistoryId() throws IOException {
+    public void testPrepareRequestWithJobFilter() throws IOException {
         Map<String, String> params = new HashMap<>();
-        params.put("history_id", "test-index-job123");
+        params.put("job_index_name", "test-index");
+        params.put("job_id", "job123");
 
         FakeRestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withMethod(RestRequest.Method.GET)
-            .withPath(getHistoryByIdPath.replace("{history_id}", "test-index-job123"))
+            .withPath(getHistoryPath)
             .withParams(params)
             .build();
 
@@ -97,7 +94,8 @@ public class RestGetHistoryActionTests extends OpenSearchTestCase {
 
         doAnswer(invocation -> {
             GetHistoryRequest historyRequest = invocation.getArgument(1);
-            assertEquals("test-index-job123", historyRequest.getHistoryId());
+            assertEquals("test-index", historyRequest.getJobIndexName());
+            assertEquals("job123", historyRequest.getJobId());
             ActionListener<GetHistoryResponse> listener = invocation.getArgument(2);
             GetHistoryResponse response = new GetHistoryResponse(new HashMap<>());
             listener.onResponse(response);
@@ -108,5 +106,12 @@ public class RestGetHistoryActionTests extends OpenSearchTestCase {
 
         assertEquals(0, channel.responses().get());
         assertEquals(0, channel.errors().get());
+    }
+
+    public void testGetHistoryRequestValidationRequiresCompleteJobFilter() {
+        assertNull(new GetHistoryRequest(null, null).validate());
+        assertNull(new GetHistoryRequest("test-index", "job123").validate());
+        assertNotNull(new GetHistoryRequest("test-index", null).validate());
+        assertNotNull(new GetHistoryRequest(null, "job123").validate());
     }
 }

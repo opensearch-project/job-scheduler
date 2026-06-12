@@ -53,9 +53,10 @@ public class TransportGetHistoryAction extends HandledTransportAction<GetHistory
 
     @Override
     protected void doExecute(Task task, GetHistoryRequest request, ActionListener<GetHistoryResponse> listener) {
-        if (request.getHistoryId() != null) {
+        if (request.getJobIndexName() != null && request.getJobId() != null) {
             getHistoryById(
-                request.getHistoryId(),
+                request.getJobIndexName(),
+                request.getJobId(),
                 ActionListener.wrap(history -> listener.onResponse(new GetHistoryResponse(history)), listener::onFailure)
             );
         } else {
@@ -63,22 +64,14 @@ public class TransportGetHistoryAction extends HandledTransportAction<GetHistory
         }
     }
 
-    private void getHistoryById(String jobId, ActionListener<Map<String, StatusHistoryModel>> listener) {
+    private void getHistoryById(String jobIndexName, String jobId, ActionListener<Map<String, StatusHistoryModel>> listener) {
         try (ThreadContext.StoredContext ignore = client.threadPool().getThreadContext().stashContext()) {
-            String[] parts = jobId.split("-", 2);
-            if (parts.length != 2) {
-                listener.onFailure(new IllegalArgumentException("History ID must be in format 'index-history-id'"));
-                return;
-            }
-            String jobIndexName = parts[0];
-            String actualJobId = parts[1];
-
             SearchRequest searchRequest = new SearchRequest(JobHistoryService.JOB_HISTORY_INDEX_NAME);
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.query(
                 QueryBuilders.boolQuery()
                     .must(QueryBuilders.termQuery("job_index_name", jobIndexName))
-                    .must(QueryBuilders.termQuery("job_id", actualJobId))
+                    .must(QueryBuilders.termQuery("job_id", jobId))
             );
             searchRequest.source(searchSourceBuilder);
 
@@ -102,7 +95,7 @@ public class TransportGetHistoryAction extends HandledTransportAction<GetHistory
 
                 @Override
                 public void onFailure(Exception e) {
-                    log.debug("Error in finding history by ID {}", jobId, e);
+                    log.debug("Error in finding history for job index {} and job ID {}", jobIndexName, jobId, e);
                     listener.onResponse(new HashMap<>());
                 }
             });

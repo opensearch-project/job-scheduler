@@ -15,36 +15,53 @@ import org.opensearch.core.common.io.stream.StreamOutput;
 
 import java.io.IOException;
 
+import static org.opensearch.action.ValidateActions.addValidationError;
+
 public class GetHistoryRequest extends ActionRequest {
 
-    private String historyId;
+    private String jobIndexName;
+    private String jobId;
 
     public GetHistoryRequest() {
         super();
     }
 
-    public GetHistoryRequest(String historyId) {
+    public GetHistoryRequest(String jobIndexName, String jobId) {
         super();
-        this.historyId = historyId;
+        this.jobIndexName = jobIndexName;
+        this.jobId = jobId;
     }
 
     public GetHistoryRequest(StreamInput in) throws IOException {
         super(in);
-        this.historyId = in.readOptionalString();
+        this.jobIndexName = in.readOptionalString();
+        this.jobId = in.readOptionalString();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeOptionalString(historyId);
+        out.writeOptionalString(jobIndexName);
+        out.writeOptionalString(jobId);
     }
 
-    public String getHistoryId() {
-        return historyId;
+    public String getJobIndexName() {
+        return jobIndexName;
+    }
+
+    public String getJobId() {
+        return jobId;
     }
 
     @Override
     public ActionRequestValidationException validate() {
-        return null;
+        ActionRequestValidationException validationException = null;
+        if ((jobIndexName == null) != (jobId == null)) {
+            validationException = addValidationError(
+                "job_index_name and job_id must both be provided to filter job history",
+                validationException
+            );
+        }
+        return validationException;
     }
 }
