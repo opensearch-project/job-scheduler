@@ -10,6 +10,7 @@ package org.opensearch.jobscheduler.transport.action;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.opensearch.action.search.ClearScrollRequest;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
@@ -107,7 +108,7 @@ public class TransportGetAllLocksAction extends HandledTransportAction<GetLocksR
 
             @Override
             public void onFailure(Exception e) {
-                log.debug("Error in finding lock by ID {}", lockId, e);
+                log.debug(() -> new ParameterizedMessage("Error in finding lock by ID {}", lockId), e);
                 listener.onResponse(new HashMap<>());
             }
         });
