@@ -39,12 +39,7 @@ ext {
     noticeFile = rootProject.file('NOTICE.txt')
 }
 
-repositories {
-    mavenLocal()
-    maven { url "https://ci.opensearch.org/maven2/" }
-    mavenCentral()
-    maven { url "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
-}
+
 
 configurations {
     opensearchPlugin

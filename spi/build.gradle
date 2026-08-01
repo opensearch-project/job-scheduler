@@ -18,12 +18,7 @@ apply plugin: 'opensearch.java'
 apply plugin: 'opensearch.testclusters'
 apply plugin: 'opensearch.java-agent'
 
-repositories {
-    mavenLocal()
-    maven { url "https://ci.opensearch.org/maven2/" }
-    mavenCentral()
-    maven { url "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
-}
+
 
 ext {
     projectSubstitutions = [:]

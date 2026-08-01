@@ -67,7 +67,7 @@ fi
 [[ "$SNAPSHOT" == "true" ]] && VERSION=$VERSION-SNAPSHOT
 [ -z "$OUTPUT" ] && OUTPUT=artifacts
 
-./gradlew assemble --no-daemon --refresh-dependencies -DskipTests=true -Dopensearch.version=$VERSION -Dbuild.snapshot=$SNAPSHOT -Dbuild.version_qualifier=$QUALIFIER
+./gradlew assemble --no-daemon -Drepos.mavenLocal=true -DskipTests=true -Dopensearch.version=$VERSION -Dbuild.snapshot=$SNAPSHOT -Dbuild.version_qualifier=$QUALIFIER
 [ -z "$OUTPUT" ] && OUTPUT=artifacts
 mkdir -p $OUTPUT/plugins
 cp ./build/distributions/*.zip $OUTPUT/plugins
