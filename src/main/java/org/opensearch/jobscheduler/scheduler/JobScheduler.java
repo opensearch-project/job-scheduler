@@ -9,6 +9,7 @@
 package org.opensearch.jobscheduler.scheduler;
 
 import org.opensearch.jobscheduler.JobSchedulerPlugin;
+import org.opensearch.jobscheduler.ScheduledJobProvider;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
@@ -28,6 +29,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -41,12 +43,14 @@ public class JobScheduler {
     private ScheduledJobInfo scheduledJobInfo;
     private Clock clock;
     private final LockService lockService;
+    private final Map<String, ScheduledJobProvider> indexToJobProviders;
 
-    public JobScheduler(ThreadPool threadPool, final LockService lockService) {
+    public JobScheduler(ThreadPool threadPool, final LockService lockService, final Map<String, ScheduledJobProvider> indexToJobProviders) {
         this.threadPool = threadPool;
         this.scheduledJobInfo = new ScheduledJobInfo();
         this.clock = Clock.systemDefaultZone();
         this.lockService = lockService;
+        this.indexToJobProviders = indexToJobProviders;
     }
 
     @VisibleForTesting
@@ -57,6 +61,14 @@ public class JobScheduler {
     @VisibleForTesting
     public ScheduledJobInfo getScheduledJobInfo() {
         return this.scheduledJobInfo;
+    }
+
+    public List<JobSchedulingInfo> getJobsAsList() {
+        List<JobSchedulingInfo> allJobs = new ArrayList<>();
+        for (String indexName : this.scheduledJobInfo.getJobInfoMap().keySet()) {
+            allJobs.addAll(this.scheduledJobInfo.getJobsByIndex(indexName).values());
+        }
+        return allJobs;
     }
 
     public Set<String> getScheduledJobIds(String indexName) {
@@ -76,7 +88,8 @@ public class JobScheduler {
         synchronized (this.scheduledJobInfo.getJobsByIndex(indexName)) {
             jobInfo = this.scheduledJobInfo.getJobInfo(indexName, docId);
             if (jobInfo == null) {
-                jobInfo = new JobSchedulingInfo(indexName, docId, scheduledJobParameter);
+                ScheduledJobProvider provider = indexToJobProviders.get(indexName);
+                jobInfo = new JobSchedulingInfo(provider, docId, scheduledJobParameter);
                 this.scheduledJobInfo.addJob(indexName, docId, jobInfo);
             }
             if (!scheduledJobParameter.isEnabled()) {
