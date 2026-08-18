@@ -33,9 +33,9 @@ jobs:
       - name: Run start commands
         run: ${{ needs.Get-CI-Image-Tag.outputs.ci-image-start-command }}
       - name: Checkout job-scheduler
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Java ${{ matrix.java }}
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin # Temurin is a distribution of adoptium
           java-version: ${{ matrix.java }}
@@ -46,7 +46,7 @@ jobs:
           chown -R 1000:1000 `pwd`
           su `id -un 1000` -c "./gradlew build && ./gradlew publishToMavenLocal"
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: linux-JDK${{ matrix.java }}-reports
@@ -68,10 +68,10 @@ jobs:
 
     steps:
       - name: Checkout job-scheduler
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Java ${{ matrix.java }}
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin # Temurin is a distribution of adoptium
           java-version: ${{ matrix.java }}
@@ -84,7 +84,7 @@ jobs:
         run: |
           ./gradlew publishToMavenLocal
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: macos-JDK${{ matrix.java }}-reports
@@ -106,10 +106,10 @@ jobs:
 
     steps:
       - name: Checkout job-scheduler
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Java ${{ matrix.java }}
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin # Temurin is a distribution of adoptium
           java-version: ${{ matrix.java }}
@@ -122,7 +122,7 @@ jobs:
         run: |
           ./gradlew.bat publishToMavenLocal
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: windows-JDK${{ matrix.java }}-reports
@@ -135,8 +135,8 @@ jobs:
     needs: ["build-job-scheduler-linux", "build-job-scheduler-MacOS", "build-job-scheduler-Windows"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: downloaded-artifacts
 
@@ -145,7 +145,7 @@ jobs:
         working-directory: downloaded-artifacts
 
       - name: Upload Coverage Report
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
