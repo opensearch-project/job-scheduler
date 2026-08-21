@@ -46,7 +46,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             latch.countDown();
         }, exception -> fail("Exception occurred: " + exception.getMessage())));
 
-        latch.await(10L, TimeUnit.SECONDS);
+        assertTrue("Test timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testUpdateJobHistory() throws Exception {
@@ -67,7 +67,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             }, exception -> fail("Exception during update: " + exception.getMessage())));
         }, exception -> fail("Exception during initial record: " + exception.getMessage())));
 
-        latch.await(15L, TimeUnit.SECONDS);
+        assertTrue("Test timed out", latch.await(15L, TimeUnit.SECONDS));
     }
 
     public void testFindHistoryRecord() throws Exception {
@@ -91,7 +91,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             }, exception -> fail("Exception during find: " + exception.getMessage())));
         }, exception -> fail("Exception during record: " + exception.getMessage())));
 
-        latch.await(15L, TimeUnit.SECONDS);
+        assertTrue("Test timed out", latch.await(15L, TimeUnit.SECONDS));
     }
 
     public void testFindNonExistentRecord() throws Exception {
@@ -102,7 +102,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             latch.countDown();
         }, exception -> fail("Exception should not occur for non-existent record: " + exception.getMessage())));
 
-        latch.await(10L, TimeUnit.SECONDS);
+        assertTrue("Test timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testRecordJobHistoryWithNullJobIndexName() throws Exception {
@@ -122,7 +122,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             })
         );
 
-        latch.await(10L, TimeUnit.SECONDS);
+        assertTrue("Test timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testRecordJobHistoryWithNullJobId() throws Exception {
@@ -142,7 +142,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             })
         );
 
-        latch.await(10L, TimeUnit.SECONDS);
+        assertTrue("Test timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testRecordJobHistoryWithNullStartTime() throws Exception {
@@ -162,7 +162,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             })
         );
 
-        latch.await(10L, TimeUnit.SECONDS);
+        assertTrue("Test timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testHistoryIndexCreation() throws Exception {
@@ -173,7 +173,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             latch.countDown();
         }, exception -> fail("Exception during index creation: " + exception.getMessage())));
 
-        latch.await(10L, TimeUnit.SECONDS);
+        assertTrue("Test timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
     public void testRecordJobHistoryWithEndTime() throws Exception {
@@ -196,7 +196,7 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             }, exception -> fail("Exception during find: " + exception.getMessage())));
         }, exception -> fail("Exception occurred: " + exception.getMessage())));
 
-        latch.await(15L, TimeUnit.SECONDS);
+        assertTrue("Test timed out", latch.await(15L, TimeUnit.SECONDS));
     }
 
     public void testUpdateHistoryRecordDirectly() throws Exception {
@@ -232,6 +232,6 @@ public class JobHistoryServiceIT extends OpenSearchIntegTestCase {
             }, exception -> fail("Exception during find: " + exception.getMessage())));
         }, exception -> fail("Exception during initial record: " + exception.getMessage())));
 
-        latch.await(20L, TimeUnit.SECONDS);
+        assertTrue("Test timed out", latch.await(20L, TimeUnit.SECONDS));
     }
 }
