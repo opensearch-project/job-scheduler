@@ -23,6 +23,7 @@ import org.opensearch.rest.action.RestBuilderListener;
 import java.io.IOException;
 import java.util.List;
 
+import static org.opensearch.rest.RestHandler.Route.Property.ADMINISTRATIVE;
 import static org.opensearch.rest.RestRequest.Method.GET;
 
 public class RestGetScheduledInfoAction extends BaseRestHandler {
@@ -36,7 +37,7 @@ public class RestGetScheduledInfoAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return List.of(new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/jobs"));
+        return List.of(new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/jobs", ADMINISTRATIVE));
     }
 
     @Override
