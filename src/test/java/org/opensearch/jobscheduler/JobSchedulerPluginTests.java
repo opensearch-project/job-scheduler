@@ -33,13 +33,16 @@ import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
 import org.opensearch.jobscheduler.rest.action.RestGetScheduledInfoAction;
 import org.opensearch.jobscheduler.rest.action.RestReleaseLockAction;
+import org.opensearch.jobscheduler.rest.action.RestRunJobAction;
 import org.opensearch.jobscheduler.spi.JobSchedulerExtension;
 import org.opensearch.jobscheduler.spi.ScheduledJobParser;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.transport.action.GetAllLocksAction;
 import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
+import org.opensearch.jobscheduler.transport.action.RunJobAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetAllLocksAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetScheduledInfoAction;
+import org.opensearch.jobscheduler.transport.action.TransportRunJobAction;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.plugins.ActionPlugin.ActionHandler;
 import org.opensearch.plugins.ExtensiblePlugin;
@@ -174,7 +177,8 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
                 instanceOf(RestGetLockAction.class),
                 instanceOf(RestReleaseLockAction.class),
                 instanceOf(RestGetScheduledInfoAction.class),
-                instanceOf(RestGetLocksAction.class)
+                instanceOf(RestGetLocksAction.class),
+                instanceOf(RestRunJobAction.class)
             )
         );
     }
@@ -200,12 +204,15 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
     public void testGetActions() {
         List<ActionHandler<?, ?>> actions = plugin.getActions();
         assertNotNull(actions);
-        assertEquals(2, actions.size());
+        assertEquals(3, actions.size());
         ActionHandler<?, ?> actionHandler = actions.get(0);
         assertEquals(GetScheduledInfoAction.INSTANCE, actionHandler.getAction());
         assertEquals(TransportGetScheduledInfoAction.class, actionHandler.getTransportAction());
         ActionHandler<?, ?> actionHandler1 = actions.get(1);
         assertEquals(GetAllLocksAction.INSTANCE, actionHandler1.getAction());
         assertEquals(TransportGetAllLocksAction.class, actionHandler1.getTransportAction());
+        ActionHandler<?, ?> actionHandler2 = actions.get(2);
+        assertEquals(RunJobAction.INSTANCE, actionHandler2.getAction());
+        assertEquals(TransportRunJobAction.class, actionHandler2.getTransportAction());
     }
 }
