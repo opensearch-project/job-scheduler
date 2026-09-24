@@ -4,7 +4,7 @@
  */
 
 plugins {
-    id "org.gradle.test-retry" version "1.6.5"
+    id "org.gradle.test-retry" version "1.6.6"
 }
 
 apply plugin: 'opensearch.opensearchplugin'
@@ -110,9 +110,8 @@ integTest {
         jvmArgs '-agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=8000'
     }
     if (System.getProperty("tests.rest.bwcsuite") == null) {
-        filter {
-            excludeTestsMatching "org.opensearch.jobscheduler.sampleextension.bwc.*IT"
-        }
+        // BWC classes require properties that are supplied only by the dedicated BWC tasks.
+        exclude '**/bwc/**'
     }
 }
 
