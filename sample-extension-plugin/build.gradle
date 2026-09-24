@@ -114,6 +114,8 @@ integTest {
         // BWC classes require properties that are supplied only by the dedicated BWC tasks.
         exclude '**/bwc/**'
     }
+    // Remote-store tests need the dedicated 2-node remote-store cluster started by remoteStoreIntegTest.
+    exclude '**/remotestore/**'
 }
 
 Zip bundle = (Zip) project.getTasks().getByName("bundlePlugin");
@@ -144,6 +146,48 @@ testClusters.integTest {
     setting 'path.repo', repo.absolutePath
     setting 'plugins.jobscheduler.sweeper.period', '1s'
     setting 'plugins.jobscheduler.history.enabled', 'true'
+}
+
+/*
+ * Remote-store (segment replication) cluster: 2 nodes sharing a filesystem repository as remote segment + translog
+ * store. Every index created on it, including the job index, is remote-store enabled and segment replicated, which is
+ * the configuration in which deletes are not executed on replica copies and the sweeper's postDelete listener never
+ * fires on the replica-holding node (orphaned jobs). Used by the tests under src/test/.../remotestore.
+ */
+File remoteStoreRepo = file("$buildDir/testclusters/remote-store-repo")
+testClusters {
+    remoteStoreIntegTest {
+        testDistribution = 'INTEG_TEST'
+        numberOfNodes = 2
+        plugin(rootProject.getObjects().fileProperty().value(rootBundle.getArchiveFile()))
+        plugin(project.getObjects().fileProperty().value(bundle.getArchiveFile()))
+        setting 'path.repo', remoteStoreRepo.absolutePath
+        setting 'plugins.jobscheduler.sweeper.period', '1s'
+        setting 'node.attr.remote_store.segment.repository', 'js-remote-store'
+        setting 'node.attr.remote_store.translog.repository', 'js-remote-store'
+        setting 'node.attr.remote_store.state.repository', 'js-remote-store'
+        setting 'node.attr.remote_store.repository.js-remote-store.type', 'fs'
+        setting 'node.attr.remote_store.repository.js-remote-store.settings.location', "${remoteStoreRepo.absolutePath}/store"
+    }
+}
+
+task remoteStoreIntegTest(type: StandaloneRestIntegTestTask) {
+    description = 'Runs the job sweeper integration tests against a 2-node remote-store (segment replication) cluster.'
+    group = 'verification'
+    dependsOn bundle
+    dependsOn rootBundle
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useCluster testClusters.remoteStoreIntegTest
+    filter {
+        includeTestsMatching "org.opensearch.jobscheduler.sampleextension.remotestore.*IT"
+    }
+    systemProperty 'tests.security.manager', 'true'
+    systemProperty 'java.io.tmpdir', es_tmp_dir.absolutePath
+    systemProperty 'cluster.number_of_nodes', '2'
+    nonInputProperties.systemProperty('tests.rest.cluster', "${-> testClusters.remoteStoreIntegTest.allHttpSocketURI.join(",")}")
+    nonInputProperties.systemProperty('tests.clustername', "${-> testClusters.remoteStoreIntegTest.getName()}")
 }
 
 String baseName = "jobSchedulerBwcCluster"

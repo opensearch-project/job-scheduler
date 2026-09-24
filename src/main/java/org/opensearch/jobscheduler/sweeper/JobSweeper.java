@@ -24,6 +24,8 @@ import org.apache.logging.log4j.Logger;
 import org.opensearch.OpenSearchException;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.action.bulk.BackoffPolicy;
+import org.opensearch.action.get.GetRequest;
+import org.opensearch.action.get.GetResponse;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.cluster.ClusterChangedEvent;
@@ -31,6 +33,7 @@ import org.opensearch.cluster.ClusterState;
 import org.opensearch.cluster.ClusterStateListener;
 import org.opensearch.cluster.routing.IndexShardRoutingTable;
 import org.opensearch.cluster.routing.Murmur3HashFunction;
+import org.opensearch.cluster.routing.Preference;
 import org.opensearch.cluster.routing.ShardRouting;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.core.common.bytes.BytesReference;
@@ -49,6 +52,7 @@ import org.opensearch.index.shard.IndexingOperationListener;
 import org.opensearch.core.index.shard.ShardId;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.search.SearchHit;
+import org.opensearch.search.fetch.subphase.FetchSourceContext;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.search.sort.FieldSortBuilder;
 import org.opensearch.threadpool.Scheduler;
@@ -57,6 +61,7 @@ import org.opensearch.transport.client.Client;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -96,6 +101,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
     private volatile Integer sweepSearchBackoffRetryCount;
     private volatile BackoffPolicy sweepSearchBackoff;
     private volatile Double jitterLimit;
+    private volatile Boolean orphanReconciliationEnabled;
 
     public JobSweeper(
         Settings settings,
@@ -132,6 +138,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         this.sweepSearchBackoffMillis = JobSchedulerSettings.SWEEP_BACKOFF_MILLIS.get(settings);
         this.sweepSearchBackoffRetryCount = JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT.get(settings);
         this.jitterLimit = JobSchedulerSettings.JITTER_LIMIT.get(settings);
+        this.orphanReconciliationEnabled = JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.get(settings);
         this.sweepSearchBackoff = this.updateRetryPolicy();
     }
 
@@ -163,6 +170,11 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
             this.jitterLimit = doubleValue;
             log.debug("Setting background sweep jitter limit: {}", this.jitterLimit);
         });
+        clusterService.getClusterSettings()
+            .addSettingsUpdateConsumer(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED, boolValue -> {
+                this.orphanReconciliationEnabled = boolValue;
+                log.debug("Setting background sweep orphan reconciliation enabled: {}", this.orphanReconciliationEnabled);
+            });
     }
 
     private BackoffPolicy updateRetryPolicy() {
@@ -389,6 +401,9 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
             }
         }
 
+        // Every job id returned by the shard search. Compared against the in-memory jobs of this shard afterwards
+        // to find jobs whose document no longer exists (see reconcileOrphans).
+        Set<String> seenJobIds = new HashSet<>();
         long searchAfter = startAfter;
         while (searchAfter >= -1L) {
             SearchRequest jobSearchRequest = new SearchRequest().indices(shardId.getIndexName())
@@ -416,6 +431,7 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
             }
             for (SearchHit hit : response.getHits()) {
                 String jobId = hit.getId();
+                seenJobIds.add(jobId);
                 if (shardNodes.isOwningNode(jobId)) {
                     this.sweep(
                         shardId,
@@ -431,6 +447,112 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
                 SearchHit lastHit = response.getHits().getHits()[response.getHits().getHits().length - 1];
                 searchAfter = lastHit.getSeqNo();
             }
+        }
+        // Only reached after the whole shard was traversed successfully; a failed or aborted search returns above so
+        // that an incomplete seenJobIds set is never used to deschedule anything.
+        reconcileOrphans(shardId, currentJobs, seenJobIds);
+    }
+
+    /**
+     * Deschedules in-memory jobs of {@code shardId} whose backing document no longer exists.
+     *
+     * A job is normally descheduled by {@link #postDelete}, which is invoked on the shard copy that executes the delete.
+     * On remote-store enabled job indices the replica copy does not execute the operation (replicas only receive a
+     * primary term validation and later download segments), so a node that owns a job but holds the replica copy of
+     * the job index never observes the delete and keeps running the job from memory with no document behind it. The
+     * full sweep only ever visited documents that still exist and could therefore not repair this.
+     *
+     * Candidates are jobs that are in memory for this shard but were not returned by the sweep search. Because the
+     * search is refresh-bound, each candidate is confirmed with a realtime GET against the primary (which consults the
+     * translog / version map and therefore sees unrefreshed writes) before it is descheduled, so a document that was
+     * (re-)indexed after the last refresh is never descheduled by mistake. The check is only attempted for documents
+     * whose default routing places them on this shard; documents indexed with a custom routing cannot be verified by
+     * id and are left alone.
+     */
+    @VisibleForTesting
+    void reconcileOrphans(ShardId shardId, ConcurrentHashMap<String, JobDocVersion> currentJobs, Set<String> seenJobIds) {
+        if (!this.orphanReconciliationEnabled || currentJobs.isEmpty()) {
+            return;
+        }
+        String indexName = shardId.getIndexName();
+        Set<String> scheduledJobIds = this.scheduler.getScheduledJobIds(indexName);
+        int descheduled = 0;
+        for (String jobId : currentJobs.keySet()) {
+            if (seenJobIds.contains(jobId)) {
+                continue;
+            }
+            if (!scheduledJobIds.contains(jobId)) {
+                // already descheduled on this node (e.g. by postDelete); only the stale version entry is left behind
+                log.debug("Dropping stale sweep entry for job {} on index {}: job is not scheduled on this node", jobId, indexName);
+                currentJobs.remove(jobId);
+                continue;
+            }
+            if (!isRoutedToShard(shardId, jobId)) {
+                log.debug(
+                    "Skipping orphan check for job {} on index {}: document is not routed to shard {} by id, cannot verify by GET",
+                    jobId,
+                    indexName,
+                    shardId.getId()
+                );
+                continue;
+            }
+            Boolean exists = jobDocumentExists(indexName, jobId);
+            if (exists == null || exists) {
+                continue;
+            }
+            log.info(
+                "Descheduling job {} on index {}: job document no longer exists (orphan reconciliation, shard {})",
+                jobId,
+                indexName,
+                shardId.getId()
+            );
+            this.scheduler.deschedule(indexName, jobId);
+            currentJobs.remove(jobId);
+            lockService.deleteLock(
+                LockModel.generateLockId(indexName, jobId),
+                ActionListener.wrap(
+                    deleted -> log.debug("Deleted lock of orphaned job {}: {}", jobId, deleted),
+                    exception -> log.debug("Failed to delete lock of orphaned job {}", jobId, exception)
+                )
+            );
+            descheduled++;
+        }
+        if (descheduled > 0) {
+            log.info("Orphan reconciliation descheduled {} job(s) on shard {}", descheduled, shardId);
+        }
+    }
+
+    /**
+     * Returns true if the default (id based) routing of {@code jobId} places its document on {@code shardId}. A GET by id
+     * is only conclusive for such documents.
+     */
+    private boolean isRoutedToShard(ShardId shardId, String jobId) {
+        try {
+            ShardId routedShardId = this.clusterService.operationRouting()
+                .shardId(this.clusterService.state(), shardId.getIndexName(), jobId, null);
+            return shardId.equals(routedShardId);
+        } catch (Exception e) {
+            log.debug("Unable to compute routing for job {} on index {}: {}", jobId, shardId.getIndexName(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Checks whether the job document exists using a realtime GET against the primary shard copy.
+     *
+     * @return TRUE / FALSE if the check succeeded, null if it could not be performed (the caller must then leave the
+     *         job alone and retry on the next sweep).
+     */
+    private Boolean jobDocumentExists(String indexName, String jobId) {
+        GetRequest getRequest = new GetRequest(indexName, jobId).realtime(true)
+            .preference(Preference.PRIMARY.type())
+            .fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
+        try {
+            GetResponse response = this.client.get(getRequest).actionGet(this.sweepSearchTimeout);
+            return response.isExists();
+        } catch (Exception e) {
+            log.warn("Orphan check for job {} on index {} failed, will retry on next sweep: {}", jobId, indexName, e.getMessage());
+            return null;
         }
     }
 
