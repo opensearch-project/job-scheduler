@@ -20,7 +20,10 @@ import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.opensearch.Version;
+import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.delete.DeleteResponse;
+import org.opensearch.action.get.GetRequest;
+import org.opensearch.action.get.GetResponse;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.cluster.ClusterName;
 import org.opensearch.cluster.ClusterState;
@@ -34,6 +37,7 @@ import org.opensearch.cluster.routing.RoutingTable;
 import org.opensearch.cluster.routing.ShardRoutingState;
 import org.opensearch.cluster.routing.allocation.AllocationService;
 import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.common.bytes.BytesArray;
 import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.common.action.ActionFuture;
@@ -115,6 +119,7 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
         settingSet.add(JobSchedulerSettings.SWEEP_BACKOFF_MILLIS);
         settingSet.add(JobSchedulerSettings.SWEEP_PAGE_SIZE);
         settingSet.add(JobSchedulerSettings.JITTER_LIMIT);
+        settingSet.add(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED);
 
         ClusterSettings clusterSettings = new ClusterSettings(this.settings, settingSet);
         ClusterService originClusterService = ClusterServiceUtils.createClusterService(this.threadPool, discoveryNode, clusterSettings);
@@ -366,8 +371,237 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
             .sweep(Mockito.any(), Mockito.anyString(), Mockito.any(BytesReference.class), Mockito.any(JobDocVersion.class));
     }
 
+    // ---------------------------------------------------------------------------------------------------------------
+    // Orphan reconciliation: in-memory jobs whose document was deleted without this node observing the delete
+    // (remote-store replicas never execute deletes, so postDelete never fires on the replica-holding node).
+    // ---------------------------------------------------------------------------------------------------------------
+
+    public void testReconcileOrphans_deschedulesJobWhoseDocumentIsGone() throws IOException {
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+        ShardId shardId = shardIdOf(clusterState, "index-name", 0);
+
+        seedScheduledJob(shardId, "orphan-job");
+        mockEmptyShardSearch();
+        mockJobDocumentGet(false);
+
+        this.sweeper.sweepIndex("index-name");
+
+        Mockito.verify(this.client).get(Mockito.any(GetRequest.class));
+        Mockito.verify(this.scheduler).deschedule("index-name", "orphan-job");
+        // the lock of the orphaned job is deleted, like postDelete does
+        Mockito.verify(this.client).delete(Mockito.any(DeleteRequest.class), Mockito.any(ActionListener.class));
+
+        // the stale sweep entry is gone: a second sweep has nothing left to reconcile
+        this.sweeper.sweepIndex("index-name");
+        Mockito.verify(this.client, Mockito.times(1)).get(Mockito.any(GetRequest.class));
+        Mockito.verify(this.scheduler, Mockito.times(1)).deschedule("index-name", "orphan-job");
+    }
+
+    public void testReconcileOrphans_usesRealtimePrimaryGetWithoutSource() throws IOException {
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+        ShardId shardId = shardIdOf(clusterState, "index-name", 0);
+
+        seedScheduledJob(shardId, "orphan-job");
+        mockEmptyShardSearch();
+        mockJobDocumentGet(false);
+
+        this.sweeper.sweepIndex("index-name");
+
+        org.mockito.ArgumentCaptor<GetRequest> captor = org.mockito.ArgumentCaptor.forClass(GetRequest.class);
+        Mockito.verify(this.client).get(captor.capture());
+        GetRequest getRequest = captor.getValue();
+        assertEquals("index-name", getRequest.index());
+        assertEquals("orphan-job", getRequest.id());
+        assertTrue("orphan check must be a realtime GET", getRequest.realtime());
+        assertEquals("orphan check must read the primary copy", "_primary", getRequest.preference());
+        assertFalse("orphan check must not fetch the source", getRequest.fetchSourceContext().fetchSource());
+    }
+
+    public void testReconcileOrphans_keepsJobWhoseDocumentStillExists() throws IOException {
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+        ShardId shardId = shardIdOf(clusterState, "index-name", 0);
+
+        // document was (re-)indexed after the last refresh: not a search hit yet, but the realtime GET sees it
+        seedScheduledJob(shardId, "live-job");
+        mockEmptyShardSearch();
+        mockJobDocumentGet(true);
+
+        this.sweeper.sweepIndex("index-name");
+
+        Mockito.verify(this.client).get(Mockito.any(GetRequest.class));
+        Mockito.verify(this.scheduler, Mockito.times(0)).deschedule(Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(this.client, Mockito.times(0)).delete(Mockito.any(DeleteRequest.class), Mockito.any(ActionListener.class));
+
+        // the entry is kept, so the next sweep checks again
+        this.sweeper.sweepIndex("index-name");
+        Mockito.verify(this.client, Mockito.times(2)).get(Mockito.any(GetRequest.class));
+    }
+
+    public void testReconcileOrphans_leavesJobAloneWhenGetFails() throws IOException {
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+        ShardId shardId = shardIdOf(clusterState, "index-name", 0);
+
+        seedScheduledJob(shardId, "unverified-job");
+        mockEmptyShardSearch();
+        ActionFuture<GetResponse> failingFuture = Mockito.mock(ActionFuture.class);
+        Mockito.when(failingFuture.actionGet(Mockito.any(TimeValue.class))).thenThrow(new RuntimeException("no primary available"));
+        Mockito.when(this.client.get(Mockito.any(GetRequest.class))).thenReturn(failingFuture);
+
+        this.sweeper.sweepIndex("index-name");
+
+        Mockito.verify(this.client).get(Mockito.any(GetRequest.class));
+        Mockito.verify(this.scheduler, Mockito.times(0)).deschedule(Mockito.anyString(), Mockito.anyString());
+    }
+
+    public void testReconcileOrphans_dropsStaleEntryOfAlreadyDescheduledJob() throws IOException {
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+        ShardId shardId = shardIdOf(clusterState, "index-name", 0);
+
+        // job was swept once, then postDelete on this node descheduled it: only the sweptJobs entry is left behind
+        seedScheduledJob(shardId, "descheduled-job");
+        Mockito.when(this.scheduler.getScheduledJobIds("index-name")).thenReturn(new HashSet<>());
+        mockEmptyShardSearch();
+
+        this.sweeper.sweepIndex("index-name");
+
+        Mockito.verify(this.client, Mockito.times(0)).get(Mockito.any(GetRequest.class));
+        Mockito.verify(this.scheduler, Mockito.times(0)).deschedule(Mockito.anyString(), Mockito.anyString());
+    }
+
+    public void testReconcileOrphans_ignoresJobsReturnedBySearch() throws IOException {
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+        ShardId shardId = shardIdOf(clusterState, "index-name", 0);
+
+        seedScheduledJob(shardId, "doc-id");
+        // the shard search returns the job document (same version as in memory, so sweep() is a no-op)
+        SearchHit hit = new SearchHit(1, "doc-id", null, null);
+        hit.sourceRef(this.getTestJsonSource());
+        hit.setSeqNo(1L);
+        hit.setPrimaryTerm(1L);
+        hit.version(2L);
+        mockShardSearch(new SearchHits(new SearchHit[] { hit }, null, 1.0f));
+
+        this.sweeper.sweepIndex("index-name");
+
+        Mockito.verify(this.client, Mockito.times(0)).get(Mockito.any(GetRequest.class));
+        Mockito.verify(this.scheduler, Mockito.times(0)).deschedule(Mockito.anyString(), Mockito.anyString());
+    }
+
+    public void testReconcileOrphans_disabledBySetting() throws IOException {
+        Settings disabled = Settings.builder().put(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.getKey(), false).build();
+        ScheduledJobProvider jobProvider = new ScheduledJobProvider("JOB_TYPE", "job-index-name", this.jobParser, this.jobRunner);
+        Map<String, ScheduledJobProvider> jobProviderMap = new HashMap<>();
+        jobProviderMap.put("index-name", jobProvider);
+        JobSweeper disabledSweeper = new JobSweeper(
+            disabled,
+            this.client,
+            this.clusterService,
+            this.threadPool,
+            xContentRegistry,
+            jobProviderMap,
+            scheduler,
+            new LockServiceImpl(client, clusterService),
+            jobDetailsService
+        );
+
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+        ShardId shardId = shardIdOf(clusterState, "index-name", 0);
+
+        seedScheduledJob(disabledSweeper, shardId, "orphan-job");
+        mockEmptyShardSearch();
+        mockJobDocumentGet(false);
+
+        disabledSweeper.sweepIndex("index-name");
+
+        Mockito.verify(this.client, Mockito.times(0)).get(Mockito.any(GetRequest.class));
+        Mockito.verify(this.scheduler, Mockito.times(0)).deschedule(Mockito.anyString(), Mockito.anyString());
+    }
+
+    public void testReconcileOrphans_skipsJobNotRoutedToShardById() throws IOException {
+        // two shards on one node; the job entry is (artificially) recorded on the shard its id does NOT route to,
+        // which is what a document indexed with a custom routing value looks like from the sweeper's point of view
+        ClusterState clusterState = buildClusterState("index-name", 2);
+        Mockito.when(this.clusterService.state()).thenReturn(clusterState);
+        ShardId routedShard = this.clusterService.operationRouting().shardId(clusterState, "index-name", "custom-routed-job", null);
+        ShardId otherShard = shardIdOf(clusterState, "index-name", routedShard.getId() == 0 ? 1 : 0);
+
+        seedScheduledJob(otherShard, "custom-routed-job");
+        mockEmptyShardSearch();
+        mockJobDocumentGet(false);
+
+        this.sweeper.sweepIndex("index-name");
+
+        // cannot be verified by a GET by id, so it must be left alone
+        Mockito.verify(this.client, Mockito.times(0)).get(Mockito.any(GetRequest.class));
+        Mockito.verify(this.scheduler, Mockito.times(0)).deschedule(Mockito.anyString(), Mockito.anyString());
+    }
+
+    /** Puts a job into the sweeper's in-memory state (sweptJobs + "scheduled" on this node) as a completed sweep would. */
+    private void seedScheduledJob(ShardId shardId, String jobId) throws IOException {
+        seedScheduledJob(this.sweeper, shardId, jobId);
+    }
+
+    private void seedScheduledJob(JobSweeper targetSweeper, ShardId shardId, String jobId) throws IOException {
+        ScheduledJobParameter mockJobParameter = Mockito.mock(ScheduledJobParameter.class);
+        Mockito.when(mockJobParameter.isEnabled()).thenReturn(true);
+        Mockito.when(this.jobParser.parse(Mockito.any(), Mockito.eq(jobId), Mockito.any(JobDocVersion.class))).thenReturn(mockJobParameter);
+        targetSweeper.sweep(shardId, jobId, this.getTestJsonSource(), new JobDocVersion(1L, 1L, 2L));
+
+        Set<String> scheduled = new HashSet<>();
+        scheduled.add(jobId);
+        Mockito.when(this.scheduler.getScheduledJobIds("index-name")).thenReturn(scheduled);
+    }
+
+    private void mockEmptyShardSearch() {
+        mockShardSearch(new SearchHits(new SearchHit[0], null, 1.0f));
+    }
+
+    /** First page returns {@code hits}, every following page is empty (ends the paged traversal). */
+    private void mockShardSearch(SearchHits hits) {
+        SearchResponse firstResponse = Mockito.mock(SearchResponse.class);
+        Mockito.when(firstResponse.status()).thenReturn(RestStatus.OK);
+        Mockito.when(firstResponse.getHits()).thenReturn(hits);
+        SearchResponse emptyResponse = Mockito.mock(SearchResponse.class);
+        Mockito.when(emptyResponse.status()).thenReturn(RestStatus.OK);
+        Mockito.when(emptyResponse.getHits()).thenReturn(new SearchHits(new SearchHit[0], null, 1.0f));
+
+        ActionFuture<SearchResponse> firstFuture = Mockito.mock(ActionFuture.class);
+        Mockito.when(firstFuture.actionGet(Mockito.any(TimeValue.class))).thenReturn(firstResponse);
+        ActionFuture<SearchResponse> emptyFuture = Mockito.mock(ActionFuture.class);
+        Mockito.when(emptyFuture.actionGet(Mockito.any(TimeValue.class))).thenReturn(emptyResponse);
+
+        if (hits.getHits().length == 0) {
+            Mockito.when(this.client.search(Mockito.any())).thenReturn(emptyFuture);
+        } else {
+            Mockito.when(this.client.search(Mockito.any())).thenReturn(firstFuture).thenReturn(emptyFuture);
+        }
+    }
+
+    private void mockJobDocumentGet(boolean exists) {
+        GetResponse getResponse = Mockito.mock(GetResponse.class);
+        Mockito.when(getResponse.isExists()).thenReturn(exists);
+        ActionFuture<GetResponse> getFuture = Mockito.mock(ActionFuture.class);
+        Mockito.when(getFuture.actionGet(Mockito.any(TimeValue.class))).thenReturn(getResponse);
+        Mockito.when(this.client.get(Mockito.any(GetRequest.class))).thenReturn(getFuture);
+    }
+
+    private ShardId shardIdOf(ClusterState clusterState, String indexName, int shard) {
+        return clusterState.routingTable().index(indexName).shard(shard).shardId();
+    }
+
     private ClusterState buildSingleShardClusterState(String indexName) {
-        Metadata metadata = Metadata.builder().put(createIndexMetadata(indexName, 0, 1)).build();
+        return buildClusterState(indexName, 1);
+    }
+
+    private ClusterState buildClusterState(String indexName, int numberOfShards) {
+        Metadata metadata = Metadata.builder().put(createIndexMetadata(indexName, 0, numberOfShards)).build();
         RoutingTable routingTable = new RoutingTable.Builder().add(
             new IndexRoutingTable.Builder(metadata.index(indexName).getIndex()).initializeAsNew(metadata.index(indexName)).build()
         ).build();

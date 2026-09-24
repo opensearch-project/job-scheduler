@@ -60,4 +60,17 @@ public class JobSchedulerSettings {
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
     );
+
+    /**
+     * When enabled, the full sweep deschedules in-memory jobs whose backing document no longer exists in the job
+     * index (confirmed with a realtime GET against the primary shard). This repairs jobs that were orphaned because
+     * the delete of their document was never observed on this node, e.g. on remote-store enabled job indices where
+     * replicas do not execute delete operations and the postDelete listener never fires on the replica-holding node.
+     */
+    public static final Setting<Boolean> SWEEP_ORPHAN_RECONCILIATION_ENABLED = Setting.boolSetting(
+        "plugins.jobscheduler.sweeper.orphan_reconciliation.enabled",
+        true,
+        Setting.Property.NodeScope,
+        Setting.Property.Dynamic
+    );
 }
