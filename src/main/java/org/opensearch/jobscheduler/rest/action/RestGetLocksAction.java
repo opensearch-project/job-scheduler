@@ -18,6 +18,7 @@ import org.opensearch.rest.action.RestToXContentListener;
 
 import java.util.List;
 
+import static org.opensearch.rest.RestHandler.Route.Property.ADMINISTRATIVE;
 import static org.opensearch.rest.RestRequest.Method.GET;
 
 /**
@@ -33,8 +34,8 @@ public class RestGetLocksAction extends BaseRestHandler {
     @Override
     public List<Route> routes() {
         return List.of(
-            new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/locks"),
-            new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/locks/{lock_id}")
+            new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/locks", ADMINISTRATIVE),
+            new Route(GET, JobSchedulerPlugin.JS_BASE_URI + "/api/locks/{lock_id}", ADMINISTRATIVE)
         );
     }
 

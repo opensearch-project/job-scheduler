@@ -32,6 +32,7 @@ import static java.util.Collections.emptyList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.opensearch.rest.RestHandler.Route.Property.ADMINISTRATIVE;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class RestGetScheduledInfoActionTests extends OpenSearchTestCase {
@@ -56,6 +57,7 @@ public class RestGetScheduledInfoActionTests extends OpenSearchTestCase {
         assertEquals(1, routes.size());
         assertEquals(getScheduledInfoPath, routes.get(0).getPath());
         assertEquals(RestRequest.Method.GET, routes.get(0).getMethod());
+        assertTrue(routes.get(0).hasProperty(ADMINISTRATIVE));
     }
 
     public void testPrepareRequest() throws IOException {
