@@ -107,21 +107,13 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
         // namedXContentRegistryEntries.add(xContentRegistryEntry);
         this.xContentRegistry = new NamedXContentRegistry(namedXContentRegistryEntries);
 
-        this.settings = Settings.builder().build();
+        // orphan reconciliation is enabled explicitly: these tests exercise the mechanism itself; how its default is
+        // derived from the node's remote store configuration is covered by the testOrphanReconciliationSetting_* tests
+        this.settings = Settings.builder().put(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.getKey(), true).build();
 
         this.discoveryNode = new DiscoveryNode("node", OpenSearchTestCase.buildNewFakeTransportAddress(), Version.CURRENT);
 
-        Set<Setting<?>> settingSet = new HashSet<>();
-        settingSet.addAll(ClusterSettings.BUILT_IN_CLUSTER_SETTINGS);
-        settingSet.add(JobSchedulerSettings.REQUEST_TIMEOUT);
-        settingSet.add(JobSchedulerSettings.SWEEP_PERIOD);
-        settingSet.add(JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT);
-        settingSet.add(JobSchedulerSettings.SWEEP_BACKOFF_MILLIS);
-        settingSet.add(JobSchedulerSettings.SWEEP_PAGE_SIZE);
-        settingSet.add(JobSchedulerSettings.JITTER_LIMIT);
-        settingSet.add(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED);
-
-        ClusterSettings clusterSettings = new ClusterSettings(this.settings, settingSet);
+        ClusterSettings clusterSettings = new ClusterSettings(this.settings, jobSchedulerClusterSettings());
         ClusterService originClusterService = ClusterServiceUtils.createClusterService(this.threadPool, discoveryNode, clusterSettings);
         this.clusterService = Mockito.spy(originClusterService);
 
@@ -524,6 +516,77 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
         Mockito.verify(this.scheduler, Mockito.times(0)).deschedule(Mockito.anyString(), Mockito.anyString());
     }
 
+    public void testOrphanReconciliationSetting_defaultsToDisabledWithoutRemoteStore() {
+        assertFalse(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.get(Settings.EMPTY));
+        // segment replication alone is not remote store: replicas still execute operations and postDelete fires on them
+        Settings segmentReplication = Settings.builder().put("cluster.indices.replication.strategy", "SEGMENT").build();
+        assertFalse(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.get(segmentReplication));
+    }
+
+    public void testOrphanReconciliationSetting_defaultsToEnabledOnRemoteStoreNode() {
+        assertTrue(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.get(remoteStoreNodeSettings()));
+        Settings translogRepositoryOnly = Settings.builder().put("node.attr.remote_store.translog.repository", "translog-repo").build();
+        assertTrue(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.get(translogRepositoryOnly));
+    }
+
+    public void testOrphanReconciliationSetting_explicitValueOverridesDerivedDefault() {
+        String key = JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.getKey();
+        Settings disabledOnRemoteStoreNode = Settings.builder().put(remoteStoreNodeSettings()).put(key, false).build();
+        assertFalse(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.get(disabledOnRemoteStoreNode));
+        Settings enabledWithoutRemoteStore = Settings.builder().put(key, true).build();
+        assertTrue(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.get(enabledWithoutRemoteStore));
+    }
+
+    public void testReconcileOrphans_followsDerivedDefaultOnRemoteStoreNodeUntilOverridden() throws IOException {
+        // a remote store data node on which the setting is not configured: only the node attributes are present
+        Settings nodeSettings = remoteStoreNodeSettings();
+        ClusterSettings remoteStoreClusterSettings = new ClusterSettings(nodeSettings, jobSchedulerClusterSettings());
+        ClusterService remoteStoreClusterService = Mockito.spy(
+            ClusterServiceUtils.createClusterService(this.threadPool, discoveryNode, remoteStoreClusterSettings)
+        );
+        ScheduledJobProvider jobProvider = new ScheduledJobProvider("JOB_TYPE", "job-index-name", this.jobParser, this.jobRunner);
+        Map<String, ScheduledJobProvider> jobProviderMap = new HashMap<>();
+        jobProviderMap.put("index-name", jobProvider);
+        JobSweeper remoteStoreSweeper = new JobSweeper(
+            nodeSettings,
+            this.client,
+            remoteStoreClusterService,
+            this.threadPool,
+            xContentRegistry,
+            jobProviderMap,
+            scheduler,
+            new LockServiceImpl(client, remoteStoreClusterService),
+            jobDetailsService
+        );
+
+        ClusterState clusterState = buildSingleShardClusterState("index-name");
+        Mockito.when(remoteStoreClusterService.state()).thenReturn(clusterState);
+        ShardId shardId = shardIdOf(clusterState, "index-name", 0);
+        mockEmptyShardSearch();
+        mockJobDocumentGet(false);
+
+        // 1. enabled by default on a remote store node: the orphan is descheduled
+        seedScheduledJob(remoteStoreSweeper, shardId, "orphan-job");
+        remoteStoreSweeper.sweepIndex("index-name");
+        Mockito.verify(this.scheduler, Mockito.times(1)).deschedule("index-name", "orphan-job");
+
+        // 2. an explicit false applied as a cluster setting wins over the derived default
+        remoteStoreClusterSettings.applySettings(
+            Settings.builder().put(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.getKey(), false).build()
+        );
+        // the scheduler no longer holds the job after the deschedule; seed it again as the sweep of a live document would
+        Mockito.when(this.scheduler.getScheduledJobIds("index-name")).thenReturn(new HashSet<>());
+        seedScheduledJob(remoteStoreSweeper, shardId, "orphan-job");
+        Mockito.clearInvocations(this.scheduler);
+        remoteStoreSweeper.sweepIndex("index-name");
+        Mockito.verify(this.scheduler, Mockito.never()).deschedule(Mockito.anyString(), Mockito.anyString());
+
+        // 3. removing the cluster setting again restores the derived default (the node attributes are still present)
+        remoteStoreClusterSettings.applySettings(Settings.EMPTY);
+        remoteStoreSweeper.sweepIndex("index-name");
+        Mockito.verify(this.scheduler, Mockito.times(1)).deschedule("index-name", "orphan-job");
+    }
+
     public void testReconcileOrphans_skipsJobNotRoutedToShardById() throws IOException {
         // two shards on one node; the job entry is (artificially) recorded on the shard its id does NOT route to,
         // which is what a document indexed with a custom routing value looks like from the sweeper's point of view
@@ -546,6 +609,28 @@ public class JobSweeperTests extends OpenSearchAllocationTestCase {
     /** Puts a job into the sweeper's in-memory state (sweptJobs + "scheduled" on this node) as a completed sweep would. */
     private void seedScheduledJob(ShardId shardId, String jobId) throws IOException {
         seedScheduledJob(this.sweeper, shardId, jobId);
+    }
+
+    private Set<Setting<?>> jobSchedulerClusterSettings() {
+        Set<Setting<?>> settingSet = new HashSet<>();
+        settingSet.addAll(ClusterSettings.BUILT_IN_CLUSTER_SETTINGS);
+        settingSet.add(JobSchedulerSettings.REQUEST_TIMEOUT);
+        settingSet.add(JobSchedulerSettings.SWEEP_PERIOD);
+        settingSet.add(JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT);
+        settingSet.add(JobSchedulerSettings.SWEEP_BACKOFF_MILLIS);
+        settingSet.add(JobSchedulerSettings.SWEEP_PAGE_SIZE);
+        settingSet.add(JobSchedulerSettings.JITTER_LIMIT);
+        settingSet.add(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED);
+        return settingSet;
+    }
+
+    /** Node settings of a remote store data node, as set through node.attr.remote_store.* in opensearch.yml. */
+    private Settings remoteStoreNodeSettings() {
+        return Settings.builder()
+            .put("node.attr.remote_store.segment.repository", "segment-repo")
+            .put("node.attr.remote_store.translog.repository", "translog-repo")
+            .put("node.attr.remote_store.state.repository", "state-repo")
+            .build();
     }
 
     private void seedScheduledJob(JobSweeper targetSweeper, ShardId shardId, String jobId) throws IOException {

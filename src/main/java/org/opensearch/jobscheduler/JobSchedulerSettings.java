@@ -9,6 +9,7 @@
 package org.opensearch.jobscheduler;
 
 import org.opensearch.common.settings.Setting;
+import org.opensearch.node.remotestore.RemoteStoreNodeAttribute;
 import org.opensearch.common.unit.TimeValue;
 
 public class JobSchedulerSettings {
@@ -64,12 +65,17 @@ public class JobSchedulerSettings {
     /**
      * When enabled, the full sweep deschedules in-memory jobs whose backing document no longer exists in the job
      * index (confirmed with a realtime GET against the primary shard). This repairs jobs that were orphaned because
-     * the delete of their document was never observed on this node, e.g. on remote-store enabled job indices where
-     * replicas do not execute delete operations and the postDelete listener never fires on the replica-holding node.
+     * the delete of their document was never observed on this node: on remote-store enabled job indices replicas do
+     * not execute delete operations, so the postDelete listener never fires on the replica-holding node.
+     *
+     * Unless set explicitly, the setting follows the node's remote store configuration: it is enabled on nodes that
+     * carry a remote segment or translog repository attribute (where the listener gap exists) and disabled on all
+     * other nodes. An explicit value, including a dynamic cluster settings update, always takes precedence; removing
+     * the cluster setting again restores the derived default.
      */
     public static final Setting<Boolean> SWEEP_ORPHAN_RECONCILIATION_ENABLED = Setting.boolSetting(
         "plugins.jobscheduler.sweeper.orphan_reconciliation.enabled",
-        true,
+        settings -> Boolean.toString(RemoteStoreNodeAttribute.isRemoteDataAttributePresent(settings)),
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
     );

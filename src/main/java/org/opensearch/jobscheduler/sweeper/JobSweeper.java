@@ -139,6 +139,13 @@ public class JobSweeper extends LifecycleListener implements IndexingOperationLi
         this.sweepSearchBackoffRetryCount = JobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT.get(settings);
         this.jitterLimit = JobSchedulerSettings.JITTER_LIMIT.get(settings);
         this.orphanReconciliationEnabled = JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.get(settings);
+        log.info(
+            "Background sweep orphan reconciliation is {} ({})",
+            this.orphanReconciliationEnabled ? "enabled" : "disabled",
+            JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED.exists(settings)
+                ? "configured explicitly"
+                : "default derived from the node's remote store configuration"
+        );
         this.sweepSearchBackoff = this.updateRetryPolicy();
     }
 
