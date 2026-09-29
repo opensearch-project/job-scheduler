@@ -68,7 +68,6 @@ dependencyLicenses.enabled = false
 thirdPartyAudit.enabled = false
 forbiddenApisTest.ignoreFailures = true
 validateNebulaPom.enabled = false
-loggerUsageCheck.enabled = false
 
 opensearchplugin {
     name 'opensearch-job-scheduler'

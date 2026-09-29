@@ -386,7 +386,7 @@ public class JobDetailsService implements IndexingOperationListener {
                             createJobDetails(tempJobDetails, listener);
                         }
                     } catch (VersionConflictEngineException e) {
-                        logger.debug("could not process job index for extensionUniqueId " + extensionUniqueId, e.getMessage());
+                        logger.debug("could not process job index for extensionUniqueId {}: {}", extensionUniqueId, e.getMessage());
                         listener.onResponse(null);
                     }
                 } else {
@@ -464,7 +464,7 @@ public class JobDetailsService implements IndexingOperationListener {
             );
         }, exception -> {
             if (exception instanceof IndexNotFoundException || exception.getCause() instanceof IndexNotFoundException) {
-                logger.debug("Index is not found to delete job details for document id. {} " + documentId, exception.getMessage());
+                logger.debug("Index is not found to delete job details for document id {}: {}", documentId, exception.getMessage());
                 listener.onResponse(true);
             } else {
                 listener.onFailure(exception);
@@ -488,7 +488,7 @@ public class JobDetailsService implements IndexingOperationListener {
 
             client.update(updateRequest, ActionListener.wrap(response -> listener.onResponse(response.getId()), exception -> {
                 if (exception instanceof VersionConflictEngineException) {
-                    logger.debug("could not update job details for documentId " + documentId, exception.getMessage());
+                    logger.debug("could not update job details for documentId {}: {}", documentId, exception.getMessage());
                 }
                 if (exception instanceof DocumentMissingException) {
                     logger.debug("Document is deleted. This happens if the job details is already removed {}", exception.getMessage());
