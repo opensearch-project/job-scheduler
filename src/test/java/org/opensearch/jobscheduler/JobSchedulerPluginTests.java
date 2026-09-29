@@ -28,6 +28,8 @@ import org.opensearch.index.IndexModule;
 import org.opensearch.index.IndexSettings;
 import org.opensearch.index.analysis.AnalysisRegistry;
 import org.opensearch.index.engine.EngineConfigFactory;
+import org.opensearch.indices.SystemIndexDescriptor;
+import org.opensearch.indices.UnrestrictedSystemIndexDescriptor;
 import org.opensearch.jobscheduler.rest.action.RestGetLocksAction;
 import org.opensearch.jobscheduler.rest.action.RestGetJobDetailsAction;
 import org.opensearch.jobscheduler.rest.action.RestGetLockAction;
@@ -41,6 +43,8 @@ import org.opensearch.jobscheduler.transport.action.GetScheduledInfoAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetAllLocksAction;
 import org.opensearch.jobscheduler.transport.action.TransportGetScheduledInfoAction;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
+import org.opensearch.jobscheduler.utils.JobHistoryService;
+import org.opensearch.jobscheduler.utils.LockServiceImpl;
 import org.opensearch.plugins.ActionPlugin.ActionHandler;
 import org.opensearch.plugins.ExtensiblePlugin;
 import org.opensearch.rest.RestController;
@@ -132,6 +136,24 @@ public class JobSchedulerPluginTests extends OpenSearchTestCase {
         assertEquals(2, plugin.getIndexToJobProviders().size());
         assertTrue(plugin.getIndicesToListen().contains("index1"));
         assertTrue(plugin.getIndicesToListen().contains("index2"));
+    }
+
+    public void testLockIndexIsUnrestricted() {
+        SystemIndexDescriptor descriptor = plugin.getSystemIndexDescriptors(Settings.EMPTY)
+            .stream()
+            .filter(index -> index.getIndexPattern().equals(LockServiceImpl.LOCK_INDEX_NAME))
+            .findFirst()
+            .orElseThrow();
+        assertThat(descriptor, instanceOf(UnrestrictedSystemIndexDescriptor.class));
+    }
+
+    public void testJobHistoryIndexRemainsRestricted() {
+        SystemIndexDescriptor descriptor = plugin.getSystemIndexDescriptors(Settings.EMPTY)
+            .stream()
+            .filter(index -> index.getIndexPattern().equals(JobHistoryService.JOB_HISTORY_INDEX_NAME))
+            .findFirst()
+            .orElseThrow();
+        assertFalse(descriptor instanceof UnrestrictedSystemIndexDescriptor);
     }
 
     public void testGetSettings_returnsSettingsList() {
