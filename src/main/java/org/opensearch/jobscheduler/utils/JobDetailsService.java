@@ -40,7 +40,6 @@ import org.opensearch.index.seqno.SequenceNumbers;
 import org.opensearch.index.shard.IndexingOperationListener;
 import org.opensearch.core.index.shard.ShardId;
 import org.opensearch.jobscheduler.ScheduledJobProvider;
-import org.opensearch.jobscheduler.model.ExtensionJobParameter;
 import org.opensearch.jobscheduler.model.JobDetails;
 import org.opensearch.jobscheduler.spi.JobDocVersion;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
@@ -159,8 +158,8 @@ public class JobDetailsService implements IndexingOperationListener {
 
                 logger.info("Sending ScheduledJobParameter parse request to extension : " + extensionUniqueId);
 
-                final ExtensionJobParameter[] extensionJobParameterHolder = new ExtensionJobParameter[1];
-                CompletableFuture<ExtensionJobParameter[]> inProgressFuture = new CompletableFuture<>();
+                final ScheduledJobParameter[] extensionJobParameterHolder = new ScheduledJobParameter[1];
+                CompletableFuture<ScheduledJobParameter[]> inProgressFuture = new CompletableFuture<>();
 
                 // TODO : Replace the placeholder with the provided access token from the inital job detials request
 
