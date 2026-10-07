@@ -6,7 +6,6 @@ This document contains a list of maintainers in this repo. See [opensearch-proje
 
 | Maintainer        | GitHub ID                                               | Affiliation |
 | ----------------- | ------------------------------------------------------- | ----------- |
-| Josh Palis        | [joshpalis](https://github.com/joshpalis)               | Amazon      |
 | Sarat Vemulapalli | [saratvemulapalli](https://github.com/saratvemulapalli) | Amazon      |
 | Dan Widdis        | [dbwiddis](https://github.com/dbwiddis)                 | Amazon      |
 | Kaituo Li         | [kaituo](https://github.com/kaituo)                     | Amazon      |
@@ -23,3 +22,4 @@ This document contains a list of maintainers in this repo. See [opensearch-proje
 | Drew Baugher      | [dbbaughe](https://github.com/dbbaughe)                 | Amazon      |
 | Mohammad Qureshi  | [qreshi](https://github.com/qreshi)                     | Amazon      |
 | Sriram Kosuri     | [skkosuri-amzn](https://github.com/skkosuri-amzn)       | Amazon      |
+| Josh Palis        | [joshpalis](https://github.com/joshpalis)               | Amazon      |
