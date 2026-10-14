@@ -9,9 +9,9 @@
 package org.opensearch.jobscheduler.transport.request;
 
 import org.opensearch.action.support.nodes.BaseNodesRequest;
-import org.opensearch.cluster.node.DiscoveryNode;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.transport.TransportRequest;
 
 import java.io.IOException;
 
@@ -28,14 +28,6 @@ public class GetScheduledInfoRequest extends BaseNodesRequest<GetScheduledInfoRe
         this.byNode = in.readBoolean();
     }
 
-    public GetScheduledInfoRequest(String... nodeIds) {
-        super(nodeIds);
-    }
-
-    public GetScheduledInfoRequest(DiscoveryNode... nodes) {
-        super(nodes);
-    }
-
     public boolean isByNode() {
         return byNode;
     }
@@ -48,5 +40,16 @@ public class GetScheduledInfoRequest extends BaseNodesRequest<GetScheduledInfoRe
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
         out.writeBoolean(byNode);
+    }
+
+    /**
+     * The node request.
+     */
+    public static class NodeRequest extends TransportRequest {
+        public NodeRequest() {}
+
+        public NodeRequest(StreamInput in) throws IOException {
+            super(in);
+        }
     }
 }
