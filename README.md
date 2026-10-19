@@ -37,6 +37,17 @@ Add the following to your plugin to integrate with JobScheduler
 3. Add the resource file
 * Create `org.opensearch.jobscheduler.spi.JobSchedulerExtension` [file](https://github.com/opensearch-project/job-scheduler/blob/main/sample-extension-plugin/src/main/resources/META-INF/services/org.opensearch.jobscheduler.spi.JobSchedulerExtension#L1).
 
+### Remote extension registration (deprecated)
+
+The `PUT /_plugins/_job_scheduler/_job_details` and
+`PUT /_plugins/_job_scheduler/_job_details/{document_id}` endpoints are deprecated.
+They register callbacks to remote extensions and return a deprecation warning when used.
+Existing registrations continue to work; this change does not remove stored job details.
+
+For new integrations, use the in-process `JobSchedulerExtension` plugin SPI described
+above. That SPI and the sample extension plugin are **not** deprecated. Migrating a
+remote extension requires implementing a plugin; there is no replacement registration REST API.
+
 ## Contributing
 
 See [developer guide](DEVELOPER_GUIDE.md) and [how to contribute to this project](CONTRIBUTING.md).
