@@ -9,7 +9,7 @@ import java.util.concurrent.Callable
 
 buildscript {
     ext {
-        opensearch_version = System.getProperty("opensearch.version", "3.6.0-SNAPSHOT")
+        opensearch_version = System.getProperty("opensearch.version", "3.10.0-SNAPSHOT")
         isSnapshot = "true" == System.getProperty("build.snapshot", "true")
         buildVersionQualifier = System.getProperty("build.version_qualifier", "")
         // 2.2.0-SNAPSHOT -> 2.2.0.0-SNAPSHOT
@@ -26,6 +26,8 @@ buildscript {
 
     repositories {
         mavenLocal()
+        maven { url "https://ci.opensearch.org/maven2/" }
+        maven { url "https://ci.opensearch.org/m2/" }
         mavenCentral()
         maven { url "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
     }
@@ -39,7 +41,7 @@ plugins {
     id "de.undercouch.download" version "5.7.0"
     id 'com.netflix.nebula.ospackage' version "11.11.2"
     id 'java-library'
-    id "com.diffplug.spotless" version "6.25.0"
+    id "com.diffplug.spotless" version "8.10.4"
 }
 
 apply plugin: 'opensearch.opensearchplugin'
@@ -218,24 +220,6 @@ publishing {
                 name = "opensearch-job-scheduler"
                 description = "OpenSearch Job Scheduler plugin"
                 groupId = "org.opensearch.plugin"
-                url = "https://github.com/opensearch-project/job-scheduler"
-                licenses {
-                    license {
-                        name = "The Apache License, Version 2.0"
-                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-                    }
-                }
-                developers {
-                    developer {
-                        name = "OpenSearch"
-                        url = "https://github.com/opensearch-project/job-scheduler"
-                    }
-                }
-                scm {
-                    connection = "scm:git@github.com:opensearch-project/job-scheduler.git"
-                    developerConnection = "scm:git@github.com:opensearch-project/job-scheduler.git"
-                    url = "git@github.com:opensearch-project/job-scheduler.git"
-                }
             }
         }
     }
@@ -254,27 +238,23 @@ publishing {
 
 repositories {
     mavenLocal()
+    maven { url "https://ci.opensearch.org/maven2/" }
     mavenCentral()
     maven { url "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
 }
 
 dependencies {
     compileOnly project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    testImplementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
 
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
 }
 
-// Copy the SPI shadow jar into shared/ so core installs it to OPENSEARCH_HOME/plugins/lib/<plugin_name>/
+// Core installs shared/ into OPENSEARCH_HOME/plugins/lib/<plugin_name>/.
 gradle.projectsEvaluated {
     def spiProject = project(":${rootProject.name}-spi")
-    task copyLibs(type: Copy) {
-        dependsOn spiProject.tasks.named('shadowJar')
-        from spiProject.tasks.named('shadowJar')
-        into "$buildDir/lib"
-    }
-    bundlePlugin.dependsOn copyLibs
     bundlePlugin {
-        from("$buildDir/lib") {
+        from(spiProject.tasks.named('shadowJar')) {
             into 'shared'
         }
     }

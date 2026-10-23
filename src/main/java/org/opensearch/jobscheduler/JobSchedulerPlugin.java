@@ -168,6 +168,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
         settingList.add(JobSchedulerSettings.SWEEP_PERIOD);
         settingList.add(JobSchedulerSettings.JITTER_LIMIT);
         settingList.add(JobSchedulerSettings.STATUS_HISTORY);
+        settingList.add(JobSchedulerSettings.SWEEP_ORPHAN_RECONCILIATION_ENABLED);
         return settingList;
     }
 
