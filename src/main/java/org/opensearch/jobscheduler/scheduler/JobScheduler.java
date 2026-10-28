@@ -19,6 +19,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.common.Randomness;
 import org.opensearch.common.unit.TimeValue;
+import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.threadpool.Scheduler;
 import org.opensearch.threadpool.ThreadPool;
 
@@ -206,13 +207,17 @@ public class JobScheduler {
             return false;
         }
 
-        jobInfo.setScheduledCancellable(
-            this.threadPool.schedule(
-                runnable,
-                new TimeValue(duration.toNanos(), TimeUnit.NANOSECONDS),
-                JobSchedulerPlugin.OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME
-            )
-        );
+        // ThreadPool.schedule runs the job in the caller's context, which can be that of the write that indexed the job
+        // document, and each run schedules the next. Stash it so that runs do not depend on which thread scheduled the job.
+        try (ThreadContext.StoredContext ignored = this.threadPool.getThreadContext().stashContext()) {
+            jobInfo.setScheduledCancellable(
+                this.threadPool.schedule(
+                    runnable,
+                    new TimeValue(duration.toNanos(), TimeUnit.NANOSECONDS),
+                    JobSchedulerPlugin.OPEN_DISTRO_JOB_SCHEDULER_THREAD_POOL_NAME
+                )
+            );
+        }
 
         return true;
     }
