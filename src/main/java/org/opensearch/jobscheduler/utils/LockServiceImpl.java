@@ -52,7 +52,7 @@ public class LockServiceImpl implements LockService {
 
     private final Client client;
     private final ClusterService clusterService;
-    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
+    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.auto_expand_replicas", "0-1", "index.periodic_flush_interval", "10m");
     private final JobHistoryService historyService;
     private final Supplier<Boolean> statusHistoryEnabled;
 
