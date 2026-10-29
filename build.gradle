@@ -138,10 +138,12 @@ allprojects {
             // === Setup security test ===
             testClusters.integTest.nodes.each { node ->
                 def plugins = node.plugins
-                def firstPlugin = plugins.get(0)
-                if (firstPlugin.provider == project.bundlePlugin.archiveFile) {
-                    plugins.remove(0)
-                    plugins.add(firstPlugin)
+                if (!plugins.isEmpty()) {
+                    def firstPlugin = plugins.get(0)
+                    if (firstPlugin.provider == project.bundlePlugin.archiveFile) {
+                        plugins.remove(0)
+                        plugins.add(firstPlugin)
+                    }
                 }
 
                 if (ext.securityEnabled) {
@@ -241,9 +243,20 @@ repositories {
 }
 
 dependencies {
-    implementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    compileOnly project(path: ":${rootProject.name}-spi", configuration: 'shadow')
+    testImplementation project(path: ":${rootProject.name}-spi", configuration: 'shadow')
 
     opensearchPlugin "org.opensearch.plugin:opensearch-security:${security_plugin_version}@zip"
+}
+
+// Core installs shared/ into OPENSEARCH_HOME/plugins/lib/<plugin_name>/.
+gradle.projectsEvaluated {
+    def spiProject = project(":${rootProject.name}-spi")
+    bundlePlugin {
+        from(spiProject.tasks.named('shadowJar')) {
+            into 'shared'
+        }
+    }
 }
 
 // RPM & Debian build
@@ -293,10 +306,12 @@ integTest {
         jvmArgs '-agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=8000'
     }
 }
-Zip bundle = (Zip) project.getTasks().getByName("bundlePlugin");
-integTest.getClusters().forEach{c -> {
-    c.plugin(project.getObjects().fileProperty().value(bundle.getArchiveFile()))
-}}
+gradle.projectsEvaluated {
+    Zip bundle = (Zip) project.getTasks().getByName("bundlePlugin");
+    integTest.getClusters().forEach{c -> {
+        c.plugin(project.getObjects().fileProperty().value(bundle.getArchiveFile()))
+    }}
+}
 
 testClusters.integTest {
     testDistribution = 'INTEG_TEST'
