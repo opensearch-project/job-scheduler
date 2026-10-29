@@ -218,7 +218,7 @@ public class LockServiceImpl implements LockService {
                 .id(updateLock.getLockId())
                 .setIfSeqNo(updateLock.getSeqNo())
                 .setIfPrimaryTerm(updateLock.getPrimaryTerm())
-                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.NONE)
                 .doc(updateLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .fetchSource(true);
 
@@ -255,7 +255,7 @@ public class LockServiceImpl implements LockService {
                 .source(tempLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
                 .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
-                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.NONE)
                 .create(true);
             client.index(
                 request,
@@ -278,7 +278,7 @@ public class LockServiceImpl implements LockService {
     }
 
     public void findLock(final String lockId, ActionListener<LockModel> listener) {
-        GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
+        GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId).realtime(true);
         client.get(getRequest, ActionListener.wrap(response -> {
             if (!response.isExists()) {
                 listener.onResponse(null);

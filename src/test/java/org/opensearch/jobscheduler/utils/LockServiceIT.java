@@ -128,6 +128,41 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         assertTrue("testSanity timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
+    public void testRealtimeGetObservesLockStateWithoutImmediateRefresh() throws Exception {
+        String uniqSuffix = "_realtime_get";
+        String lockId = "realtime_lock";
+        CountDownLatch latch = new CountDownLatch(1);
+        LockServiceImpl lockService = new LockServiceImpl(client(), this.clusterService);
+        final JobExecutionContext context = new JobExecutionContext(
+            Instant.now(),
+            new JobDocVersion(0, 0, 0),
+            lockService,
+            JOB_INDEX_NAME + uniqSuffix,
+            JOB_ID + uniqSuffix
+        );
+
+        lockService.acquireLockWithId(context.getJobIndexName(), LOCK_DURATION_SECONDS, lockId, ActionListener.wrap(acquiredLock -> {
+            assertNotNull("Expected to successfully acquire lock", acquiredLock);
+            lockService.findLock(acquiredLock.getLockId(), ActionListener.wrap(observedLock -> {
+                assertNotNull("Realtime GET should observe an acquired lock", observedLock);
+                assertFalse("Observed lock should be active", observedLock.isReleased());
+                lockService.release(observedLock, ActionListener.wrap(released -> {
+                    assertTrue("Expected to release lock", released);
+                    lockService.findLock(acquiredLock.getLockId(), ActionListener.wrap(releasedLock -> {
+                        assertNotNull("Realtime GET should observe a released lock", releasedLock);
+                        assertTrue("Observed lock should be released", releasedLock.isReleased());
+                        lockService.deleteLock(acquiredLock.getLockId(), ActionListener.wrap(deleted -> {
+                            assertTrue("Expected to delete lock", deleted);
+                            latch.countDown();
+                        }, exception -> fail(exception.getMessage())));
+                    }, exception -> fail(exception.getMessage())));
+                }, exception -> fail(exception.getMessage())));
+            }, exception -> fail(exception.getMessage())));
+        }, exception -> fail(exception.getMessage())));
+
+        assertTrue("Test timed out - lock state was not visible through realtime GET", latch.await(30L, TimeUnit.SECONDS));
+    }
+
     public void testSanityWithCustomLockID() throws Exception {
         String lockID = "sanity_test_lock";
         String uniqSuffix = "_sanity";
