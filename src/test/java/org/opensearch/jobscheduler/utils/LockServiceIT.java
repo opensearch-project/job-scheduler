@@ -11,6 +11,9 @@ package org.opensearch.jobscheduler.utils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.mockito.Mockito;
+import org.opensearch.action.support.PlainActionFuture;
+import org.opensearch.cluster.metadata.Metadata;
+import org.opensearch.common.settings.Settings;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.core.xcontent.XContentBuilder;
@@ -86,6 +89,7 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         // test framework,
         // thus the OpenSearchIntegTestCase.clusterService() will throw exception.
         this.clusterService = Mockito.mock(ClusterService.class, Mockito.RETURNS_DEEP_STUBS);
+        Mockito.when(this.clusterService.state().metadata()).thenReturn(Metadata.EMPTY_METADATA);
         Mockito.when(this.clusterService.state().routingTable().hasIndex(".opendistro-job-scheduler-lock"))
             .thenReturn(false)
             .thenReturn(true);
@@ -128,7 +132,34 @@ public class LockServiceIT extends OpenSearchIntegTestCase {
         assertTrue("testSanity timed out", latch.await(10L, TimeUnit.SECONDS));
     }
 
-    public void testRealtimeGetObservesLockStateWithoutImmediateRefresh() throws Exception {
+    public void testLocalLockWritesAreImmediatelySearchable() {
+        LockServiceImpl lockService = new LockServiceImpl(client(), clusterService);
+        PlainActionFuture<Boolean> created = PlainActionFuture.newFuture();
+        lockService.createLockIndex(created);
+        assertTrue(created.actionGet());
+        Mockito.when(clusterService.state().metadata()).thenReturn(client().admin().cluster().prepareState().get().getState().metadata());
+        client().admin()
+            .indices()
+            .prepareUpdateSettings(LockServiceImpl.LOCK_INDEX_NAME)
+            .setSettings(Settings.builder().put("index.refresh_interval", "-1"))
+            .get();
+
+        PlainActionFuture<LockModel> acquired = PlainActionFuture.newFuture();
+        lockService.acquireLockWithId(JOB_INDEX_NAME, LOCK_DURATION_SECONDS, "immediate-refresh", acquired);
+        LockModel lock = acquired.actionGet();
+        assertNotNull(lock);
+        assertEquals(1L, client().prepareSearch(LockServiceImpl.LOCK_INDEX_NAME).setSize(0).get().getHits().getTotalHits().value());
+
+        PlainActionFuture<Boolean> released = PlainActionFuture.newFuture();
+        lockService.release(lock, released);
+        assertTrue(released.actionGet());
+        assertEquals(
+            Boolean.TRUE,
+            client().prepareSearch(LockServiceImpl.LOCK_INDEX_NAME).get().getHits().getAt(0).getSourceAsMap().get("released")
+        );
+    }
+
+    public void testRealtimeGetObservesLockState() throws Exception {
         String uniqSuffix = "_realtime_get";
         String lockId = "realtime_lock";
         CountDownLatch latch = new CountDownLatch(1);

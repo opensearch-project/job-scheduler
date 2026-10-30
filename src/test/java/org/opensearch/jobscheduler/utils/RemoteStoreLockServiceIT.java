@@ -101,7 +101,7 @@ public class RemoteStoreLockServiceIT extends OpenSearchIntegTestCase {
         createLockIndex(lockService);
         assertRemoteStoreBackedLockIndex();
 
-        // Model the previous LockService create path: a lock document written with RefreshPolicy.IMMEDIATE.
+        // Model the previous remote-store LockService create path with RefreshPolicy.IMMEDIATE.
         List<PlainActionFuture<IndexResponse>> requests = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             LockModel lock = new LockModel(
@@ -135,6 +135,7 @@ public class RemoteStoreLockServiceIT extends OpenSearchIntegTestCase {
         PlainActionFuture<Boolean> future = PlainActionFuture.newFuture();
         lockService.createLockIndex(future);
         assertTrue("failed to create lock index", future.actionGet());
+        Mockito.when(clusterService.state().metadata()).thenReturn(client().admin().cluster().prepareState().get().getState().metadata());
     }
 
     private LockModel acquire(LockServiceImpl lockService, String lockId) {
