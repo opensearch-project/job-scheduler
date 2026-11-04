@@ -261,6 +261,7 @@ opensearch_tmp_dir.mkdirs()
 tasks.generatePomFileForPluginZipPublication.dependsOn publishNebulaPublicationToMavenLocal
 
 integTest {
+    exclude 'org/opensearch/jobscheduler/utils/RemoteStoreLockServiceIT.class'
     if (project.hasProperty('excludeTests')) {
         project.properties['excludeTests']?.replaceAll('\\s', '')?.split('[,;]')?.each {
             exclude "${it}"
@@ -318,6 +319,55 @@ testClusters.integTest {
         plugin(provider(ext.securityPluginFile))
     }
     setting 'path.repo', repo.absolutePath
+}
+
+/*
+ * A deliberately slow remote-store cluster used to demonstrate why a synchronous refresh on a system-index write can
+ * exhaust system_write. ReloadableFsRepository is a built-in test repository that pauses every remote blob write.
+ */
+File remoteStoreLockRepo = file("$buildDir/testclusters/remote-store-lock-repo")
+testClusters {
+    remoteStoreLockIntegTest {
+        testDistribution = 'INTEG_TEST'
+        numberOfNodes = 1
+        plugin(project.getObjects().fileProperty().value(bundle.getArchiveFile()))
+        setting 'path.repo', remoteStoreLockRepo.absolutePath
+        setting 'thread_pool.system_write.size', '1'
+        setting 'thread_pool.system_write.queue_size', '1'
+        setting 'node.attr.remote_store.segment.repository', 'job-scheduler-segment-repo'
+        setting 'node.attr.remote_store.translog.repository', 'job-scheduler-translog-repo'
+        setting 'node.attr.remote_store.state.repository', 'job-scheduler-state-repo'
+        ['job-scheduler-segment-repo', 'job-scheduler-translog-repo', 'job-scheduler-state-repo'].each { repositoryName ->
+            setting "node.attr.remote_store.repository.${repositoryName}.type", 'reloadable-fs'
+            setting "node.attr.remote_store.repository.${repositoryName}.settings.location", "${remoteStoreLockRepo.absolutePath}/${repositoryName}"
+            setting "node.attr.remote_store.repository.${repositoryName}.settings.repositories.slowdown", '1'
+        }
+    }
+}
+
+task remoteStoreLockIntegTest(type: RestIntegTestTask) {
+    description = 'Runs LockService tests against a deliberately slow remote-store cluster.'
+    group = 'verification'
+    dependsOn bundle
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useCluster testClusters.remoteStoreLockIntegTest
+    filter {
+        includeTestsMatching 'org.opensearch.jobscheduler.utils.RemoteStoreLockServiceIT'
+    }
+    // The external transport client must verify the same local FS repositories as the test cluster.
+    systemProperty 'tests.security.manager', 'false'
+    systemProperty 'java.io.tmpdir', es_tmp_dir.absolutePath
+    systemProperty 'cluster.number_of_nodes', '1'
+    systemProperty 'tests.job_scheduler.remote_store.repository', remoteStoreLockRepo.absolutePath
+    nonInputProperties.systemProperty('tests.rest.cluster', "${-> testClusters.remoteStoreLockIntegTest.allHttpSocketURI.join(',')}")
+    nonInputProperties.systemProperty('tests.clustername', "${-> testClusters.remoteStoreLockIntegTest.getName()}")
+    doFirst {
+        getClusters().forEach { cluster ->
+            cluster.waitForAllConditions()
+        }
+    }
 }
 
 run {
