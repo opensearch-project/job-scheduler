@@ -18,49 +18,49 @@ public class JobSchedulerSettings {
         LegacyOpenDistroJobSchedulerSettings.REQUEST_TIMEOUT,
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
-    );
+    ).withDescription("Timeout for waiting on sweeper searches and checks for deleted job documents; does not limit job execution time.");
 
     public static final Setting<TimeValue> SWEEP_BACKOFF_MILLIS = Setting.positiveTimeSetting(
         "plugins.jobscheduler.sweeper.backoff_millis",
         LegacyOpenDistroJobSchedulerSettings.SWEEP_BACKOFF_MILLIS,
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
-    );
+    ).withDescription("Initial delay for exponential backoff when retrying failed sweeper searches.");
 
     public static final Setting<Integer> SWEEP_BACKOFF_RETRY_COUNT = Setting.intSetting(
         "plugins.jobscheduler.retry_count",
         LegacyOpenDistroJobSchedulerSettings.SWEEP_BACKOFF_RETRY_COUNT,
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
-    );
+    ).withDescription("Maximum number of retries for failed sweeper searches.");
 
     public static final Setting<TimeValue> SWEEP_PERIOD = Setting.positiveTimeSetting(
         "plugins.jobscheduler.sweeper.period",
         LegacyOpenDistroJobSchedulerSettings.SWEEP_PERIOD,
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
-    );
+    ).withDescription("Interval between background full sweeps that discover and reconcile scheduled jobs.");
 
     public static final Setting<Integer> SWEEP_PAGE_SIZE = Setting.intSetting(
         "plugins.jobscheduler.sweeper.page_size",
         LegacyOpenDistroJobSchedulerSettings.SWEEP_PAGE_SIZE,
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
-    );
+    ).withDescription("Maximum number of job documents fetched per page during a sweep.");
 
     public static final Setting<Double> JITTER_LIMIT = Setting.doubleSetting(
         "plugins.jobscheduler.jitter_limit",
         LegacyOpenDistroJobSchedulerSettings.JITTER_LIMIT,
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
-    );
+    ).withDescription("Caps the jitter requested by a job as a fraction of its scheduling interval. Jobs without jitter are not delayed.");
 
     public static final Setting<Boolean> STATUS_HISTORY = Setting.boolSetting(
         "plugins.jobscheduler.history.enabled",
         false,
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
-    );
+    ).withDescription("Records job execution history when job locks are acquired and released.");
 
     /**
      * When enabled, the full sweep deschedules in-memory jobs whose backing document no longer exists in the job
@@ -78,5 +78,9 @@ public class JobSchedulerSettings {
         settings -> Boolean.toString(RemoteStoreNodeAttribute.isRemoteDataAttributePresent(settings)),
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
-    );
+    )
+        .withDescription(
+            "Removes scheduled jobs whose backing documents were deleted. "
+                + "When unset, enabled on nodes with remote segment or translog repository attributes."
+        );
 }
