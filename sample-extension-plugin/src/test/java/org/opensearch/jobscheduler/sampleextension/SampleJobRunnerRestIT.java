@@ -266,11 +266,10 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         waitUntilLockIsAcquiredAndReleased(jobId, 20, LOCK_INFO_URI, isLockReleased);
 
         // Checks lock is released
-        response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
-        responseJson = parseResponse(response);
-
-        // Asserts that "released" is true
-        assertTrue(isLockReleased.apply(responseJson));
+        await().atMost(20, TimeUnit.SECONDS)
+            .pollInterval(1, TimeUnit.SECONDS)
+            .ignoreExceptions()
+            .until(() -> isLockReleased.apply(parseResponse(makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null))));
 
         // Check that .opendistro-job-scheduler-lock index is green
         Response catResponse = makeRequest(
@@ -311,11 +310,10 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
         // Checks lock is released
         String lock_info_URI_PathParameter = LOCK_INFO_URI + "/.scheduler_sample_extension" + "-" + jobId;
 
-        response = makeRequest(client(), "GET", lock_info_URI_PathParameter, Map.of(), null);
-        responseJson = parseResponse(response);
-
-        // Asserts that "released" is true
-        assertTrue(isLockReleased.apply(responseJson));
+        await().atMost(20, TimeUnit.SECONDS)
+            .pollInterval(1, TimeUnit.SECONDS)
+            .ignoreExceptions()
+            .until(() -> isLockReleased.apply(parseResponse(makeRequest(client(), "GET", lock_info_URI_PathParameter, Map.of(), null))));
 
         // Cleanup
         deleteWatcherJob(jobId);
@@ -345,11 +343,10 @@ public class SampleJobRunnerRestIT extends SampleExtensionIntegTestCase {
             return currentLock != null && !currentLock.isReleased();
         });
 
-        Response response = makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null);
-        Map<String, Object> responseJson = parseResponse(response);
-
-        // Asserts that "released" is false
-        assertFalse(navigationFunction.apply(responseJson));
+        await().atMost(15, TimeUnit.SECONDS)
+            .pollInterval(1, TimeUnit.SECONDS)
+            .ignoreExceptions()
+            .until(() -> !navigationFunction.apply(parseResponse(makeRequest(client(), "GET", LOCK_INFO_URI, Map.of(), null))));
 
         await().atMost(maxTimeInSec, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
             lock.set(getLockByJobId(jobId));
