@@ -135,7 +135,6 @@ public class RemoteStoreLockServiceIT extends OpenSearchIntegTestCase {
         PlainActionFuture<Boolean> future = PlainActionFuture.newFuture();
         lockService.createLockIndex(future);
         assertTrue("failed to create lock index", future.actionGet());
-        Mockito.when(clusterService.state().metadata()).thenReturn(client().admin().cluster().prepareState().get().getState().metadata());
     }
 
     private LockModel acquire(LockServiceImpl lockService, String lockId) {

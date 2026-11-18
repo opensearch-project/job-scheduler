@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.utils;
 
-import org.opensearch.action.support.WriteRequest;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -23,7 +22,6 @@ import org.opensearch.action.get.GetRequest;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.update.UpdateRequest;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.cluster.metadata.IndexMetadata;
 import org.opensearch.common.xcontent.LoggingDeprecationHandler;
 import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
@@ -219,7 +217,6 @@ public class LockServiceImpl implements LockService {
                 .id(updateLock.getLockId())
                 .setIfSeqNo(updateLock.getSeqNo())
                 .setIfPrimaryTerm(updateLock.getPrimaryTerm())
-                .setRefreshPolicy(lockRefreshPolicy())
                 .doc(updateLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .fetchSource(true);
 
@@ -256,7 +253,6 @@ public class LockServiceImpl implements LockService {
                 .source(tempLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
                 .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
-                .setRefreshPolicy(lockRefreshPolicy())
                 .create(true);
             client.index(
                 request,
@@ -276,14 +272,6 @@ public class LockServiceImpl implements LockService {
             logger.error("IOException occurred creating lock", e);
             listener.onFailure(e);
         }
-    }
-
-    WriteRequest.RefreshPolicy lockRefreshPolicy() {
-        IndexMetadata index = clusterService.state().metadata().index(LOCK_INDEX_NAME);
-        // Remote refreshes wait for blob uploads; lock coordination uses realtime GET and optimistic concurrency.
-        return index != null && IndexMetadata.INDEX_REMOTE_STORE_ENABLED_SETTING.get(index.getSettings())
-            ? WriteRequest.RefreshPolicy.NONE
-            : WriteRequest.RefreshPolicy.IMMEDIATE;
     }
 
     public void findLock(final String lockId, ActionListener<LockModel> listener) {
