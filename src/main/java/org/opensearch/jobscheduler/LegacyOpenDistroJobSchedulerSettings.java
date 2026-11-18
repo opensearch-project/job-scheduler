@@ -18,7 +18,7 @@ public class LegacyOpenDistroJobSchedulerSettings {
         Setting.Property.NodeScope,
         Setting.Property.Dynamic,
         Setting.Property.Deprecated
-    );
+    ).withDescription("Deprecated fallback for plugins.jobscheduler.request_timeout; use that setting instead.");
 
     public static final Setting<TimeValue> SWEEP_BACKOFF_MILLIS = Setting.positiveTimeSetting(
         "opendistro.jobscheduler.sweeper.backoff_millis",
@@ -26,7 +26,7 @@ public class LegacyOpenDistroJobSchedulerSettings {
         Setting.Property.NodeScope,
         Setting.Property.Dynamic,
         Setting.Property.Deprecated
-    );
+    ).withDescription("Deprecated fallback for plugins.jobscheduler.sweeper.backoff_millis; use that setting instead.");
 
     public static final Setting<Integer> SWEEP_BACKOFF_RETRY_COUNT = Setting.intSetting(
         "opendistro.jobscheduler.retry_count",
@@ -34,7 +34,7 @@ public class LegacyOpenDistroJobSchedulerSettings {
         Setting.Property.NodeScope,
         Setting.Property.Dynamic,
         Setting.Property.Deprecated
-    );
+    ).withDescription("Deprecated fallback for plugins.jobscheduler.retry_count; use that setting instead.");
 
     public static final Setting<TimeValue> SWEEP_PERIOD = Setting.positiveTimeSetting(
         "opendistro.jobscheduler.sweeper.period",
@@ -42,7 +42,7 @@ public class LegacyOpenDistroJobSchedulerSettings {
         Setting.Property.NodeScope,
         Setting.Property.Dynamic,
         Setting.Property.Deprecated
-    );
+    ).withDescription("Deprecated fallback for plugins.jobscheduler.sweeper.period; use that setting instead.");
 
     public static final Setting<Integer> SWEEP_PAGE_SIZE = Setting.intSetting(
         "opendistro.jobscheduler.sweeper.page_size",
@@ -50,7 +50,7 @@ public class LegacyOpenDistroJobSchedulerSettings {
         Setting.Property.NodeScope,
         Setting.Property.Dynamic,
         Setting.Property.Deprecated
-    );
+    ).withDescription("Deprecated fallback for plugins.jobscheduler.sweeper.page_size; use that setting instead.");
 
     public static final Setting<Double> JITTER_LIMIT = Setting.doubleSetting(
         "opendistro.jobscheduler.jitter_limit",
@@ -60,5 +60,5 @@ public class LegacyOpenDistroJobSchedulerSettings {
         Setting.Property.NodeScope,
         Setting.Property.Dynamic,
         Setting.Property.Deprecated
-    );
+    ).withDescription("Deprecated fallback for plugins.jobscheduler.jitter_limit; use that setting instead.");
 }
