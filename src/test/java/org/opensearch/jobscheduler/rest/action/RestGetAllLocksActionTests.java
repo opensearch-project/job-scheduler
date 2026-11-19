@@ -31,6 +31,7 @@ import static java.util.Collections.emptyMap;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.opensearch.rest.RestHandler.Route.Property.ADMINISTRATIVE;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class RestGetAllLocksActionTests extends OpenSearchTestCase {
@@ -55,8 +56,10 @@ public class RestGetAllLocksActionTests extends OpenSearchTestCase {
         assertEquals(2, routes.size());
         assertEquals(getAllLocksPath, routes.get(0).getPath());
         assertEquals(RestRequest.Method.GET, routes.get(0).getMethod());
+        assertTrue(routes.get(0).hasProperty(ADMINISTRATIVE));
         assertEquals(getAllLocksPath + "/{lock_id}", routes.get(1).getPath());
         assertEquals(RestRequest.Method.GET, routes.get(1).getMethod());
+        assertTrue(routes.get(1).hasProperty(ADMINISTRATIVE));
     }
 
     public void testPrepareRequest() throws IOException {
