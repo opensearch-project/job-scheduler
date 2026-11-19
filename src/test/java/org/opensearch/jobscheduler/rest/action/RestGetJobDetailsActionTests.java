@@ -90,10 +90,19 @@ public class RestGetJobDetailsActionTests extends OpenSearchTestCase {
         assertEquals(action.GET_JOB_DETAILS_ACTION, name);
     }
 
-    public void testGetRoutes() {
-        List<RestHandler.Route> routes = action.routes();
+    public void testDeprecatedRoutes() {
+        assertTrue(action.routes().isEmpty());
+        List<RestHandler.DeprecatedRoute> routes = action.deprecatedRoutes();
+        assertEquals(2, routes.size());
         assertEquals(getJobDetailsPath, routes.get(0).getPath());
         assertEquals(updateJobDetailsPath, routes.get(1).getPath());
+        for (RestHandler.DeprecatedRoute route : routes) {
+            assertEquals(RestRequest.Method.PUT, route.getMethod());
+            assertEquals(
+                "Remote extension job registration is deprecated. Use the JobSchedulerExtension plugin SPI instead.",
+                route.getDeprecationMessage()
+            );
+        }
     }
 
     public void testPrepareGetJobDetailsRequest() throws IOException {
