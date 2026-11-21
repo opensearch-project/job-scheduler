@@ -9,6 +9,7 @@
 package org.opensearch.jobscheduler.multinode;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
@@ -20,6 +21,7 @@ import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.jobscheduler.ODFERestTestCase;
 import org.opensearch.jobscheduler.TestHelpers;
 import org.opensearch.jobscheduler.transport.AcquireLockResponse;
+import org.opensearch.jobscheduler.utils.LockServiceImpl;
 import org.opensearch.test.OpenSearchIntegTestCase;
 
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.SUITE, numDataNodes = 2)
@@ -76,6 +78,39 @@ public class GetLockMultiNodeRestIT extends ODFERestTestCase {
 
             assertEquals(expectedLockId, lockId);
         }
+    }
+
+    public void testLockDocumentIsReadable() throws Exception {
+        String lockId = validateResponseAndGetLockId(initialGetLockResponse);
+        // client() uses basic authentication in the Security-enabled suite, not the admin certificate.
+        assertBusy(() -> {
+            Response response = TestHelpers.makeRequest(
+                client(),
+                "GET",
+                "/" + LockServiceImpl.LOCK_INDEX_NAME + "/_search",
+                Map.of(),
+                TestHelpers.toHttpEntity("{\"query\":{\"ids\":{\"values\":[\"" + lockId + "\"]}}}"),
+                null
+            );
+            Map<String, Object> hits = (Map<String, Object>) entityAsMap(response).get("hits");
+            List<Map<String, Object>> documents = (List<Map<String, Object>>) hits.get("hits");
+            assertEquals(1, documents.size());
+            assertEquals(lockId, documents.get(0).get("_id"));
+            assertNotNull(documents.get(0).get("_source"));
+        });
+
+        Response response = TestHelpers.makeRequest(
+            client(),
+            "GET",
+            "/" + LockServiceImpl.LOCK_INDEX_NAME + "/_doc/" + lockId,
+            Map.of(),
+            null,
+            null
+        );
+        Map<String, Object> document = entityAsMap(response);
+        assertEquals(true, document.get("found"));
+        assertEquals(lockId, document.get("_id"));
+        assertNotNull(document.get("_source"));
     }
 
     private String validateResponseAndGetLockId(Response response) throws IOException {

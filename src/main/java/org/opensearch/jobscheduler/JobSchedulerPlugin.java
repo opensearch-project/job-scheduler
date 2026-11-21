@@ -49,6 +49,7 @@ import org.opensearch.env.Environment;
 import org.opensearch.env.NodeEnvironment;
 import org.opensearch.index.IndexModule;
 import org.opensearch.indices.SystemIndexDescriptor;
+import org.opensearch.indices.UnrestrictedSystemIndexDescriptor;
 import org.opensearch.jobscheduler.utils.JobDetailsService;
 import org.opensearch.jobscheduler.utils.JobHistoryService;
 import org.opensearch.plugins.ActionPlugin;
@@ -111,7 +112,7 @@ public class JobSchedulerPlugin extends Plugin implements ActionPlugin, Extensib
     @Override
     public Collection<SystemIndexDescriptor> getSystemIndexDescriptors(Settings settings) {
         return List.of(
-            new SystemIndexDescriptor(LockServiceImpl.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution"),
+            new UnrestrictedSystemIndexDescriptor(LockServiceImpl.LOCK_INDEX_NAME, "Stores lock documents used for plugin job execution"),
             new SystemIndexDescriptor(JobHistoryService.JOB_HISTORY_INDEX_NAME, "Stores history documents used for plugin job execution")
         );
     }
