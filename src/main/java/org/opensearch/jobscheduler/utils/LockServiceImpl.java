@@ -8,7 +8,6 @@
  */
 package org.opensearch.jobscheduler.utils;
 
-import org.opensearch.action.support.WriteRequest;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.LockModel;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -52,7 +51,7 @@ public class LockServiceImpl implements LockService {
 
     private final Client client;
     private final ClusterService clusterService;
-    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.number_of_shards", 1, "index.auto_expand_replicas", "0-1");
+    final static Map<String, Object> INDEX_SETTINGS = Map.of("index.auto_expand_replicas", "0-1", "index.periodic_flush_interval", "10m");
     private final JobHistoryService historyService;
     private final Supplier<Boolean> statusHistoryEnabled;
 
@@ -218,7 +217,6 @@ public class LockServiceImpl implements LockService {
                 .id(updateLock.getLockId())
                 .setIfSeqNo(updateLock.getSeqNo())
                 .setIfPrimaryTerm(updateLock.getPrimaryTerm())
-                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .doc(updateLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .fetchSource(true);
 
@@ -255,7 +253,6 @@ public class LockServiceImpl implements LockService {
                 .source(tempLock.toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS))
                 .setIfSeqNo(SequenceNumbers.UNASSIGNED_SEQ_NO)
                 .setIfPrimaryTerm(SequenceNumbers.UNASSIGNED_PRIMARY_TERM)
-                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
                 .create(true);
             client.index(
                 request,
@@ -278,7 +275,7 @@ public class LockServiceImpl implements LockService {
     }
 
     public void findLock(final String lockId, ActionListener<LockModel> listener) {
-        GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId);
+        GetRequest getRequest = new GetRequest(LOCK_INDEX_NAME).id(lockId).realtime(true);
         client.get(getRequest, ActionListener.wrap(response -> {
             if (!response.isExists()) {
                 listener.onResponse(null);
