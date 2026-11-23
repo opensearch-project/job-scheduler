@@ -9,7 +9,6 @@ This document contains a list of maintainers in this repo. See [opensearch-proje
 | Sarat Vemulapalli | [saratvemulapalli](https://github.com/saratvemulapalli) | Amazon      |
 | Dan Widdis        | [dbwiddis](https://github.com/dbwiddis)                 | Amazon      |
 | Kaituo Li         | [kaituo](https://github.com/kaituo)                     | Amazon      |
-| Varun Jain        | [vibrantvarun](https://github.com/vibrantvarun)         | Amazon      |
 | Craig Perkins     | [cwperks](https://github.com/cwperks)                   | Amazon      |
 | Prudhvi Godithi   | [prudhvigodithi](https://github.com/prudhvigodithi)     | Amazon      |
 
@@ -23,3 +22,4 @@ This document contains a list of maintainers in this repo. See [opensearch-proje
 | Mohammad Qureshi  | [qreshi](https://github.com/qreshi)                     | Amazon      |
 | Sriram Kosuri     | [skkosuri-amzn](https://github.com/skkosuri-amzn)       | Amazon      |
 | Josh Palis        | [joshpalis](https://github.com/joshpalis)               | Amazon      |
+| Varun Jain        | [vibrantvarun](https://github.com/vibrantvarun)         | Amazon      |
