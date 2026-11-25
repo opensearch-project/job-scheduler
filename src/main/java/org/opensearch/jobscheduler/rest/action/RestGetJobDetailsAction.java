@@ -38,8 +38,11 @@ import static org.opensearch.core.xcontent.XContentParserUtils.ensureExpectedTok
 import static org.opensearch.rest.RestRequest.Method.PUT;
 
 /**
- * This class consists of the REST handler to GET job details from extensions.
+ * Registers job details for remote extensions.
+ *
+ * @deprecated Use the in-process {@link org.opensearch.jobscheduler.spi.JobSchedulerExtension} SPI instead.
  */
+@Deprecated
 public class RestGetJobDetailsAction extends BaseRestHandler {
 
     public static final String GET_JOB_DETAILS_ACTION = "get_job_details_action";
@@ -58,14 +61,16 @@ public class RestGetJobDetailsAction extends BaseRestHandler {
     }
 
     @Override
-    public List<Route> routes() {
+    public List<DeprecatedRoute> deprecatedRoutes() {
+        String message = "Remote extension job registration is deprecated. Use the JobSchedulerExtension plugin SPI instead.";
         return List.of(
             // New Job Details Entry Request
-            new Route(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_job_details")),
+            new DeprecatedRoute(PUT, String.format(Locale.ROOT, "%s/%s", JobSchedulerPlugin.JS_BASE_URI, "_job_details"), message),
             // Update Job Details Entry Request
-            new Route(
+            new DeprecatedRoute(
                 PUT,
-                String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_job_details", GetJobDetailsRequest.DOCUMENT_ID)
+                String.format(Locale.ROOT, "%s/%s/{%s}", JobSchedulerPlugin.JS_BASE_URI, "_job_details", GetJobDetailsRequest.DOCUMENT_ID),
+                message
             )
 
         );
